@@ -13,9 +13,7 @@ synopsis: Fuzzing
 -- extra-source-files: README.md
 
 data-files:
-  rand.lo.bc
-  stderr.lo.bc
-  stdout.lo.bc
+  musl/rand.bc
 
 common common
   -- Manually list warnings that are errors so that the project doesn't fail to
