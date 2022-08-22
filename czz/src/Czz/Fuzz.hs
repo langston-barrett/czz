@@ -54,7 +54,7 @@ import qualified Czz.Concurrent.Lock as Lock
 import qualified Czz.Concurrent.Handle as Hand
 import qualified Czz.Config.Type as Conf
 import           Czz.Fuzz.Type
-import           Czz.Log (Logger)
+import           Czz.Log (Logger, Msg)
 import qualified Czz.Log as Log
 import qualified Czz.Log.Concurrent as CLog
 import           Czz.Record (Record)
@@ -119,14 +119,14 @@ run _conf bak halloc seed fuzzer = do
   () <-
     case simResult of
       C.AbortedResult _ ar -> do
-        Log.log ?logger "Aborted!"
-        Log.log ?logger $
+        Log.debug "Aborted!"
+        Log.debug $
           case ar of
             C.AbortedExec _reason _ -> "" -- show (C.ppAbortExecReason reason)
             C.AbortedExit exitCode -> Text.pack (show exitCode)
             C.AbortedBranch{} -> "branch..."
-      C.TimeoutResult{} -> Log.log ?logger "Timeout!"
-      C.FinishedResult{} -> Log.log ?logger "Finished!"
+      C.TimeoutResult{} -> Log.debug "Timeout!"
+      C.FinishedResult{} -> Log.debug "Finished!"
   C.popUntilAssumptionFrame bak frame
   -- ??? Needed?
   enableOpt <-
@@ -183,17 +183,14 @@ fuzz ::
   IsSyntaxExtension ext =>
   Conf.Config ->
   Fuzzer ext env eff fb ->
-  Logger Text ->
-  Logger Text ->
+  Logger (Msg Text) ->
+  Logger (Msg Text) ->
   IO (Either FuzzError (State env eff fb))
 fuzz conf fuzzer stdoutLogger stderrLogger = do
   initRandom (Conf.seed conf)
-
   runResultVar <- MVar.newEmptyMVar
-  go runResultVar 0 State.new
+  Log.with stdoutLogger (go runResultVar 0 State.new)
   where
-    log = Log.log stdoutLogger
-
     initRandom =
       Random.setStdGen <=<
         \case
@@ -209,7 +206,8 @@ fuzz conf fuzzer stdoutLogger stderrLogger = do
     go runResultVar running state = do
       if tooManyTries state
       then do
-        Log.log stderrLogger "Too many tries without new coverage! Giving up."
+        Log.with stdoutLogger $
+          Log.info "Too many tries without new coverage! Giving up."
         return (Right state)
       else do
         if running >= Conf.jobs conf
@@ -222,13 +220,15 @@ fuzz conf fuzzer stdoutLogger stderrLogger = do
       MVar.takeMVar runResultVar >>=
         \case
           Left err -> do
-            Log.log stderrLogger ("Thread exited with error! " <> Text.pack (show err))
+            Log.with stderrLogger $
+              Log.error ("Thread exited with error! " <> Text.pack (show err))
             return (Left (ThreadError err))
           Right record -> do
             let (new, state') = State.record record state
-            if new
-              then log "New coverage :)"
-              else log "No new coverage :("
+            Log.with stdoutLogger $
+              if new
+                then Log.info ("New coverage :)" :: Text)
+                else Log.info ("No new coverage :(" :: Text)
             go runResultVar (running - 1) state'
 
     -- TODO(lb): is forkFinally enough to handle all exceptions?
@@ -239,7 +239,6 @@ fuzz conf fuzzer stdoutLogger stderrLogger = do
           then CLog.pfxThreadId stdoutLogger
           else return stdoutLogger
         let ?logger = logger
-        Log.log ?logger "Hello from a new thread!"
         seed <- nextSeed fuzzer (State.pool state)
         withZ3 $ \bak -> do
           halloc <- C.newHandleAllocator
@@ -251,10 +250,11 @@ main ::
   Fuzzer ext env eff fb ->
   IO (Either FuzzError (State env eff fb))
 main conf fuzzer = do
+  let s = Conf.verbosity conf
   let cap = 4096 -- TODO(lb): Good default? Configurable?
   lss <- Lock.new Hand.stdStreams
-  (_tid, stdoutLogger) <- CLog.forkStdoutLogger lss cap
-  (_tid, stderrLogger) <- CLog.forkStderrLogger lss cap
+  (_tid, stdoutLogger) <- CLog.forkStdoutLogger s lss cap
+  (_tid, stderrLogger) <- CLog.forkStderrLogger s lss cap
   fuzz conf fuzzer stdoutLogger stderrLogger
 
 -- TODO(lb)

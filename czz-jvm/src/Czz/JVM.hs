@@ -26,7 +26,7 @@ import qualified Lang.Crucible.JVM.Context as CJVM
 import qualified Czz.Config.Type as CConf
 import           Czz.Coverage (Coverage)
 import qualified Czz.Coverage as Cover
-import           Czz.Log (Logger)
+import           Czz.Log (Logger, Msg)
 import           Czz.Fuzz (Fuzzer, FuzzError)
 import qualified Czz.Fuzz as Fuzz
 import           Czz.KLimited (IsKLimited)
@@ -91,8 +91,8 @@ jvmFuzzer _conf jvmCtx entryPoint =
 fuzz ::
   IsKLimited k =>
   Conf.Config ->
-  Logger Text ->
-  Logger Text ->
+  Logger (Msg Text) ->
+  Logger (Msg Text) ->
   IO (Either FuzzError (State () () (Coverage k)))
 fuzz conf stdoutLogger stderrLogger = do
   (jvmCtx, entryPoint) <- Trans.translate conf  -- Allowed to fail/call exit

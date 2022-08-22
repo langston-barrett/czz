@@ -5,6 +5,7 @@ where
 
 import qualified Options.Applicative as Opt
 
+import qualified Czz.Log as Log
 import           Czz.Config.Type (Config)
 import qualified Czz.Config.Type as Conf
 
@@ -40,4 +41,11 @@ parser =
           <> Opt.metavar "NUM"
           <> Opt.help "Number of times to try to get new coverage before giving up"
         )
+      )
+  <*> Opt.option Opt.auto
+      ( Opt.long "verbosity"
+        <> Opt.short 'v'
+        <> Opt.metavar "VERB"
+        <> Opt.value Log.Info
+        <> Opt.help "Verbosity"
       )

@@ -1,6 +1,5 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE ExplicitNamespaces #-}
-{-# LANGUAGE ImplicitParams #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 
@@ -112,7 +111,7 @@ mutate r = do
       case newEnv of
         Nothing -> return env
         Just var -> do
-          Log.log ?logger ("Adding env var " <> Text.pack (show var))
+          Log.debug ("Adding env var " <> Text.pack (show var))
           val <- MutBS.new (0, 64)  -- TODO(lb): size?
           return env { Env.args = Args.addWellFormedEnv var val (Env.args env) }
 
@@ -132,7 +131,7 @@ mutate r = do
       case newFilePath of
         Nothing -> return envFs
         Just newPath -> do
-          Log.log ?logger ("Adding file " <> Text.pack (show newPath))
+          Log.debug ("Adding file " <> Text.pack (show newPath))
           newFileContent <- Rand.genByteString (0, 256)  -- TODO(lb): size?
           return (FS.addFile newPath newFileContent envFs)
 
@@ -142,7 +141,7 @@ mutate r = do
       case path of
         Nothing -> return envFs
         Just p -> do
-          Log.log ?logger ("Dropping file " <> Text.pack (show p))
+          Log.debug ("Dropping file " <> Text.pack (show p))
           return (FS.rmFile p envFs)
 
     randomizeFile s = mutFs s $ \envFs -> do

@@ -569,7 +569,7 @@ sendImpl _proxy bak e memVar sockFd buf len flags = do
           let buf' = C.regValue buf
           output <-
             BS.pack <$> liftIO (CLLVM.loadString bak mem buf' (Just lenInt))
-          liftIO (Log.log ?logger ("Program called `send`: " ++ show output))
+          liftIO (Log.debug ("Program called `send`: " ++ show output))
           sentExpr <- What4.bvLit sym ?ptrWidth (BV.mkBV ?ptrWidth sent)
           return (sentExpr, mem)
       , Nothing
