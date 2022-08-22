@@ -19,6 +19,8 @@ import qualified System.Random as Random
 
 import qualified Czz.Log as Log
 import           Czz.KLimited (IsKLimited)
+import qualified Czz.Mutate.ByteString as MutBS
+import qualified Czz.Mutate.Seq as MutSeq
 import qualified Czz.Random as Rand
 import           Czz.Record (Record)
 import qualified Czz.Record as Rec
@@ -26,6 +28,7 @@ import           Czz.Seed (Seed)
 import qualified Czz.Seed as Seed
 import           Czz.SysTrace (type Time(Begin, End))
 
+import qualified Czz.LLVM.CString as CStr
 import           Czz.LLVM.Env (Env)
 import qualified Czz.LLVM.Env as Env
 import qualified Czz.LLVM.Env.Args as Args
@@ -69,59 +72,51 @@ mutate r = do
     mutations :: Vec.Vector (Seed 'Begin Env Effect -> IO Env)
     mutations =
       Vec.fromList
-      [ addArg
-      , dropArg
-      , addEnv
-      , dropEnv
+      [ mutArgv
+      , mutEnvp
       , addEnvFromRead
       , newFileFromOpen
       , dropFile
       , randomizeFile
       ]
 
-    argvIdx as = Random.randomRIO (0, Args.argvLength as - 1)
-    envpIdx as = Random.randomRIO (0, Args.envpLength as - 1)
+    mutCString range = fmap CStr.terminate . MutBS.any range . CStr.toByteString
 
-    mutArgs ::
-      Seed 'Begin Env Effect ->
-      (Args.Template -> IO Args.Template) ->
-      IO Env
-    mutArgs s f = do
+    mutArgs f s = do
       let env = Seed.env s
-      args' <- f (Env.args env)
-      return env { Env.args = args' }
+      args <- Args.mutArgsA f (Env.args env)
+      return env { Env.args = args }
 
-    addArg s = mutArgs s $ \envArgs -> do
-      Log.log ?logger "Adding command-line argument..."
-      idx <- argvIdx envArgs
-      newArg <- Rand.genCString (0, 64)  -- TODO(lb): size?
-      return (Args.addArg idx newArg envArgs)
+    mutArgv =
+      mutArgs $
+        MutSeq.any
+          (mutCString (0, 64))
+          (CStr.terminate <$> MutBS.new (0, 64))
+          (0, 32)
 
-    dropArg s = mutArgs s $ \envArgs -> do
-      Log.log ?logger "Dropping command-line argument..."
-      idx <- argvIdx envArgs
-      return (Args.rmArg idx envArgs)
+    mutEnvs f s = do
+      let env = Seed.env s
+      args <- Args.mutEnvsA f (Env.args env)
+      return env { Env.args = args }
 
-    addEnv s = mutArgs s $ \envArgs -> do
-      Log.log ?logger "Adding env var..."
-      idx <- envpIdx envArgs
-      newEnv <- Rand.genCString (0, 64)  -- TODO(lb): size?
-      return (Args.addEnv idx newEnv envArgs)
+    mutEnvp =
+      mutEnvs $
+        MutSeq.any
+          (mutCString (0, 64))
+          (CStr.terminate <$> MutBS.new (0, 64))
+          (0, 32)
 
-    dropEnv s = mutArgs s $ \envArgs -> do
-      Log.log ?logger "Dropping env var..."
-      idx <- envpIdx envArgs
-      return (Args.rmEnv idx envArgs)
-
-    addEnvFromRead s = mutArgs s $ \envArgs -> do
+    addEnvFromRead s = do
+      let env = Seed.env s
       newEnv <- Rand.pickSet (FB.envVarsRead (Rec.feedback r))
-      Log.log ?logger ("Trying to add env " <> Text.pack (show (FB.envVarsRead (Rec.feedback r))))
       case newEnv of
-        Nothing -> return envArgs
+        Nothing -> return env
         Just var -> do
           Log.log ?logger ("Adding env var " <> Text.pack (show var))
-          val <- Rand.genByteString (0, 64)  -- TODO(lb): size?
-          return (Args.addWellFormedEnv var val envArgs)
+          val <- MutBS.new (0, 64)  -- TODO(lb): size?
+          return env { Env.args = Args.addWellFormedEnv var val (Env.args env) }
+
+    -- TODO(lb): Lift out and use generic Map mutations
 
     mutFs ::
       Seed 'Begin Env Effect ->
