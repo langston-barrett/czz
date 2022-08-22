@@ -173,6 +173,7 @@ run _conf bak halloc seed fuzzer = do
 
 newtype FuzzError
   = ThreadError SomeException
+  deriving Show
 
 -- | Main entry point.
 --
