@@ -1,0 +1,95 @@
+cabal-version: 2.2
+name: czz-jvm
+version: 0.1
+author: Langston Barrett
+maintainer: Langston Barrett
+copyright: (c) Brian Langston Barrett, Inc 2022
+license: MIT
+license-file: LICENSE
+build-type: Simple
+category: Language
+synopsis: Fuzzing
+-- extra-source-files: README.md
+
+common common
+  -- Manually list warnings that are errors so that the project doesn't fail to
+  -- compile when new warnings are added to -Wall.
+  ghc-options:
+    -Wall
+    -Werror=deferred-type-errors
+    -Werror=deprecated-flags
+    -Werror=deprecations
+    -Werror=deriving-defaults
+    -Werror=dodgy-foreign-imports
+    -Werror=duplicate-exports
+    -Werror=empty-enumerations
+    -Werror=identities
+    -Werror=inaccessible-code
+    -Werror=incomplete-patterns
+    -Werror=incomplete-record-updates
+    -Werror=incomplete-uni-patterns
+    -Werror=inline-rule-shadowing
+    -Werror=missed-extra-shared-lib
+    -Werror=missing-exported-signatures
+    -Werror=missing-fields
+    -Werror=missing-home-modules
+    -Werror=missing-methods
+    -Werror=overflowed-literals
+    -Werror=overlapping-patterns
+    -Werror=partial-fields
+    -Werror=partial-type-signatures
+    -Werror=simplifiable-class-constraints
+    -Werror=star-binder
+    -Werror=tabs
+    -Werror=typed-holes
+    -Werror=unrecognised-pragmas
+    -Werror=unrecognised-warning-flags
+    -Werror=unsupported-calling-conventions
+    -Werror=unsupported-llvm-version
+    -Werror=unticked-promoted-constructors
+    -Werror=unused-imports
+    -Werror=warnings-deprecations
+    -Werror=wrong-do-bind
+  ghc-prof-options: -O2 -fprof-auto-top
+  default-language: Haskell2010
+
+library
+  import: common
+
+  hs-source-dirs: src
+
+  exposed-modules:
+    Czz.JVM
+    Czz.JVM.Config.CLI
+    Czz.JVM.Config.Type
+    Czz.JVM.Init
+    Czz.JVM.Translate
+
+  build-depends:
+    base >= 4.15 && < 4.17,
+    containers,
+    crucible,
+    crucible-jvm,
+    czz,
+    hashable,
+    jvm-parser,
+    lens,
+    optparse-applicative,
+    parameterized-utils,
+    text,
+    transformers,
+    what4
+
+executable czz-jvm
+  import: common
+  main-is: Main.hs
+  hs-source-dirs: exe
+
+  build-depends:
+    base >= 4.8 && < 4.17,
+    czz-jvm
+
+  ghc-options:
+    -threaded
+    -rtsopts
+    "-with-rtsopts=-N"

@@ -1,0 +1,55 @@
+packages:
+  czz
+  czz-jvm
+  czz-llvm
+
+source-repository-package
+  type: git
+  location: https://github.com/GaloisInc/crucible.git
+  tag: 5676b29
+  subdir: crucible
+
+source-repository-package
+  type: git
+  location: https://github.com/GaloisInc/crucible.git
+  tag: 5676b29
+  subdir: crucible-jvm
+
+source-repository-package
+  type: git
+  location: https://github.com/GaloisInc/crucible.git
+  tag: 5676b29
+  subdir: crucible-llvm
+
+source-repository-package
+  type: git
+  location: https://github.com/GaloisInc/crucible.git
+  tag: 5676b29
+  subdir: crucible-symio
+
+source-repository-package
+  type: git
+  location: https://github.com/GaloisInc/crucible.git
+  tag: 5676b29
+  subdir: crux
+
+source-repository-package
+  type: git
+  location: https://github.com/GaloisInc/jvm-parser
+  tag: b1a5a21
+
+source-repository-package
+  type: git
+  location: https://github.com/elliottt/llvm-pretty.git
+  tag: 64d43d9
+
+source-repository-package
+  type: git
+  location: https://github.com/GaloisInc/llvm-pretty-bc-parser.git
+  tag: cbcf095
+
+source-repository-package
+  type: git
+  location: https://github.com/GaloisInc/what4.git
+  tag: e569514
+  subdir: what4

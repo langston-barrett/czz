@@ -1,0 +1,13 @@
+*.out
+*.txt
+*.sh
+
+# Haskell
+dist-*
+dist/
+*.prof
+*.aux
+*.hp
+cabal.project.local
+.boring
+*~

@@ -1,0 +1,12 @@
+cradle:
+  cabal:
+  - path: "./czz/src"
+    component: "lib:czz"
+  - path: "./czz-llvm/exe"
+    component: "exe:czz-llvm"
+  - path: "./czz-llvm/src"
+    component: "lib:czz-llvm"
+  - path: "./czz-jvm/exe"
+    component: "exe:czz-jvm"
+  - path: "./czz-jvm/src"
+    component: "lib:czz-jvm"

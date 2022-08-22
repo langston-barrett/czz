@@ -1,0 +1,138 @@
+# HLint configuration file
+# https://github.com/ndmitchell/hlint
+
+# Imports
+# -------
+
+- modules:
+  # If you import Data.List qualified, it must be as 'List'
+  - {name: [Control.Lens], as: Lens}
+  - {name: [Data.IORef], as: IORef}
+  - {name: [Data.List], as: List}
+  - {name: [Data.Map, Data.Map.Strict], as: Map}
+  - {name: [Data.Maybe], as: Maybe}
+  - {name: [Data.Sequence], as: Seq}
+  - {name: [Data.Set, Data.HashSet], as: Set}
+  - {name: [Data.Text], as: Text}
+  - {name: [Data.Vector], as: Vec}
+  - {name: [System.Exit], as: Exit}
+  - {name: [System.IO], as: IO}
+  - {name: [System.Random], as: Random}
+
+  # libraries
+  - {name: [Prettyprinter, Prettyprinter.Render.Text], as: PP}
+  - {name: [Text.LLVM.AST], as: L}
+
+  # crucible
+  - {name: [Lang.Crucible.Backend], as: C}
+  - {name: [Lang.Crucible.Backend.Online], as: C}
+  - {name: [Lang.Crucible.CFG.Common], as: C}
+  - {name: [Lang.Crucible.CFG.Core], as: C}
+  - {name: [Lang.Crucible.CFG.Extension], as: C}
+  - {name: [Lang.Crucible.FunctionHandle], as: C}
+  - {name: [Lang.Crucible.Simulator], as: C}
+  - {name: [Lang.Crucible.Simulator.CallFrame], as: C}
+  - {name: [Lang.Crucible.Simulator.EvalStmt], as: C}
+  - {name: [Lang.Crucible.Simulator.ExecutionTree], as: C}
+  - {name: [Lang.Crucible.Simulator.OverrideSim], as: C}
+  - {name: [Lang.Crucible.Simulator.RegMap], as: C}
+  - {name: [Lang.Crucible.Simulator.SimError], as: C}
+  - {name: [Lang.Crucible.Types], as: C}
+
+  # crucible-jvm
+  - {name: [Lang.Crucible.JVM], as: CJVM}
+  - {name: [Lang.Crucible.JVM.Simulate], as: CJVM}
+  - {name: [Lang.Crucible.JVM.Types], as: CJVM}
+
+  # crucible-llvm
+  - {name: [Lang.Crucible.LLVM], as: CLLVM}
+  - {name: [Lang.Crucible.LLVM.Bytes], as: CLLVM}
+  - {name: [Lang.Crucible.LLVM.DataLayout], as: CLLVM}
+  - {name: [Lang.Crucible.LLVM.Errors], as: CLLVM}
+  - {name: [Lang.Crucible.LLVM.Errors.MemoryError], as: CLLVM}
+  - {name: [Lang.Crucible.LLVM.Extension], as: CLLVM}
+  - {name: [Lang.Crucible.LLVM.Globals], as: CLLVM}
+  - {name: [Lang.Crucible.LLVM.Intrinsics], as: CLLVM}
+  - {name: [Lang.Crucible.LLVM.MemModel], as: CLLVM}
+  - {name: [Lang.Crucible.LLVM.MemModel.CallStack], as: CLLVM}
+  - {name: [Lang.Crucible.LLVM.MemModel.Partial], as: CLLVM}
+  - {name: [Lang.Crucible.LLVM.MemModel.Pointer], as: CLLVM}
+  - {name: [Lang.Crucible.LLVM.MemType as CLLVM], as: CLLVM}
+  - {name: [Lang.Crucible.LLVM.QQ], as: CLLVM}
+  - {name: [Lang.Crucible.LLVM.SymIO], as: CLLVM}
+  - {name: [Lang.Crucible.LLVM.Translation], as: CLLVM}
+  - {name: [Lang.Crucible.LLVM.TypeContext], as: CLLVM}
+
+  # local
+  - {name: [Czz.Concurrent.Handle], as: Hand}
+  - {name: [Czz.Concurrent.Lock], as: Lock}
+  - {name: [Czz.Coverage], as: Cover}
+  - {name: [Czz.Fuzz], as: Fuzz}
+  - {name: [Czz.Record], as: Rec}
+  - {name: [Czz.Result], as: Res}
+  - {name: [Czz.Seed], as: Seed}
+
+  #
+  - {name: [Czz.JVM.Translate], as: Trans}
+
+  #
+  - {name: [Czz.LLVM.Translate], as: Trans}
+
+
+# Custom hints
+# ------------
+
+# We should use "panic", not "error".
+# - error:
+#     name: Use panic
+#     lhs: "error x"
+#     rhs: 'panic "nameOfFunction" [x, "more lines of details"]'
+# - error:
+#     name: Use panic
+#     lhs: "undefined"
+#     rhs: 'panic "nameOfFunction" [x, "more lines of details"]'
+
+- error:
+    name: Use PP.viaShow
+    lhs: "Prettyprinter.pretty (show x)"
+    rhs: "Prettyprinter.viaShow x"
+
+- error:
+    name: Use TypeApplications
+    lhs: "Proxy :: a"
+    rhs: "Proxy @Whatever"
+
+- error:
+    name: Use Log.log
+    lhs: "putStrLn"
+    rhs: "Logger.log ?logger"
+
+# Ignored
+# -------
+
+# for now..
+- ignore: {name: "Use newtype instead of data"}
+- ignore: {name: "Use ++"}
+
+# always
+- ignore: {name: "Avoid lambda"}  # Can be more clear with explicit binding
+- ignore: {name: "Avoid lambda using `infix`"}  # Can be more clear with explicit binding
+- ignore: {name: "Eta reduce"}  # Can be more clear with explicit binding
+- ignore: {name: "Parse error"}  # we trust the compiler over HLint
+- ignore: {name: "Reduce duplication"}  # Too heuristic
+- ignore: {name: "Use const"}  # Naming parameters helps
+- ignore: {name: "Use section"}  # Too opinionated
+- ignore: {name: "Use void"}  # Too opinionated
+
+# exceptions
+- ignore:
+    name: "Use Log.log"
+    within:
+      - "Czz.Fuzz"
+      - "Czz.JVM"
+      - "Czz.JVM.Translate"
+      - "Czz.LLVM"
+      - "Czz.LLVM.Translate"
+      - "Test"
+- ignore:
+    within: ["Czz.LLVM.QQ"]
