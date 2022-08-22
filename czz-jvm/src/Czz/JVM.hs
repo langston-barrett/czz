@@ -104,7 +104,7 @@ main :: IO Exit.ExitCode
 main = do
   conf <- CLI.cliConfig
   (jvmCtx, entryPoint) <- Trans.translate conf  -- Allowed to fail/call exit
-  KLimit.withKLimit (CConf.maxPathLen (Conf.common conf)) $ do
+  KLimit.withKLimit (CConf.pathLen (Conf.common conf)) $ do
     let fuzzer = jvmFuzzer conf jvmCtx entryPoint
     _finalState <- Fuzz.main (Conf.common conf) fuzzer
     return ()

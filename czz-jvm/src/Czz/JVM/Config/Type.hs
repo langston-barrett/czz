@@ -9,6 +9,6 @@ data Config = Config
   { common :: !Czz.Conf.Type.Config
   , classPath :: ![FilePath]
   , jars :: ![FilePath]
-  , entryClass :: !(Maybe String)
-  , entryMethod :: !(Maybe String)
+  , entryClass :: !String
+  , entryMethod :: !String
   }

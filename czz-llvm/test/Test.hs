@@ -44,13 +44,13 @@ tests = do
         Conf.Config
           { Conf.common =
               CConf.Config
-              { CConf.jobs = Just 1
-              , CConf.pathLen = Just 1
+              { CConf.jobs = 1
+              , CConf.pathLen = 1
               , CConf.seed = Nothing  -- Just 0
               , CConf.tries = Just 10
               }
           , Conf.prog = "test.bc"
-          , Conf.entryPoint = Nothing  -- main
+          , Conf.entryPoint = "main"
           , Conf.skip = []
           , Conf.onlyNeeded = True
           }

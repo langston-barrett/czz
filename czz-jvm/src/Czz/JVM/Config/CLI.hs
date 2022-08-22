@@ -47,19 +47,17 @@ cliConfig =
               <> Opt.help "JAR files"
             )
           )
-      <*> Opt.optional
-          ( Opt.option Opt.auto
-            ( Opt.long "entry-class"
-              <> Opt.short 'c'
-              <> Opt.metavar "CLASS"
-              <> Opt.help "Class with entry point method (default: Main)"
-            )
+      <*> Opt.option Opt.auto
+          ( Opt.long "entry-class"
+            <> Opt.short 'c'
+            <> Opt.metavar "CLASS"
+            <> Opt.value "Main"
+            <> Opt.help "Class with entry point method (default: Main)"
           )
-      <*> Opt.optional
-          ( Opt.option Opt.auto
-            ( Opt.long "entry-method"
-              <> Opt.short 'e'
-              <> Opt.metavar "METHOD"
-              <> Opt.help "Entry point; must take String[] argument (default: main)"
-            )
+      <*> Opt.option Opt.auto
+          ( Opt.long "entry-method"
+            <> Opt.short 'e'
+            <> Opt.metavar "METHOD"
+            <> Opt.value "main"
+            <> Opt.help "Entry point; must take String[] argument (default: main)"
           )
