@@ -57,14 +57,15 @@ import           Czz.Fuzz.Type
 import           Czz.Log (Logger, Msg)
 import qualified Czz.Log as Log
 import qualified Czz.Log.Concurrent as CLog
+import           Czz.Overrides (EffectTrace)
+import qualified Czz.Overrides as Ov
 import           Czz.Record (Record)
 import qualified Czz.Record as Rec
 import           Czz.Seed (Seed)
 import qualified Czz.Seed as Seed
 import           Czz.State (State)
 import qualified Czz.State as State
-import           Czz.SysTrace (SomeSysTrace(SomeSysTrace), Time(Begin))
-import qualified Czz.SysTrace as SysTrace
+import           Czz.SysTrace (Time(Begin))
 
 -- | Not exported.
 withZ3 ::
@@ -98,15 +99,17 @@ run ::
   Conf.Config ->
   bak ->
   C.HandleAllocator ->
+  -- | Mutate last library call response?
+  Bool ->
   Seed 'Begin env eff ->
   Fuzzer ext env eff fb ->
   IO (Record env eff fb)
-run _conf bak halloc seed fuzzer = do
+run _conf bak halloc doMut seed fuzzer = do
   (sym :: sym) <- return (C.backendGetSym bak)
   -- Stuff that gets recorded during execution
   effectRef <-
-    IORef.newIORef (SomeSysTrace (Seed.effects seed))
-      :: IO (IORef.IORef (SomeSysTrace eff))
+    IORef.newIORef (Ov.makeEffectTrace (Seed.effects seed) doMut)
+      :: IO (IORef.IORef (EffectTrace eff))
   frame <- C.pushAssumptionFrame bak
   -- TODO(lb): something with result, probably
   -- TODO(lb): allow other execution features
@@ -156,11 +159,7 @@ run _conf bak halloc seed fuzzer = do
   let (failedGoals, _provedGoals) = Either.partitionEithers goalResults
 
   results <- explainResults symbBits (map FailedGoal failedGoals) simResult
-
-  -- TODO(lb): maybe assert at end of trace?
-  SomeSysTrace effects_ <- IORef.readIORef effectRef
-  let effects = SysTrace.fastForward effects_
-
+  effects <- Ov.extract <$> IORef.readIORef effectRef
   (fb, fbId) <- getFeedback symbBits
 
   return $
@@ -242,9 +241,10 @@ fuzz conf fuzzer stdoutLogger stderrLogger = do
           else return stdoutLogger
         let ?logger = logger
         seed <- nextSeed fuzzer (State.pool state)
+        (seed, doMut) <- nextSeed fuzzer (State.pool state)
         withZ3 $ \bak -> do
           halloc <- C.newHandleAllocator
-          run conf bak halloc seed fuzzer
+          run conf bak halloc doMut seed fuzzer
 
 main ::
   IsSyntaxExtension ext =>

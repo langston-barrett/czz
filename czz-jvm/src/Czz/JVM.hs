@@ -56,9 +56,9 @@ jvmFuzzer _conf jvmCtx entryPoint =
     { Fuzz.nextSeed = \records -> do
         record <- Rand.pickSeq records
         case record of
-          Nothing -> return (Seed.begin ())
+          Nothing -> return (Seed.begin (), False)
           -- TODO(lb): mutate, power schedule, mutation schedule
-          Just r -> return (Seed.rewind (Rec.seed r))
+          Just r -> return (Seed.rewind (Rec.seed r), False)
 
     , Fuzz.onUpdate = \_state -> return ()
 

@@ -29,11 +29,12 @@ import qualified Lang.Crucible.Simulator as C
 import           Lang.Crucible.Types (UnitType)
 
 import qualified Czz.Log as Log
+import           Czz.Overrides (EffectTrace)
 import           Czz.Record (FeedbackId, Record)
 import qualified Czz.Result as Res
 import           Czz.Seed (Seed)
 import           Czz.State (State)
-import           Czz.SysTrace (SomeSysTrace, Time(Begin))
+import           Czz.SysTrace (Time(Begin))
 
 data CzzPersonality = CzzPersonality
 
@@ -49,7 +50,7 @@ data SymbolicBits sym bak ext env eff fb
   = SymbolicBits
     { initState ::
         C.HandleAllocator ->
-        IORef (SomeSysTrace eff) ->
+        IORef (EffectTrace eff) ->
         Seed 'Begin env eff ->
         IO (Handle, C.ExecState CzzPersonality sym ext (C.RegEntry sym UnitType))
     , explainResults ::
@@ -65,11 +66,11 @@ data SymbolicBits sym bak ext env eff fb
 -- non-atomically modifying an IORef.
 data Fuzzer ext env eff fb =
   Fuzzer
-  { -- Parts that don't change between runs, don't share state via IORef
+  { -- | 'Bool' is whether or not to mutate the last library call in the trace
     nextSeed ::
       Log.Has Text =>
       Seq (Record env eff fb) ->
-      IO (Seed 'Begin env eff)
+      IO (Seed 'Begin env eff, Bool)
 
   , onUpdate ::
       State env eff fb ->

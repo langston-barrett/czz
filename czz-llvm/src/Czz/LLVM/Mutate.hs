@@ -1,6 +1,5 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE ExplicitNamespaces #-}
-{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Czz.LLVM.Mutate
@@ -9,7 +8,6 @@ module Czz.LLVM.Mutate
 where
 
 import           Control.Monad (foldM)
-import qualified Data.ByteString as BS
 import qualified Data.Maybe as Maybe
 import           Data.Text (Text)
 import qualified Data.Text as Text
@@ -25,7 +23,7 @@ import           Czz.Record (Record)
 import qualified Czz.Record as Rec
 import           Czz.Seed (Seed)
 import qualified Czz.Seed as Seed
-import           Czz.SysTrace (type Time(Begin, End))
+import           Czz.SysTrace (type Time(Begin))
 
 import qualified Czz.LLVM.CString as CStr
 import           Czz.LLVM.Env (Env)
@@ -35,9 +33,6 @@ import qualified Czz.LLVM.Env.FileSystem as FS
 import           Czz.LLVM.Feedback (Feedback)
 import qualified Czz.LLVM.Feedback as FB
 import           Czz.LLVM.Overrides (Effect)
-import qualified Czz.LLVM.Overrides as Ov
-import qualified Czz.LLVM.Overrides.Libc as Libc
-import qualified Czz.LLVM.Overrides.Posix as Posix
 
 -- TODO(lb): mutation schedule
 -- TODO(lb): mutate the trace
@@ -48,18 +43,13 @@ mutate ::
   IO (Seed 'Begin Env Effect)
 mutate r = do
   let seed = Seed.rewind (Rec.seed r)
-  mutTrace <- Random.randomIO :: IO Bool
-  mutated <-
-    if mutTrace
-      then do
-        Seed.mutLast mutEffect (Rec.seed r)
-      else do
-        numMuts <- Random.randomRIO (0, 8) :: IO Int
-        let go state _n = do
-              mut <- Rand.pickVec mutations
-              mutated <- Maybe.fromJust mut state
-              return (Seed.begin mutated)
-        foldM go seed [0..numMuts]
+  mutated <- do
+    numMuts <- Random.randomRIO (0, 8) :: IO Int
+    let go state _n = do
+          mut <- Rand.pickVec mutations
+          mutated <- Maybe.fromJust mut state
+          return (Seed.begin mutated)
+    foldM go seed [0..numMuts]
   if mutated == seed
     then mutate r
     else return mutated
@@ -152,26 +142,3 @@ mutate r = do
         Just p -> do
           newContent <- Rand.genByteString (0, 256)  -- TODO(lb): size?
           return (FS.addFile p newContent envFs)
-
-    _mutTrace ::
-      Seed 'End Env Effect ->
-      (Effect -> IO Effect) ->
-      IO (Seed 'Begin Env Effect)
-    _mutTrace s f = Seed.mutLast f s  -- TODO(lb): unsnoc variable number of times
-
-    -- TODO(lb): mutation should hapen in situ - but how?
-    mutEffect :: Effect -> IO Effect
-    mutEffect =
-      \case
-        e@(Ov.Libc (Libc.Fprintf Libc.FprintfSuccess)) -> return e
-        e@(Ov.Libc (Libc.Strcpy Libc.StrcpyEffect)) -> return e
-        e@(Ov.Posix (Posix.Accept Posix.AcceptSuccess)) -> return e
-        e@(Ov.Posix (Posix.Bind Posix.BindSuccess)) -> return e
-        e@(Ov.Posix (Posix.Listen Posix.ListenSuccess)) -> return e
-        Ov.Posix (Posix.Recv (Posix.RecvSuccess bs)) -> do
-          Ov.Posix . Posix.Recv . Posix.RecvSuccess <$>
-            Rand.genByteString (0, BS.length bs)
-        Ov.Posix (Posix.Socket (Posix.SocketSuccess _i)) -> do
-          Ov.Posix . Posix.Socket . Posix.SocketSuccess <$>
-            Random.randomRIO (0, 64)
-        e -> return e

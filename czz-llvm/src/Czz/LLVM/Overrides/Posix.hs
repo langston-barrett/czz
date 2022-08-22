@@ -45,18 +45,16 @@ import           Lang.Crucible.Types (BVType)
 
 -- crucible-llvm
 import qualified Lang.Crucible.LLVM.DataLayout as CLLVM
-import           Lang.Crucible.LLVM.Extension (ArchWidth)
 import           Lang.Crucible.LLVM.Intrinsics (OverrideTemplate, LLVMOverride)
 import qualified Lang.Crucible.LLVM.Intrinsics as CLLVM
 import qualified Lang.Crucible.LLVM.MemModel as CLLVM
 import           Lang.Crucible.LLVM.MemModel.Pointer (LLVMPointerType)
 
 import qualified Czz.Log as Log
+import           Czz.Overrides (EffectTrace, Override)
+import qualified Czz.Overrides as COv
 import qualified Czz.Random as Rand
-import           Czz.SysTrace (SomeSysTrace)
 
-import qualified Czz.LLVM.Overrides.State.Env as State.Env
-import           Czz.LLVM.Overrides.Type (Override(..), toLLVMOverride)
 import           Czz.LLVM.Overrides.Util (OverrideConstraints)
 import           Czz.LLVM.QQ (llvmArgs, llvmOvr, llvmOvrType)
 import qualified Czz.LLVM.Unimplemented as Unimpl
@@ -131,21 +129,20 @@ overrides ::
   Log.Has String =>
   OverrideConstraints sym arch wptr =>
   proxy arch ->
-  IORef (SomeSysTrace eff) ->
+  IORef (EffectTrace eff) ->
   Lens.Prism' eff Effect ->
-  C.GlobalVar State.Env.EnvState ->
   [OverrideTemplate p sym arch rtp l a]
-overrides proxy effects inj envVar =
-  [ ov (acceptDecl proxy envVar effects (inj . _Accept))
-  , ov (bindDecl proxy envVar effects (inj . _Bind))
-  -- , ov (getEgidDecl proxy envVar effects (inj . _))
-  -- , ov (getHostNameDecl proxy envVar effects (inj . _))
-  -- , ov (getTimeOfDayDecl proxy envVar effects (inj . _))
-  , ov (listenDecl proxy envVar effects (inj . _Listen))
-  , ov (recvDecl proxy envVar effects (inj . _Recv))
-  , ov (sendDecl proxy envVar effects (inj . _Send))
-  , ov (setSockOptDecl proxy envVar effects (inj . _SetSockOpt))
-  , ov (socketDecl proxy envVar effects (inj . _Socket))
+overrides proxy effects inj =
+  [ ov (acceptDecl proxy effects (inj . _Accept))
+  , ov (bindDecl proxy effects (inj . _Bind))
+  -- , ov (getEgidDecl proxy effects (inj . _))
+  -- , ov (getHostNameDecl proxy effects (inj . _))
+  -- , ov (getTimeOfDayDecl proxy effects (inj . _))
+  , ov (listenDecl proxy effects (inj . _Listen))
+  , ov (recvDecl proxy effects (inj . _Recv))
+  , ov (sendDecl proxy effects (inj . _Send))
+  , ov (setSockOptDecl proxy effects (inj . _SetSockOpt))
+  , ov (socketDecl proxy effects (inj . _Socket))
   ]
   where ov = CLLVM.basic_llvm_override
 
@@ -200,8 +197,7 @@ acceptDecl ::
   Log.Has String =>
   OverrideConstraints sym arch wptr =>
   proxy arch ->
-  C.GlobalVar State.Env.EnvState ->
-  IORef (SomeSysTrace eff) ->
+  IORef (EffectTrace eff) ->
   Lens.Prism' eff AcceptEffect ->
   LLVMOverride
     p
@@ -210,31 +206,33 @@ acceptDecl ::
               ::> LLVMPointerType wptr
               ::> LLVMPointerType wptr)
     (BVType 32)
-acceptDecl proxy envVar effects inj =
+acceptDecl proxy effects inj =
   [llvmOvr| i32 @accept( i32, %struct.sockaddr*, i32* ) |] $
   \memVar bak args ->
-    let ov = acceptOverride proxy
-    in toLLVMOverride bak effects inj ov memVar envVar args
+    let ov = acceptOverride proxy bak memVar
+    in COv.toOverride bak effects inj ov args
 
 acceptOverride ::
   Log.Has String =>
-  (wptr ~ ArchWidth arch) =>
-  CLLVM.HasPtrWidth wptr =>
+  OverrideConstraints sym arch wptr =>
+  IsSymBackend sym bak =>
   proxy arch ->
+  bak ->
+  C.GlobalVar CLLVM.Mem ->
   Override
-    arch
+    sym
+    bak
     AcceptEffect
     (EmptyCtx
      ::> BVType 32
      ::> LLVMPointerType wptr
      ::> LLVMPointerType wptr)
     (BVType 32)
-acceptOverride proxy =
-  Override
-  { genEffect = \_bak _memVar _envVar _args -> return AcceptSuccess
-  , doEffect =
-      \bak e memVar _envVar args ->
-        Ctx.uncurryAssignment (acceptImpl proxy bak e memVar) args
+acceptOverride proxy bak memVar =
+  COv.Override
+  { COv.genEffect = \_oldEff _args -> return AcceptSuccess
+  , COv.doEffect = \e args ->
+      Ctx.uncurryAssignment (acceptImpl proxy bak e memVar) args
   }
 
 -- | Unsound!
@@ -272,28 +270,29 @@ bindDecl ::
   Log.Has String =>
   OverrideConstraints sym arch wptr =>
   proxy arch ->
-  C.GlobalVar State.Env.EnvState ->
-  IORef (SomeSysTrace eff) ->
+  IORef (EffectTrace eff) ->
   Lens.Prism' eff BindEffect ->
   [llvmOvrType| i32 @( i32, %struct.sockaddr*, i32 ) |]
-bindDecl proxy envVar effects inj =
+bindDecl proxy effects inj =
   [llvmOvr| i32 @bind( i32, %struct.sockaddr*, i32 ) |] $
   \memVar bak args ->
-    let ov = bindOverride proxy
-    in toLLVMOverride bak effects inj ov memVar envVar args
+    let ov = bindOverride proxy bak memVar
+    in COv.toOverride bak effects inj ov args
 
 bindOverride ::
   Log.Has String =>
-  (wptr ~ ArchWidth arch) =>
-  CLLVM.HasPtrWidth wptr =>
+  OverrideConstraints sym arch wptr =>
+  IsSymBackend sym bak =>
   proxy arch ->
-  Override arch BindEffect [llvmArgs| i32, %struct.sockaddr*, i32 |] (BVType 32)
-bindOverride proxy =
-  Override
-  { genEffect =
-      \_bak _memVar _envVar _args -> return BindSuccess
-  , doEffect =
-      \bak e memVar _envVar args ->
+  bak ->
+  C.GlobalVar CLLVM.Mem ->
+  Override sym bak BindEffect [llvmArgs| i32, %struct.sockaddr*, i32 |] (BVType 32)
+bindOverride proxy bak memVar =
+  COv.Override
+  { COv.genEffect =
+      \_oldEff _args -> return BindSuccess
+  , COv.doEffect =
+      \e args ->
         Ctx.uncurryAssignment (bindImpl proxy bak e memVar) args
   }
 
@@ -331,28 +330,29 @@ listenDecl ::
   Log.Has String =>
   OverrideConstraints sym arch wptr =>
   proxy arch ->
-  C.GlobalVar State.Env.EnvState ->
-  IORef (SomeSysTrace eff) ->
+  IORef (EffectTrace eff) ->
   Lens.Prism' eff ListenEffect ->
   [llvmOvrType| i32 @( i32, i32 ) |]
-listenDecl proxy envVar effects inj =
+listenDecl proxy effects inj =
   [llvmOvr| i32 @listen( i32, i32 ) |] $
   \memVar bak args ->
-    let ov = listenOverride proxy
-    in toLLVMOverride bak effects inj ov memVar envVar args
+    let ov = listenOverride proxy bak memVar
+    in COv.toOverride bak effects inj ov args
 
 listenOverride ::
   Log.Has String =>
-  (wptr ~ ArchWidth arch) =>
-  CLLVM.HasPtrWidth wptr =>
+  OverrideConstraints sym arch wptr =>
+  IsSymBackend sym bak =>
   proxy arch ->
-  Override arch ListenEffect [llvmArgs| i32, i32 |] (BVType 32)
-listenOverride proxy =
-  Override
-  { genEffect =
-      \_bak _memVar _envVar _args -> return ListenSuccess
-  , doEffect =
-      \bak e memVar _envVar args ->
+  bak ->
+  C.GlobalVar CLLVM.Mem ->
+  Override sym bak ListenEffect [llvmArgs| i32, i32 |] (BVType 32)
+listenOverride proxy bak memVar =
+  COv.Override
+  { COv.genEffect =
+      \_oldEff _args -> return ListenSuccess
+  , COv.doEffect =
+      \e args ->
         Ctx.uncurryAssignment (listenImpl proxy bak e memVar) args
   }
 
@@ -389,26 +389,27 @@ recvDecl ::
   Log.Has String =>
   OverrideConstraints sym arch wptr =>
   proxy arch ->
-  C.GlobalVar State.Env.EnvState ->
-  IORef (SomeSysTrace eff) ->
+  IORef (EffectTrace eff) ->
   Lens.Prism' eff RecvEffect ->
   [llvmOvrType| ssize_t @(i32, i8*, size_t, i32) |]
-recvDecl proxy envVar effects inj =
+recvDecl proxy effects inj =
   [llvmOvr| ssize_t @recv(i32, i8*, size_t, i32) |] $
   \memVar bak args ->
-    let ov = recvOverride proxy
-    in toLLVMOverride bak effects inj ov memVar envVar args
+    let ov = recvOverride proxy bak memVar
+    in COv.toOverride bak effects inj ov args
 
 recvOverride ::
   Log.Has String =>
-  (wptr ~ ArchWidth arch) =>
-  CLLVM.HasPtrWidth wptr =>
+  OverrideConstraints sym arch wptr =>
+  IsSymBackend sym bak =>
   proxy arch ->
-  Override arch RecvEffect [llvmArgs| i32, i8*, size_t, i32 |] (BVType wptr)
-recvOverride proxy =
-  Override
-  { genEffect =
-      \_bak _memVar _envVar args -> do
+  bak ->
+  C.GlobalVar CLLVM.Mem ->
+  Override sym bak RecvEffect [llvmArgs| i32, i8*, size_t, i32 |] (BVType wptr)
+recvOverride proxy bak memVar =
+  COv.Override
+  { COv.genEffect =
+      \_oldEff args -> do
         flip Ctx.uncurryAssignment args $ \_sockFd _buf len _flags -> liftIO $ do
           lenBv <-
             case What4.asBV (C.regValue len) of
@@ -420,8 +421,8 @@ recvOverride proxy =
             liftIO (Random.randomRIO (0, (lenInt `div` 8) - 1) :: IO Int)
           str <- Rand.genByteString (0, recvd)  -- inclusivee
           return (RecvSuccess str)
-  , doEffect =
-      \bak e memVar _envVar args ->
+  , COv.doEffect =
+      \e args ->
         Ctx.uncurryAssignment (recvImpl proxy bak e memVar) args
   }
 
@@ -491,26 +492,27 @@ sendDecl ::
   Log.Has String =>
   OverrideConstraints sym arch wptr =>
   proxy arch ->
-  C.GlobalVar State.Env.EnvState ->
-  IORef (SomeSysTrace eff) ->
+  IORef (EffectTrace eff) ->
   Lens.Prism' eff SendEffect ->
   [llvmOvrType| size_t @(i32, i8*, size_t, i32) |]
-sendDecl proxy envVar effects inj =
+sendDecl proxy effects inj =
   [llvmOvr| size_t @send(i32, i8*, size_t, i32) |] $
   \memVar bak args ->
-    let ov = sendOverride proxy
-    in toLLVMOverride bak effects inj ov memVar envVar args
+    let ov = sendOverride proxy bak memVar
+    in COv.toOverride bak effects inj ov args
 
 sendOverride ::
   Log.Has String =>
-  (wptr ~ ArchWidth arch) =>
-  CLLVM.HasPtrWidth wptr =>
+  OverrideConstraints sym arch wptr =>
+  IsSymBackend sym bak =>
   proxy arch ->
-  Override arch SendEffect [llvmArgs| i32, i8*, size_t, i32 |] (BVType wptr)
-sendOverride proxy =
-  Override
-  { genEffect =
-      \_bak _memVar _envVar args ->
+  bak ->
+  C.GlobalVar CLLVM.Mem ->
+  Override sym bak SendEffect [llvmArgs| i32, i8*, size_t, i32 |] (BVType wptr)
+sendOverride proxy bak memVar =
+  COv.Override
+  { COv.genEffect =
+      \_oldEff args ->
         flip Ctx.uncurryAssignment args $ \_sockFd _buf len _flags -> do
           case What4.asBV (C.regValue len) of
             Nothing -> Unimpl.throw Unimpl.SendSymbolicLen
@@ -518,8 +520,8 @@ sendOverride proxy =
               let len' = BV.asUnsigned bv
               in SendSuccess len' <$>
                    liftIO (Random.randomRIO (0, len') :: IO Integer)
-  , doEffect =
-      \bak e memVar _envVar args ->
+  , COv.doEffect =
+      \e args ->
         Ctx.uncurryAssignment (sendImpl proxy bak e memVar) args
   }
 
@@ -588,32 +590,34 @@ setSockOptDecl ::
   Log.Has String =>
   OverrideConstraints sym arch wptr =>
   proxy arch ->
-  C.GlobalVar State.Env.EnvState ->
-  IORef (SomeSysTrace eff) ->
+  IORef (EffectTrace eff) ->
   Lens.Prism' eff SetSockOptEffect ->
   [llvmOvrType| i32 @( i32, i32, i32, i8*, i32 ) |]
-setSockOptDecl proxy envVar effects inj =
+setSockOptDecl proxy effects inj =
   [llvmOvr| i32 @setsockopt( i32, i32, i32, i8*, i32 ) |] $
   \memVar bak args ->
-    let ov = setSockOptOverride proxy
-    in toLLVMOverride bak effects inj ov memVar envVar args
+    let ov = setSockOptOverride proxy bak memVar
+    in COv.toOverride bak effects inj ov args
 
 setSockOptOverride ::
   Log.Has String =>
-  (wptr ~ ArchWidth arch) =>
-  CLLVM.HasPtrWidth wptr =>
+  OverrideConstraints sym arch wptr =>
+  IsSymBackend sym bak =>
   proxy arch ->
+  bak ->
+  C.GlobalVar CLLVM.Mem ->
   Override
-    arch
+    sym
+    bak
     SetSockOptEffect
     [llvmArgs| i32, i32, i32, i8*, i32 |]
     (BVType 32)
-setSockOptOverride proxy =
-  Override
-  { genEffect =
-      \_bak _memVar _envVar _args -> return SetSockOptSuccess
-  , doEffect =
-      \bak e memVar _envVar args ->
+setSockOptOverride proxy bak memVar =
+  COv.Override
+  { COv.genEffect =
+      \_oldEff _args -> return SetSockOptSuccess
+  , COv.doEffect =
+      \e args ->
         Ctx.uncurryAssignment (setSockOptImpl proxy bak e memVar) args
   }
 
@@ -653,28 +657,29 @@ socketDecl ::
   Log.Has String =>
   OverrideConstraints sym arch wptr =>
   proxy arch ->
-  C.GlobalVar State.Env.EnvState ->
-  IORef (SomeSysTrace eff) ->
+  IORef (EffectTrace eff) ->
   Lens.Prism' eff SocketEffect ->
   [llvmOvrType| i32 @( i32, i32, i32 ) |]
-socketDecl proxy envVar effects inj =
+socketDecl proxy effects inj =
   [llvmOvr| i32 @socket( i32, i32, i32 ) |] $
   \memVar bak args ->
-    let ov = socketOverride proxy
-    in toLLVMOverride bak effects inj ov memVar envVar args
+    let ov = socketOverride proxy bak memVar
+    in COv.toOverride bak effects inj ov args
 
 socketOverride ::
   Log.Has String =>
-  (wptr ~ ArchWidth arch) =>
-  CLLVM.HasPtrWidth wptr =>
+  OverrideConstraints sym arch wptr =>
+  IsSymBackend sym bak =>
   proxy arch ->
-  Override arch SocketEffect [llvmArgs| i32, i32, i32 |] (BVType 32)
-socketOverride proxy =
-  Override
-  { genEffect =
-      \_bak _memVar _envVar _args -> return (SocketSuccess socketFd)
-  , doEffect =
-      \bak e memVar _envVar args ->
+  bak ->
+  C.GlobalVar CLLVM.Mem ->
+  Override sym bak SocketEffect [llvmArgs| i32, i32, i32 |] (BVType 32)
+socketOverride proxy bak memVar =
+  COv.Override
+  { COv.genEffect =
+      \_oldEff _args -> return (SocketSuccess socketFd)
+  , COv.doEffect =
+      \e args ->
         Ctx.uncurryAssignment (socketImpl proxy bak e memVar) args
   }
 

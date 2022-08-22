@@ -5,6 +5,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TupleSections #-}
 
 module Czz.LLVM
   ( llvmFuzzer
@@ -22,6 +23,7 @@ import           Data.Text (Text)
 import qualified Data.Text as Text
 import qualified Control.Lens as Lens
 import qualified System.Exit as Exit
+import qualified System.Random as Random
 
 -- what4
 import qualified What4.Interface as What4
@@ -48,6 +50,7 @@ import qualified Czz.KLimited as KLimit
 import           Czz.Fuzz (Fuzzer, FuzzError)
 import qualified Czz.Fuzz as Fuzz
 import qualified Czz.Random as Rand
+import qualified Czz.Record as Rec
 import qualified Czz.Result as Res
 import qualified Czz.Seed as Seed
 import           Czz.State (State)
@@ -82,8 +85,12 @@ llvmFuzzer conf translation =
       -- TODO(lb): power schedule, mutation schedule
       record <- Rand.pickSeq records
       case record of
-        Nothing -> return (Seed.begin Env.empty)
-        Just r -> Mut.mutate r
+        Nothing -> return (Seed.begin Env.empty, False)
+        Just r -> do
+          doMutTrace <- Random.randomIO :: IO Bool
+          if doMutTrace
+            then return (Seed.rewind (Rec.seed r), True)
+            else (, False) <$> Mut.mutate r
 
   , Fuzz.onUpdate = \_state -> return ()
 

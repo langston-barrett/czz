@@ -51,9 +51,9 @@ import qualified Lang.Crucible.SymIO as SymIO
 import qualified Czz.Log as Log
 import qualified Czz.Log.Concurrent as CLog
 import           Czz.Fuzz (CzzPersonality(CzzPersonality))
+import           Czz.Overrides (EffectTrace)
 import           Czz.Seed (Seed)
 import qualified Czz.Seed as Seed
-import           Czz.SysTrace (SomeSysTrace)
 
 import           Czz.LLVM.Env (Env)
 import qualified Czz.LLVM.Env as Env
@@ -62,7 +62,6 @@ import qualified Czz.LLVM.Env.FileSystem as FS
 import qualified Czz.LLVM.Overrides as Ov
 import           Czz.LLVM.Overrides (Effect)
 import qualified Czz.LLVM.Overrides.Skip as Skip
-import qualified Czz.LLVM.Overrides.State.Env as State.Env
 import qualified Czz.LLVM.Overrides.SymIO as CzzSymIO
 import           Czz.LLVM.Translate (Translation, EntryPoint)
 import qualified Czz.LLVM.Translate as Trans
@@ -81,7 +80,7 @@ initState ::
   IORef [ByteString] ->
   -- | Trace of opened files
   IORef [ByteString] ->
-  IORef (SomeSysTrace Ov.Effect) ->
+  IORef (EffectTrace Effect) ->
   Seed t Env Effect ->
   -- | Functions to skip
   [String] ->
@@ -151,12 +150,12 @@ setupInitState ::
   IORef [ByteString] ->
   -- | Trace of opened files
   IORef [ByteString] ->
-  IORef (SomeSysTrace Ov.Effect) ->
+  IORef (EffectTrace Effect) ->
   -- | Functions to skip
   [String] ->
   Args.Template ->
   C.OverrideSim p sym CLLVM.LLVM rtp args ret ()
-setupInitState halloc bak entryPoint trans memVar initFs envVarRef openedRef effectRef skip template = do
+setupInitState _halloc bak entryPoint trans memVar initFs envVarRef openedRef effectRef skip template = do
   registerDefinedFunctions
   -- TODO(lb): initial file system?
   mainArgs <- Args.genArgs bak trans memVar template
@@ -187,9 +186,8 @@ setupInitState halloc bak entryPoint trans memVar initFs envVarRef openedRef eff
         CLLVM.registerLazyModuleFn printWarn trans (L.decName decl)
 
     registerOverrides = do
-      envVar <- State.Env.mkEnvVar halloc
       let ?lc = llvmCtx Lens.^. CLLVM.llvmTypeCtx
-      let decOvs = Ov.overrides trans effectRef envVarRef envVar ++
+      let decOvs = Ov.overrides trans effectRef envVarRef ++
                      CzzSymIO.overrides trans openedRef initFs
       let defOvs = Skip.overrides trans skip
       let ?intrinsicsOpts = CLLVM.defaultIntrinsicsOptions
