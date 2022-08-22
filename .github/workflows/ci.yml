@@ -1,0 +1,90 @@
+name: ci
+
+on:
+  - push
+  - pull_request
+
+jobs:
+
+  lint:
+    name: hlint
+    runs-on: ubuntu-latest
+    env:
+      HLINT_VERSION: 3.4
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: cache
+      uses: actions/cache@v3
+      with:
+        path: ./hlint-${HLINT_VERSION}/hlint
+        key: |
+          hlint-${{ env.HLINT_VERSION }}
+
+    - name: prep
+      shell: bash
+      run: |
+        curl --location -o hlint.tar.gz \
+          https://github.com/ndmitchell/hlint/releases/download/v${HLINT_VERSION}/hlint-${HLINT_VERSION}-x86_64-linux.tar.gz
+        tar xvf hlint.tar.gz
+
+    - name: lint
+      shell: bash
+      run: |
+        ./hlint-${HLINT_VERSION}/hlint czz/src czz-jvm/{exe,src,test} czz-llvm/{exe,src,test}
+
+  build:
+    name: ${{ matrix.os }} GHC-${{ matrix.ghc }}
+    runs-on: ${{ matrix.os }}
+    continue-on-error: ${{ matrix.allow-failure }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        ghc: [9.0.2]
+        allow-failure: [false]
+      fail-fast: true
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - uses: haskell/actions/setup@v1
+      id: setup-haskell
+      with:
+        ghc-version: ${{ matrix.ghc }}
+        enable-stack: false
+
+    - name: cache
+      uses: actions/cache@v3
+      with:
+        path: |
+          ${{ steps.setup-haskell.outputs.cabal-store }}
+          ~/.cabal/packages
+          ~/.cabal/store
+          dist-newstyle
+        key: |
+          cabal-${{ runner.os }}-ghc${{ matrix.ghc }}-${{ hashFiles('**/*.cabal') }}-${{ hashFiles('**/cabal.project') }}-${{ github.ref }}
+        restore-keys: |
+          cabal-${{ runner.os }}-ghc${{ matrix.ghc }}-
+          cabal-${{ runner.os }}-ghc${{ matrix.ghc }}-${{ hashFiles('**/*.cabal') }}-${{ hashFiles('**/cabal.project') }}-
+
+    - name: prep
+      shell: bash
+      # TODO(lb): cabal check
+      run: |
+        cabal update
+        cabal build --only-dependencies --enable-tests --enable-benchmarks all
+
+    - name: build
+      shell: bash
+      run: cabal build all
+
+    # TODO(lb)
+
+    # - name: test
+    #   shell: bash
+    #   run: cabal test all
+
+    # - name: doc
+    #   shell: bash
+    #   run: cabal haddock all
