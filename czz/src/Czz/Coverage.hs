@@ -1,5 +1,4 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE ImplicitParams #-}
 
 module Czz.Coverage
   ( Coverage
@@ -74,7 +73,7 @@ coverage _proxy coverRef = do
           let _handleId = Nonce.indexValue (C.handleID handle)
           let loc = simState Lens.^. C.stateLocation . Lens.to (fmap What4.plSourceLoc)
           let msg = show (C.handleName handle) ++ " " ++ show loc
-          liftIO $ Log.log ?logger (Text.pack msg)
+          liftIO $ Log.debug (Text.pack msg)
           let blkId = BlockId.new (C.handleName handle) blockIdInt
           path <- IORef.readIORef pathRef
           let path' = Path.snoc path blkId

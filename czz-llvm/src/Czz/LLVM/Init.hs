@@ -11,6 +11,7 @@ where
 import qualified Control.Lens as Lens
 import           Control.Monad (forM_)
 import           Data.ByteString (ByteString)
+import           Data.Functor.Contravariant ((>$<))
 import           Data.IORef (IORef)
 import qualified Data.Map as Map
 import           Data.Text (Text)
@@ -112,8 +113,8 @@ initState _proxy bak halloc translation envVarRef openedRef effectRef seed skip 
     -- Forward simulator logs to parent logger
     (_path, logHandle) <- IO.openTempFile "/tmp" "czz.temp"
     let msg = "[ERROR] simulator logging thread exited! "
-    let onError = Log.log ?logger . (msg <>) . Text.pack . show
-    _threadId <- CLog.forkReadHandle onError logHandle ?logger
+    let onError = Log.error . (msg <>) . Text.pack . show
+    _threadId <- CLog.forkReadHandle onError logHandle (Log.toDebug >$< ?logger)
 
     let simCtx =
           C.initSimContext

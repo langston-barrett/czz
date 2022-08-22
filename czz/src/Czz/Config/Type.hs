@@ -3,6 +3,8 @@ module Czz.Config.Type
   )
 where
 
+import           Czz.Log (Severity)
+
 -- TODO(lb): Configurable:
 --
 -- - Choice of solver
@@ -18,4 +20,5 @@ data Config = Config
   , pathLen :: !Int
   , seed :: !(Maybe Int)
   , tries :: !(Maybe Int)
+  , verbosity :: !Severity
   }

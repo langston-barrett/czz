@@ -48,6 +48,7 @@ tests = do
               , CConf.pathLen = 1
               , CConf.seed = Nothing  -- Just 0
               , CConf.tries = Just 10
+              , CConf.verbosity = Log.Error
               }
           , Conf.prog = "test.bc"
           , Conf.entryPoint = "main"
@@ -82,8 +83,8 @@ tests = do
       let logger prog =
             if verb == TestOpt.All
             then
-              ((Text.pack prog <> ": ") <>) >$<
-                CLog.logStdout stdStreams
+              fmap ((Text.pack prog <> ": ") <>) >$<
+                CLog.logStdout Log.Debug stdStreams
             else Log.void
           bug prog = expectBug conf (logger prog) prog
           noBug prog = expectNoBug conf (logger prog) prog

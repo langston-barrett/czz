@@ -185,7 +185,7 @@ fprintfImpl _proxy bak e memVar stream format _varArgs = do
     , ( What4.truePred sym
       , do let fmt = C.regValue format
            output <- liftIO (BS.pack <$> CLLVM.loadString bak mem fmt Nothing)
-           liftIO (Log.log ?logger ("Program called `fprintf`: " <> show output))
+           liftIO (Log.debug ("Program called `fprintf`: " <> show output))
            liftIO (What4.bvLit sym (knownNat @32) (BV.mkBV (knownNat @32) 0))
       , Nothing
       )

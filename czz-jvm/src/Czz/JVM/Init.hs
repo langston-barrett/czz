@@ -9,6 +9,7 @@ module Czz.JVM.Init
 where
 
 import qualified Control.Monad.Trans.State.Strict as State
+import           Data.Functor.Contravariant ((>$<))
 import           Data.IORef (IORef)
 import qualified Data.Map as Map
 import           Data.Text (Text)
@@ -71,8 +72,8 @@ initState bak jvmCtx entryPoint halloc _traceRef _seed = do
   -- Forward simulator logs to parent logger
   (_path, logHandle) <- IO.openTempFile "/tmp" "czz.temp"
   let msg = "[ERROR] simulator logging thread exited! "
-  let onError = Log.log ?logger . (msg <>) . Text.pack . show
-  _threadId <- CLog.forkReadHandle onError logHandle ?logger
+  let onError = Log.error . (msg <>) . Text.pack . show
+  _threadId <- CLog.forkReadHandle onError logHandle (Log.toDebug >$< ?logger)
 
   let verbosity = 0
   let simCtx =

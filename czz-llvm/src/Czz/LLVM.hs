@@ -40,7 +40,7 @@ import qualified Lang.Crucible.LLVM.MemModel.Partial as CLLVM
 
 import qualified Czz.Config.Type as CConf
 import qualified Czz.Coverage as Cover
-import           Czz.Log (Logger)
+import           Czz.Log (Logger, Msg)
 import qualified Czz.Log as Log
 import           Czz.KLimited (IsKLimited)
 import qualified Czz.KLimited as KLimit
@@ -153,7 +153,7 @@ llvmFuzzer conf translation =
           case Map.lookup (CLLVM.BoolAnn ann) bbMap of
             Nothing -> return bug
             Just (_cs, CLLVM.BBMemoryError (CLLVM.MemoryError (CLLVM.MemLoadHandleOp _ (Just nm) _ _) (CLLVM.BadFunctionPointer CLLVM.NoOverride))) -> do
-              Log.log ?logger ("Missing implementation of " <> Text.pack nm)
+              Log.info ("Missing implementation of " <> Text.pack nm)
               return (Res.MissingOverride (Text.pack nm))
             Just (callStack, badBehavior) -> do
               let _msg =
@@ -170,11 +170,12 @@ llvmFuzzer conf translation =
 fuzz ::
   IsKLimited k =>
   Conf.Config ->
-  Logger Text ->
-  Logger Text ->
+  Logger (Msg Text) ->
+  Logger (Msg Text) ->
   IO (Either FuzzError (State Env Effect (Feedback k)))
 fuzz conf stdoutLogger stderrLogger = do
-  Log.log stdoutLogger ("Fuzzing program " <> Text.pack (Conf.prog conf))
+  Log.with stdoutLogger $
+    Log.info ("Fuzzing program " <> Text.pack (Conf.prog conf))
   translation <- Trans.translate conf  -- Allowed to fail/call exit
   let fuzzer = llvmFuzzer conf translation
   Fuzz.fuzz (Conf.common conf) fuzzer stdoutLogger stderrLogger

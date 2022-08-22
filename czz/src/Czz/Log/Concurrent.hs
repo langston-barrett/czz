@@ -31,7 +31,7 @@ import qualified System.IO as IO
 import           Czz.Concurrent.Lock (Locked)
 import           Czz.Concurrent.Handle (StdStreams)
 import qualified Czz.Concurrent.Handle as Hand
-import           Czz.Log (Logger)
+import           Czz.Log (Logger, Severity, Msg)
 import qualified Czz.Log as Log
 
 withThreadId ::
@@ -43,14 +43,16 @@ withThreadId logger adapt = do
   return (adapt tid >$< logger)
 
 pfxThreadId ::
-  Logger Text ->
-  IO (Logger Text)
+  Functor f =>
+  Logger (f Text) ->
+  IO (Logger (f Text))
 pfxThreadId logger =
   withThreadId
     logger
     (\tid msg ->
        let tidTxt = Text.pack (drop (length ("ThreadId " :: String)) (show tid))
-       in "[" <> lpad 7 '0' tidTxt <> "] " <> msg)
+           pfx t = "[" <> lpad 7 '0' tidTxt <> "] " <> t
+       in pfx <$> msg)
   where
     lpad :: Int -> Char -> Text -> Text
     lpad num c t =
@@ -74,28 +76,36 @@ forkWithBoundedChan onExc bound logger = do
         Log.log logger =<< STM.atomically (TBQ.readTBQueue q)
         loop
   tid <- Con.forkFinally loop onExit
-  return (tid, Log.new (STM.atomically . TBQ.writeTBQueue q))
+  return (tid, Log.bare (STM.atomically . TBQ.writeTBQueue q))
 
-logHandle :: Locked Handle -> Logger Text
-logHandle lock = Log.new (Hand.lhPutStrLn lock)
+logHandle :: Severity -> Locked Handle -> Logger (Msg Text)
+logHandle s lock = Log.new s (Hand.lhPutStrLn lock)
 
-logStdout :: Locked StdStreams -> Logger Text
-logStdout lss = Log.new (Hand.lPutStrLn lss)
+logStdout :: Severity -> Locked StdStreams -> Logger (Msg Text)
+logStdout s lss = Log.new s (Hand.lPutStrLn lss)
 
-logStderr :: Locked StdStreams -> Logger Text
-logStderr lss = Log.new (Hand.lPutErrLn lss)
+logStderr :: Severity -> Locked StdStreams -> Logger (Msg Text)
+logStderr s lss = Log.new s (Hand.lPutErrLn lss)
 
-forkStdoutLogger :: Locked StdStreams -> Natural -> IO (ThreadId, Logger Text)
-forkStdoutLogger lss cap = do
+forkStdoutLogger ::
+  Severity ->
+  Locked StdStreams ->
+  Natural ->
+  IO (ThreadId, Logger (Msg Text))
+forkStdoutLogger s lss cap = do
   let msg = "[ERROR] stdout logging thread exited! "
   let onError = Hand.lPutErrLn lss . Text.pack . (msg ++) . show
-  forkWithBoundedChan onError cap (logStdout lss)
+  forkWithBoundedChan onError cap (logStdout s lss)
 
-forkStderrLogger :: Locked StdStreams -> Natural -> IO (ThreadId, Logger Text)
-forkStderrLogger lss cap = do
+forkStderrLogger ::
+  Severity ->
+  Locked StdStreams ->
+  Natural ->
+  IO (ThreadId, Logger (Msg Text))
+forkStderrLogger s lss cap = do
   let msg = "[ERROR] stderr logging thread exited! "
   let onError = Hand.lPutErrLn lss . Text.pack . (msg ++) . show
-  forkWithBoundedChan onError cap (logStderr lss)
+  forkWithBoundedChan onError cap (logStderr s lss)
 
 -- | Fork a new thread that reads each line from a handle and forwards it to the
 -- given logger until the handle is closed.
