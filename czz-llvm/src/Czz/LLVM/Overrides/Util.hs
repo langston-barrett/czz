@@ -36,8 +36,8 @@ type OverrideConstraints sym arch wptr =
   )
 
 writeString ::
-  IsSymBackend sym bak =>
   OverrideConstraints sym arch wptr =>
+  IsSymBackend sym bak =>
   proxy arch ->
   bak ->
   C.GlobalVar CLLVM.Mem ->

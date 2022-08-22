@@ -13,18 +13,14 @@ import           Data.IORef (IORef)
 import           Data.Text (Text)
 import qualified Data.Text as Text
 
--- crucible
-import qualified Lang.Crucible.Simulator as C
-
 -- crucible-llvm
 import           Lang.Crucible.LLVM.Intrinsics (OverrideTemplate)
 
+import           Czz.Overrides (EffectTrace)
 import qualified Czz.Log as Log
-import           Czz.SysTrace (SomeSysTrace)
 
 import qualified Czz.LLVM.Overrides.Libc as Libc
 import qualified Czz.LLVM.Overrides.Posix as Posix
-import qualified Czz.LLVM.Overrides.State.Env as State.Env
 import           Czz.LLVM.Overrides.Util (OverrideConstraints)
 
 data Effect
@@ -53,15 +49,14 @@ overrides ::
   Log.Has Text =>
   OverrideConstraints sym arch wptr =>
   proxy arch ->
-  IORef (SomeSysTrace Effect) ->
+  IORef (EffectTrace Effect) ->
   IORef [ByteString] ->
-  C.GlobalVar State.Env.EnvState ->
   [OverrideTemplate p sym arch rtp l a]
-overrides proxy effects envVarRef envVar =
+overrides proxy effects envVarRef =
   Log.adjust Text.pack $  -- TODO(lb): structured logging
     concat
-      [ Libc.overrides proxy effects _Libc envVarRef envVar
-      , Posix.overrides proxy effects _Posix envVar
+      [ Libc.overrides proxy effects _Libc envVarRef
+      , Posix.overrides proxy effects _Posix
       ]
 
 -- TODO(lb): stdout, stderr global FILE*

@@ -44,21 +44,17 @@ import           Lang.Crucible.Types (BVType)
 -- crucible-llvm
 import qualified Lang.Crucible.LLVM.Bytes as CLLVM
 import qualified Lang.Crucible.LLVM.DataLayout as CLLVM
-import           Lang.Crucible.LLVM.Extension (ArchWidth)
 import           Lang.Crucible.LLVM.QQ (llvmOvr)
-import           Lang.Crucible.LLVM.MemModel (HasLLVMAnn, MemOptions)
 import qualified Lang.Crucible.LLVM.MemModel as CLLVM
 import           Lang.Crucible.LLVM.MemModel.Pointer (LLVMPointerType)
 import           Lang.Crucible.LLVM.Intrinsics (OverrideTemplate, LLVMOverride)
 import qualified Lang.Crucible.LLVM.Intrinsics as CLLVM
 import           Lang.Crucible.LLVM.Translation (VarArgs)
-import           Lang.Crucible.LLVM.TypeContext (TypeContext)
 
 import qualified Czz.Log as Log
-import           Czz.SysTrace (SomeSysTrace)
+import           Czz.Overrides (EffectTrace, Override)
+import qualified Czz.Overrides as COv
 
-import qualified Czz.LLVM.Overrides.State.Env as State.Env
-import           Czz.LLVM.Overrides.Type (Override(..), toLLVMOverride)
 import           Czz.LLVM.Overrides.Util (OverrideConstraints)
 import qualified Czz.LLVM.Unimplemented as Unimpl
 
@@ -87,14 +83,13 @@ overrides ::
   Log.Has String =>
   OverrideConstraints sym arch wptr =>
   proxy arch ->
-  IORef (SomeSysTrace eff) ->
+  IORef (EffectTrace eff) ->
   Lens.Prism' eff Effect ->
   IORef [ByteString] ->
-  C.GlobalVar State.Env.EnvState ->
   [OverrideTemplate p sym arch rtp l a]
-overrides proxy effects inj _envTrace envVar =
-  [ ov (fprintfDecl proxy envVar effects (inj . _Fprintf))
-  , ov (strcpyDecl proxy envVar effects (inj . _Strcpy))
+overrides proxy effects inj _envTrace =
+  [ ov (fprintfDecl proxy effects (inj . _Fprintf))
+  , ov (strcpyDecl proxy effects (inj . _Strcpy))
   ]
   where ov = CLLVM.basic_llvm_override
 
@@ -112,8 +107,7 @@ fprintfDecl ::
   Log.Has String =>
   OverrideConstraints sym arch wptr =>
   proxy arch ->
-  C.GlobalVar State.Env.EnvState ->
-  IORef (SomeSysTrace eff) ->
+  IORef (EffectTrace eff) ->
   Lens.Prism' eff FprintfEffect ->
   LLVMOverride
     p
@@ -123,31 +117,34 @@ fprintfDecl ::
      ::> LLVMPointerType wptr
      ::> VarArgs)
     (BVType 32)
-fprintfDecl proxy envVar effects inj =
+fprintfDecl proxy effects inj =
   [llvmOvr| i32 @fprintf( %struct._IO_FILE*, i8*, ... ) |] $
   \memVar bak args ->
-    let ov = fprintfOverride proxy
-    in toLLVMOverride bak effects inj ov memVar envVar args
+    let ov = fprintfOverride proxy bak memVar
+    in COv.toOverride bak effects inj ov args
 
 fprintfOverride ::
   Log.Has String =>
-  (wptr ~ ArchWidth arch) =>
-  CLLVM.HasPtrWidth wptr =>
+  OverrideConstraints sym arch wptr =>
+  IsSymBackend sym bak =>
   proxy arch ->
+  bak ->
+  C.GlobalVar CLLVM.Mem ->
   Override
-    arch
+    sym
+    bak
     FprintfEffect
     (EmptyCtx
      ::> LLVMPointerType wptr
      ::> LLVMPointerType wptr
      ::> VarArgs)
     (BVType 32)
-fprintfOverride proxy =
-  Override
-  { genEffect = \_bak _memVar _envVar _args -> return FprintfSuccess
-  , doEffect =
-      \bak e memVar _envVar args ->
-        Ctx.uncurryAssignment (fprintfImpl proxy bak e memVar) args
+fprintfOverride proxy bak memVar =
+  COv.Override
+  { COv.genEffect = \_oldEff _args ->
+      return FprintfSuccess
+  , COv.doEffect = \e args ->
+      Ctx.uncurryAssignment (fprintfImpl proxy bak e memVar) args
   }
 
 fprintfImpl ::
@@ -199,14 +196,9 @@ data StrcpyEffect = StrcpyEffect
 
 strcpyDecl ::
   IsSymInterface sym =>
-  HasLLVMAnn sym =>
-  (wptr ~ ArchWidth arch) =>
-  CLLVM.HasPtrWidth wptr =>
-  (?lc :: TypeContext) =>
-  (?memOpts :: MemOptions) =>
+  OverrideConstraints sym arch wptr =>
   proxy arch ->
-  C.GlobalVar State.Env.EnvState ->
-  IORef (SomeSysTrace eff) ->
+  IORef (EffectTrace eff) ->
   Lens.Prism' eff StrcpyEffect ->
   LLVMOverride
     p
@@ -215,39 +207,37 @@ strcpyDecl ::
      ::> LLVMPointerType wptr
      ::> LLVMPointerType wptr)
     (LLVMPointerType wptr)
-strcpyDecl proxy envVar effects inj =
+strcpyDecl proxy effects inj =
   [llvmOvr| i8* @strcpy( i8*, i8* ) |] $
   \memVar bak args ->
-    let ov = strcpyOverride proxy
-    in toLLVMOverride bak effects inj ov memVar envVar args
+    let ov = strcpyOverride proxy bak memVar
+    in COv.toOverride bak effects inj ov args
 
 strcpyOverride ::
-  (wptr ~ ArchWidth arch) =>
-  CLLVM.HasPtrWidth wptr =>
+  OverrideConstraints sym arch wptr =>
+  IsSymBackend sym bak =>
   proxy arch ->
+  bak ->
+  C.GlobalVar CLLVM.Mem ->
   Override
-    arch
+    sym
+    bak
     StrcpyEffect
     (EmptyCtx
      ::> LLVMPointerType wptr
      ::> LLVMPointerType wptr)
     (LLVMPointerType wptr)
-strcpyOverride proxy =
-  Override
-  { genEffect = \_bak _memVar _envVar _args -> return StrcpyEffect
-  , doEffect =
-      \bak e memVar _envVar args ->
-        Ctx.uncurryAssignment (strcpyImpl proxy bak e memVar) args
+strcpyOverride proxy bak memVar =
+  COv.Override
+  { COv.genEffect = \_oldEff _args -> return StrcpyEffect
+  , COv.doEffect = \e args ->
+      Ctx.uncurryAssignment (strcpyImpl proxy bak e memVar) args
   }
 
 -- | Unsound!
 strcpyImpl ::
   IsSymBackend sym bak =>
-  HasLLVMAnn sym =>
-  (wptr ~ ArchWidth arch) =>
-  CLLVM.HasPtrWidth wptr =>
-  (?lc :: TypeContext) =>
-  (?memOpts :: MemOptions) =>
+  OverrideConstraints sym arch wptr =>
   proxy arch ->
   bak ->
   StrcpyEffect ->

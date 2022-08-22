@@ -75,6 +75,7 @@ library
     Czz.Mutate.ByteString
     Czz.Mutate.Seq
     Czz.Now
+    Czz.Overrides
     Czz.Random
     Czz.Record
     Czz.Result

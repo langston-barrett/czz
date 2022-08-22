@@ -43,8 +43,8 @@ import qualified Lang.Crucible.JVM.Types as CJVM
 import           Czz.Fuzz (CzzPersonality(CzzPersonality))
 import qualified Czz.Log.Concurrent as CLog
 import qualified Czz.Log as Log
+import           Czz.Overrides (EffectTrace)
 import           Czz.Seed (Seed)
-import           Czz.SysTrace (SomeSysTrace)
 
 import           Czz.JVM.Translate (EntryPoint)
 import qualified Czz.JVM.Translate as Trans
@@ -56,7 +56,7 @@ initState ::
   CJVM.JVMContext ->
   EntryPoint ->
   C.HandleAllocator ->
-  IORef (SomeSysTrace ())  ->
+  IORef (EffectTrace ())  ->
   Seed t () () ->
   IO ( Handle
      , C.ExecState CzzPersonality sym CJVM.JVM (C.RegEntry sym UnitType)
