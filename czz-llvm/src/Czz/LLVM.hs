@@ -184,7 +184,7 @@ main :: IO Exit.ExitCode
 main = do
   conf <- CLI.cliConfig
   translation <- Trans.translate conf  -- Allowed to fail/call exit
-  KLimit.withKLimit (CConf.maxPathLen (Conf.common conf)) $ do
+  KLimit.withKLimit (CConf.pathLen (Conf.common conf)) $ do
     _finalState <- Fuzz.main (Conf.common conf) (llvmFuzzer conf translation)
     return ()
   return Exit.ExitSuccess

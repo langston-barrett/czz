@@ -11,28 +11,26 @@ import qualified Czz.Config.Type as Conf
 parser :: Opt.Parser Config
 parser =
   Conf.Config
-  <$> Opt.optional
-      ( Opt.option Opt.auto
-        ( Opt.long "jobs"
-          <> Opt.short 'j'
-          <> Opt.metavar "NUM"
-          <> Opt.help "Number of jobs to run concurrently"
-        )
+  <$> Opt.option Opt.auto
+      ( Opt.long "jobs"
+        <> Opt.short 'j'
+        <> Opt.metavar "NUM"
+        <> Opt.value 1
+        <> Opt.help "Number of jobs to run concurrently. Default is 1."
       )
-  <*> Opt.optional
-      ( Opt.option Opt.auto
-        ( Opt.long "path-len"
-          <> Opt.short 'l'
-          <> Opt.metavar "NUM"
-          <> Opt.help "Number of basic blocks to track in each path. Default is 2, i.e., edge coverage. 0 means unlimited."
-        )
+  <*> Opt.option Opt.auto
+      ( Opt.long "path-len"
+        <> Opt.short 'l'
+        <> Opt.metavar "NUM"
+        <> Opt.value 2  -- Like AFL
+        <> Opt.help "Number of basic blocks to track in each path. Default is 2, i.e., edge coverage. 0 means unlimited."
       )
   <*> Opt.optional
       ( Opt.option Opt.auto
         ( Opt.long "seed"
           <> Opt.short 's'
           <> Opt.metavar "SEED"
-          <> Opt.help "Seed"
+          <> Opt.help "Seed, default is randomly generated"
         )
       )
   <*> Opt.optional

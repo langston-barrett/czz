@@ -36,13 +36,12 @@ cliConfig =
           ( Opt.metavar "PROG"
             <> Opt.help "Path to LLVM bitcode module (.bc)"
           )
-      <*> Opt.optional
-          ( Opt.option Opt.auto
-            ( Opt.long "entrypoint"
-              <> Opt.short 'e'
-              <> Opt.metavar "FUNC"
-              <> Opt.help "Entry point; must take no arguments, or arguments like main (i32, i8**)"
-            )
+      <*> Opt.option Opt.auto
+          ( Opt.long "entrypoint"
+            <> Opt.short 'e'
+            <> Opt.metavar "FUNC"
+            <> Opt.value "main"
+            <> Opt.help "Entry point; must take no arguments, or arguments like main (i32, i8**). Default is main."
           )
       <*> Opt.many
           ( Opt.strOption

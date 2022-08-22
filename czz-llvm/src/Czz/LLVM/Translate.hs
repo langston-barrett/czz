@@ -106,9 +106,7 @@ translate conf = do
         Left err -> quit (formatError err)
         Right ast -> pure ast
 
-  doTranslate
-    llvmAst
-    (maybe "main" Text.pack (Conf.entryPoint conf))  -- TODO(lb): defaults
+  doTranslate llvmAst (Text.pack (Conf.entryPoint conf))
 
   where
     quit err =

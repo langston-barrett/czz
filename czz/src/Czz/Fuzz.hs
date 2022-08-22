@@ -212,7 +212,7 @@ fuzz conf fuzzer stdoutLogger stderrLogger = do
         Log.log stderrLogger "Too many tries without new coverage! Giving up."
         return (Right state)
       else do
-        if running >= Conf.maxJobs conf
+        if running >= Conf.jobs conf
           then blockOnResult runResultVar state running
           else do
             _threadId <- newThread runResultVar state
@@ -235,7 +235,7 @@ fuzz conf fuzzer stdoutLogger stderrLogger = do
     newThread runResultVar state =
       flip Con.forkFinally (MVar.putMVar runResultVar) $ do
         logger <-
-          if Conf.maxJobs conf > 1
+          if Conf.jobs conf > 1
           then CLog.pfxThreadId stdoutLogger
           else return stdoutLogger
         let ?logger = logger

@@ -9,7 +9,6 @@ where
 
 import           Control.Monad (unless)
 import qualified Control.Monad.Trans.State.Strict as State
-import qualified Data.Maybe as Maybe
 import           Data.Type.Equality (TestEquality(testEquality), (:~:)(Refl))
 
 import qualified Lang.JVM.Codebase as JVM
@@ -42,8 +41,8 @@ translate conf =
   doTranslate
     (Conf.classPath conf)
     (Conf.jars conf)
-    (Maybe.fromMaybe "Main" (Conf.entryClass conf))
-    (Maybe.fromMaybe "main" (Conf.entryMethod conf))
+    (Conf.entryClass conf)
+    (Conf.entryMethod conf)
 
 -- | Not exported.
 doTranslate ::
