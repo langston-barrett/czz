@@ -15,10 +15,14 @@ module Czz.LLVM.Env.Args
   , addArg
   , rmArg
   , mutArg
+  , mutArgs
+  , mutArgsA
   , addEnv
   , addWellFormedEnv
   , rmEnv
   , mutEnv
+  , mutEnvs
+  , mutEnvsA
   , genArgs
   )
 where
@@ -31,6 +35,7 @@ import           Control.Monad (foldM)
 import qualified Data.BitVector.Sized as BV
 import           Data.ByteString (ByteString)
 import qualified Data.ByteString as BS
+import           Data.Functor ((<&>))
 import           Data.Sequence (Seq)
 import qualified Data.Sequence as Seq
 
@@ -89,6 +94,12 @@ rmArg idx t = t { argv = Seq.deleteAt idx (argv t) }
 mutArg :: (CString -> CString) -> Int -> Template -> Template
 mutArg mut idx t = t { argv = Seq.adjust mut idx (argv t) }
 
+mutArgs :: (Seq CString -> Seq CString) -> Template -> Template
+mutArgs mut t = t { argv = mut (argv t) }
+
+mutArgsA :: Functor f => (Seq CString -> f (Seq CString)) -> Template -> f Template
+mutArgsA mut t = mut (argv t) <&> \as -> t { argv = as }
+
 -- | Add raw string to env
 addEnv :: Int -> ByteString -> Template -> Template
 addEnv idx val t =
@@ -104,6 +115,12 @@ rmEnv idx t = t { envp = Seq.deleteAt idx (envp t) }
 
 mutEnv :: (CString -> CString) -> Int -> Template -> Template
 mutEnv mut idx t = t { envp = Seq.adjust mut idx (envp t) }
+
+mutEnvs :: (Seq CString -> Seq CString) -> Template -> Template
+mutEnvs mut t = t { envp = mut (envp t) }
+
+mutEnvsA :: Functor f => (Seq CString -> f (Seq CString)) -> Template -> f Template
+mutEnvsA mut t = mut (envp t) <&> \es -> t { envp = es }
 
 genArgs ::
   C.IsSymBackend sym bak =>

@@ -72,6 +72,8 @@ library
     Czz.KLimited
     Czz.Log
     Czz.Log.Concurrent
+    Czz.Mutate.ByteString
+    Czz.Mutate.Seq
     Czz.Random
     Czz.Record
     Czz.Result
