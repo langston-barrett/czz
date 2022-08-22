@@ -79,11 +79,13 @@ jobs:
       shell: bash
       run: cabal build all
 
-    # TODO(lb)
+    - name: test
+      shell: bash
+      run: |
+        sudo apt-get install -y llvm z3
+        cabal test all
 
-    # - name: test
-    #   shell: bash
-    #   run: cabal test all
+    # TODO(lb)
 
     # - name: doc
     #   shell: bash
