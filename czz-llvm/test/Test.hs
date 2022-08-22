@@ -57,8 +57,10 @@ tests = do
 
   let assertFinalState cf logger f =
         TastyH.testCase (Conf.prog cf) $ do
-          Right finalState <- Main.fuzz cf logger logger
-          f finalState
+          Main.fuzz cf logger logger >>=
+            \case
+              Left err -> error (show err)
+              Right finalState -> f finalState
 
   let expectNoBug cf logger prog =
         KLimit.withKLimit 1 $
