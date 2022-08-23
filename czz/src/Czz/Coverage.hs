@@ -49,9 +49,13 @@ empty = Coverage Map.empty
 addPath :: Path k -> Coverage k -> Coverage k
 addPath p = Coverage . Map.insertWith (+) p 1 . getCoverage
 
--- TODO(lb): AFL-style binning
 bin :: Coverage k -> Coverage k
-bin = id
+bin = Coverage . Map.map log2 . getCoverage
+  where
+    log2 n =
+      if n == 1 || n == 0
+      then 0
+      else 1 + log2 (div n 2)
 
 -- TODO(lb): notion of maximum coverage? goal completed?
 coverage ::
