@@ -189,7 +189,8 @@ fuzz ::
 fuzz conf fuzzer stdoutLogger stderrLogger = do
   initRandom (Conf.seed conf)
   runResultVar <- MVar.newEmptyMVar
-  Log.with stdoutLogger (go runResultVar 0 State.new)
+  initialState <- State.newIO
+  Log.with stdoutLogger (go runResultVar 0 initialState)
   where
     initRandom =
       Random.setStdGen <=<
@@ -224,7 +225,7 @@ fuzz conf fuzzer stdoutLogger stderrLogger = do
               Log.error ("Thread exited with error! " <> Text.pack (show err))
             return (Left (ThreadError err))
           Right record -> do
-            let (new, state') = State.record record state
+            (new, state') <- State.record record state
             Log.with stdoutLogger $
               if new
                 then Log.info ("New coverage :)" :: Text)

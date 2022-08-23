@@ -101,5 +101,6 @@ library
     random,
     stm,
     text,
+    time,
     what4 >= 1 && < 2,
     vector
