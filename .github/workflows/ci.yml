@@ -31,8 +31,12 @@ jobs:
 
     - name: lint
       shell: bash
-      run: |
-        ./hlint-${HLINT_VERSION}/hlint czz/src czz-jvm/{exe,src,test} czz-llvm/{exe,src,test}
+      run: >
+        ./hlint-${HLINT_VERSION}/hlint
+        czz/src
+        czz-jvm/{exe,src,test}
+        czz-llvm/{exe,src,test}
+        czz-llvm-tui/{exe,src}
 
   build:
     name: ${{ matrix.os }} GHC-${{ matrix.ghc }}
