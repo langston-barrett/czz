@@ -79,6 +79,7 @@ library
     Czz.Result
     Czz.Seed
     Czz.State
+    Czz.State.Stats
     Czz.SysTrace
 
   -- other-modules:
