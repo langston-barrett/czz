@@ -85,6 +85,8 @@ llvmFuzzer conf translation =
         Nothing -> return (Seed.begin Env.empty)
         Just r -> Mut.mutate r
 
+  , Fuzz.onUpdate = \_state -> return ()
+
   , Fuzz.symbolicBits = \bak -> do
       (sym :: sym) <- return (C.backendGetSym bak)
 

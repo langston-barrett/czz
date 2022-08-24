@@ -59,6 +59,9 @@ jvmFuzzer _conf jvmCtx entryPoint =
           Nothing -> return (Seed.begin ())
           -- TODO(lb): mutate, power schedule, mutation schedule
           Just r -> return (Seed.rewind (Rec.seed r))
+
+    , Fuzz.onUpdate = \_state -> return ()
+
     , Fuzz.symbolicBits = \bak -> do
         (_sym :: sym) <- return (C.backendGetSym bak)
         return $

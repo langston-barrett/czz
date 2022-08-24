@@ -27,12 +27,12 @@ import qualified Data.Sequence as Seq
 import qualified Data.Set as Set
 import           Data.Text (Text)
 import qualified Data.Text as Text
-import           Data.Time (UTCTime)
-import qualified Data.Time as Time
 import           Numeric.Natural (Natural)
 
 import qualified What4.ProgramLoc as What4
 
+import           Czz.Now (Now)
+import qualified Czz.Now as Now
 import           Czz.Record (Record)
 import qualified Czz.Record as Rec
 import qualified Czz.Result as Res
@@ -53,7 +53,7 @@ data State env eff fb
     }
   deriving (Eq, Functor, Ord)
 
-new :: UTCTime -> State env eff fb
+new :: Now -> State env eff fb
 new now =
   State
   { sFeedback = IntSet.empty
@@ -63,7 +63,7 @@ new now =
   }
 
 newIO :: IO (State env eff fb)
-newIO = new <$> Time.getCurrentTime
+newIO = new <$> Now.now
 
 pool :: State env eff fb -> Seq (Record env eff fb)
 pool = sPool
@@ -81,23 +81,26 @@ record ::
   Record env eff fb ->
   State env eff fb ->
   IO (Bool, State env eff fb)
-record r state =
+record r state = do
+  now <- Now.now
   let bug = Rec.hasBug r
       fId = Hash.hash (Rec.feedbackId r, bug)
-  in if fId `IntSet.member` sFeedback state
-     then return ( False
-                 , state { sStats = Stats.notNew (sStats state) }
-                 )
-     else do
-       now <- Time.getCurrentTime
-       return
-         ( True
-         , state
-           { sStats = Stats.newRec now bug (sStats state)
-           , sFeedback = IntSet.insert fId (sFeedback state)
-           , sPool = sPool state Seq.|> r
-           }
-         )
+      isOld = fId `IntSet.member` sFeedback state
+      stats' = Stats.record now (not isOld) bug (Rec.missing r) (sStats state)
+  return $
+    if isOld
+    then
+      ( False
+      , state { sStats = stats' }
+      )
+    else
+      ( True
+      , state
+        { sStats = stats'
+        , sFeedback = IntSet.insert fId (sFeedback state)
+        , sPool = sPool state Seq.|> r
+        }
+      )
 
 summarize ::
   State env eff fb ->

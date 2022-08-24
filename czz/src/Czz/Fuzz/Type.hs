@@ -32,6 +32,7 @@ import qualified Czz.Log as Log
 import           Czz.Record (FeedbackId, Record)
 import qualified Czz.Result as Res
 import           Czz.Seed (Seed)
+import           Czz.State (State)
 import           Czz.SysTrace (SomeSysTrace, Time(Begin))
 
 data CzzPersonality = CzzPersonality
@@ -69,6 +70,10 @@ data Fuzzer ext env eff fb =
       Log.Has Text =>
       Seq (Record env eff fb) ->
       IO (Seed 'Begin env eff)
+
+  , onUpdate ::
+      State env eff fb ->
+      IO ()
 
   -- Parts that may internally share state via IORefs, and use the symbolic
   -- backend.

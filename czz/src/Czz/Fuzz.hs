@@ -226,6 +226,7 @@ fuzz conf fuzzer stdoutLogger stderrLogger = do
             return (Left (ThreadError err))
           Right record -> do
             (new, state') <- State.record record state
+            onUpdate fuzzer state'
             Log.with stdoutLogger $
               if new
                 then Log.info ("New coverage :)" :: Text)
