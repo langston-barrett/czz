@@ -7,7 +7,8 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 
 module Czz.LLVM
-  ( fuzz
+  ( llvmFuzzer
+  , fuzz
   , main
   )
 where
