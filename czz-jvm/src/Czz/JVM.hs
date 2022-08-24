@@ -83,7 +83,7 @@ jvmFuzzer _conf jvmCtx entryPoint =
                 then return (Set.singleton Res.Ok)
                 else return (Set.fromList goalExpls)
           , Fuzz.instrumentation = []
-          , Fuzz.getFeedback = return ((), Hash.hash ())
+          , Fuzz.getFeedback = return ((), Rec.FeedbackId (Hash.hash ()))
           }
     }
 

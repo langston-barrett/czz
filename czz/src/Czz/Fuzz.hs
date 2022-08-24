@@ -202,7 +202,7 @@ fuzz conf fuzzer stdoutLogger stderrLogger = do
     tooManyTries state =
       case Conf.tries conf of
         Nothing -> False
-        Just maxTries -> State.tries state > maxTries
+        Just maxTries -> State.tries state > fromIntegral maxTries
 
     go runResultVar running state = do
       if tooManyTries state

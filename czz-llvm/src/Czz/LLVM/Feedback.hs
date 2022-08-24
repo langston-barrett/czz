@@ -14,6 +14,8 @@ import qualified Data.Set as Set
 import           Czz.Coverage (Coverage)
 import qualified Czz.Coverage as Cover
 import           Czz.KLimited (IsKLimited)
+import           Czz.Record (FeedbackId)
+import qualified Czz.Record as Rec
 
 data Feedback k
   = Feedback
@@ -30,5 +32,5 @@ empty =
   , coverage = Cover.empty
   }
 
-id :: Feedback k -> Int
-id = Hash.hash . coverage
+id :: Feedback k -> FeedbackId
+id = Rec.FeedbackId . Hash.hash . coverage
