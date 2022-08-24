@@ -2,6 +2,7 @@
 {-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE ExplicitNamespaces #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE PolyKinds #-}
 
 module Czz.Record
@@ -9,6 +10,7 @@ module Czz.Record
   , Record(..)
   , empty
   , hasBug
+  , missing
   )
 where
 
@@ -17,6 +19,7 @@ import           Prelude hiding (read)
 import           Data.Hashable (Hashable)
 import           Data.Set (Set)
 import qualified Data.Set as Set
+import           Data.Text (Text)
 
 import           Czz.SysTrace (Time(End))
 
@@ -49,3 +52,11 @@ empty env fb fbId =
 
 hasBug :: Record env eff fb -> Bool
 hasBug = any Res.isBug . Set.toList . result
+
+missing :: Record env eff fb -> Set Text
+missing = Set.fromList . concatMap getMissing . Set.toList . result
+  where
+    getMissing =
+      \case
+        Res.MissingOverride t -> [t]
+        _ -> []

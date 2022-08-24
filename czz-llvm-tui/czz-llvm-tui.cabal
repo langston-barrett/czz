@@ -70,7 +70,11 @@ library
     czz,
     czz-llvm,
     lens,
+    -- TODO(lb): Avoid this import
+    MissingH >= 1.5 && < 2.0,
+    mtl,
     text < 2.0,
+    time,
     vty
 
 executable czz-llvm-tui

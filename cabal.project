@@ -18,8 +18,8 @@ source-repository-package
 
 source-repository-package
   type: git
-  location: https://github.com/GaloisInc/crucible.git
-  tag: 5676b29
+  location: https://github.com/langston-barrett/crucible.git
+  tag: 9c16616
   subdir: crucible-llvm
 
 source-repository-package

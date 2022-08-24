@@ -95,6 +95,7 @@ withCoverage ::
 withCoverage fuzzer =
   fuzzer
   { Fuzz.nextSeed = Fuzz.nextSeed fuzzer . fmap (fmap (const ()))
+  , Fuzz.onUpdate = \state -> Fuzz.onUpdate fuzzer (() <$ state)
   , Fuzz.symbolicBits = \bak -> do
       bits <- Fuzz.symbolicBits fuzzer bak
       coverageRef <- IORef.newIORef empty
