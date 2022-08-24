@@ -133,6 +133,7 @@
       - "Czz.JVM.Translate"
       - "Czz.LLVM"
       - "Czz.LLVM.Translate"
+      - "Czz.LLVM.TUI"
       - "Test"
 - ignore:
     within: ["Czz.LLVM.QQ"]
