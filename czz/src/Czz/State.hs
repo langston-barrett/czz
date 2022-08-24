@@ -9,11 +9,8 @@ module Czz.State
   ( State
   , new
   , newIO
-  , execs
-  , start
-  , lastNew
-  , lastBug
   , record
+  , stats
   , tries
   , pool
   , hasBug
@@ -30,7 +27,7 @@ import qualified Data.Sequence as Seq
 import qualified Data.Set as Set
 import           Data.Text (Text)
 import qualified Data.Text as Text
-import           Data.Time (NominalDiffTime, UTCTime)
+import           Data.Time (UTCTime)
 import qualified Data.Time as Time
 import           Numeric.Natural (Natural)
 
@@ -39,14 +36,16 @@ import qualified What4.ProgramLoc as What4
 import           Czz.Record (Record)
 import qualified Czz.Record as Rec
 import qualified Czz.Result as Res
+import           Czz.State.Stats (Stats)
+import qualified Czz.State.Stats as Stats
+
+--------------------------------------------------------------------------------
+-- State
 
 -- | Invariant: sCover is the coverage of all sPool
 data State env eff fb
   = State
-    { sExecs :: !Natural
-    , sStart :: UTCTime
-    , sLastNew :: UTCTime
-    , sLastBug :: Maybe UTCTime
+    { sStats :: !Stats
       -- | Hashes of all the feedback attached to records
     , sFeedback :: IntSet
     , sPool :: Seq (Record env eff fb)
@@ -55,40 +54,28 @@ data State env eff fb
   deriving (Eq, Functor, Ord)
 
 new :: UTCTime -> State env eff fb
-new t =
+new now =
   State
-  { sExecs = 0
-  , sStart = t
-  , sLastNew = t
-  , sLastBug = Nothing
-  , sFeedback = IntSet.empty
+  { sFeedback = IntSet.empty
   , sPool = Seq.empty
   , sTries = 0
+  , sStats = Stats.new now
   }
 
 newIO :: IO (State env eff fb)
 newIO = new <$> Time.getCurrentTime
-
-execs :: State env eff fb -> Natural
-execs = sExecs
-
-start :: State env eff fb -> UTCTime
-start = sStart
-
-lastNew :: State env eff fb -> NominalDiffTime
-lastNew s = sStart s `Time.diffUTCTime` sLastNew s
-
-lastBug :: State env eff fb -> Maybe NominalDiffTime
-lastBug s = (sStart s `Time.diffUTCTime`) <$> sLastBug s
-
-tries :: State env eff fb -> Natural
-tries = sTries
 
 pool :: State env eff fb -> Seq (Record env eff fb)
 pool = sPool
 
 hasBug :: State env eff fb -> Bool
 hasBug = any Rec.hasBug . sPool
+
+stats :: State env eff fb -> Stats
+stats = sStats
+
+tries :: State env eff fb -> Natural
+tries = Stats.tries . stats
 
 record ::
   Record env eff fb ->
@@ -99,22 +86,16 @@ record r state =
       fId = Hash.hash (Rec.feedbackId r, bug)
   in if fId `IntSet.member` sFeedback state
      then return ( False
-                 , state
-                   { sExecs = 1 + sExecs state
-                   , sTries = 1 + sTries state
-                   }
+                 , state { sStats = Stats.notNew (sStats state) }
                  )
      else do
        now <- Time.getCurrentTime
        return
          ( True
          , state
-           { sExecs = 1 + sExecs state
-           , sLastNew = now
-           , sLastBug = if bug then Just now else sLastBug state
+           { sStats = Stats.newRec now bug (sStats state)
            , sFeedback = IntSet.insert fId (sFeedback state)
            , sPool = sPool state Seq.|> r
-           , sTries = 0
            }
          )
 
