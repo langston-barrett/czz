@@ -39,6 +39,7 @@ import           Czz.Fuzz.Type (Fuzzer)
 import qualified Czz.Fuzz.Type as Fuzz
 import           Czz.KLimited (IsKLimited)
 import qualified Czz.Log as Log
+import qualified Czz.Record as Rec
 
 newtype Coverage k = Coverage { getCoverage :: Map (Path k) Word }
   deriving (Eq, Hashable, Ord, Show)
@@ -102,7 +103,7 @@ withCoverage fuzzer =
         bits
         { Fuzz.getFeedback = do
             cover <- bin <$> IORef.readIORef coverageRef
-            return (cover, Hash.hash cover)
+            return (cover, Rec.FeedbackId (Hash.hash cover))
         , Fuzz.instrumentation = [feat]
         }
   }

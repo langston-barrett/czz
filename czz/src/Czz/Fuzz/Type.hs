@@ -29,7 +29,7 @@ import qualified Lang.Crucible.Simulator as C
 import           Lang.Crucible.Types (UnitType)
 
 import qualified Czz.Log as Log
-import           Czz.Record (Record)
+import           Czz.Record (FeedbackId, Record)
 import qualified Czz.Result as Res
 import           Czz.Seed (Seed)
 import           Czz.SysTrace (SomeSysTrace, Time(Begin))
@@ -56,7 +56,7 @@ data SymbolicBits sym bak ext env eff fb
         [FailedGoal sym] ->
         C.ExecResult CzzPersonality sym ext ret ->
         IO (Set.Set Res.Result)
-    , getFeedback :: IO (fb, Int)
+    , getFeedback :: IO (fb, FeedbackId)
     , instrumentation :: [C.GenericExecutionFeature sym]
     }
 
