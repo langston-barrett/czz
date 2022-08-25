@@ -45,7 +45,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        ghc: [9.0.2]
+        ghc: [9.2.1]
         allow-failure: [false]
       fail-fast: true
 
