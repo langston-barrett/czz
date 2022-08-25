@@ -23,6 +23,7 @@ import qualified Data.Either as Either
 import           Control.Exception.Base (SomeException)
 import           Data.Functor ((<&>))
 import qualified Data.IORef as IORef
+import qualified Data.Set as Set
 import           Data.Text (Text)
 import qualified Data.Text as Text
 import qualified Control.Lens as Lens
@@ -57,6 +58,7 @@ import           Czz.Fuzz.Type
 import           Czz.Log (Logger, Msg)
 import qualified Czz.Log as Log
 import qualified Czz.Log.Concurrent as CLog
+import qualified Czz.Now as Now
 import           Czz.Overrides (EffectTrace)
 import qualified Czz.Overrides as Ov
 import           Czz.Record (Record)
@@ -65,6 +67,7 @@ import           Czz.Seed (Seed)
 import qualified Czz.Seed as Seed
 import           Czz.State (State)
 import qualified Czz.State as State
+import qualified Czz.State.Stats as Stats
 import           Czz.SysTrace (Time(Begin))
 
 -- | Not exported.
@@ -206,8 +209,15 @@ fuzz conf fuzzer stdoutLogger stderrLogger = do
     go runResultVar running state = do
       if tooManyTries state
       then do
-        Log.with stdoutLogger $
+        Log.with stdoutLogger $ do
+          now <- Now.now
           Log.info "Too many tries without new coverage! Giving up."
+          let stats = State.stats state
+          Log.info "Stats:"
+          Log.info ("execs: " <> Text.pack (show (Stats.execs stats)))
+          Log.info ("execs/sec: " <> Text.pack (show (Stats.execsPerSec stats now)))
+          Log.info ("pool: " <> Text.pack (show (Stats.poolSize stats)))
+          Log.info ("missing:\n" <> Text.unlines (Set.toList (Stats.missing stats)))
         return (Right state)
       else do
         if running >= Conf.jobs conf
@@ -240,7 +250,6 @@ fuzz conf fuzzer stdoutLogger stderrLogger = do
           then CLog.pfxThreadId stdoutLogger
           else return stdoutLogger
         let ?logger = logger
-        seed <- nextSeed fuzzer (State.pool state)
         (seed, doMut) <- nextSeed fuzzer (State.pool state)
         withZ3 $ \bak -> do
           halloc <- C.newHandleAllocator

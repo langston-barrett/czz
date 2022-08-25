@@ -163,7 +163,7 @@ llvmFuzzer conf translation =
           case Map.lookup (CLLVM.BoolAnn ann) bbMap of
             Nothing -> return bug
             Just (_cs, CLLVM.BBMemoryError (CLLVM.MemoryError (CLLVM.MemLoadHandleOp _ (Just nm) _ _) (CLLVM.BadFunctionPointer CLLVM.NoOverride))) -> do
-              Log.info ("Missing implementation of " <> Text.pack nm)
+              Log.debug ("Missing implementation of " <> Text.pack nm)
               return (Res.MissingOverride (Text.pack nm))
             Just (callStack, badBehavior) -> do
               let _msg =
