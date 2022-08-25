@@ -1,5 +1,11 @@
 CABAL := cabal
 HLINT := hlint
+PROF_TARGET := exe:czz-llvm
+PROF_ARGS := 
+PROF_FLAGS := \
+  --builddir=dist-prof \
+  --enable-library-profiling \
+  --enable-executable-profiling
 
 all: \
   lint \
@@ -17,6 +23,10 @@ entr-lint:
 .PHONY: build
 build:
 	$(CABAL) build all
+
+.PHONY: prof
+prof:
+	$(CABAL) run $(PROF_TARGET) $(PROF_FLAGS) -- $(PROF_ARGS)
 
 .PHONY: test
 test:

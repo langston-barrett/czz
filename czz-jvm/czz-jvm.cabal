@@ -50,7 +50,7 @@ common common
     -Werror=unused-imports
     -Werror=warnings-deprecations
     -Werror=wrong-do-bind
-  ghc-prof-options: -O2 -fprof-auto-top
+  ghc-prof-options: -O2 -fprof-auto-top -rtsopts
   default-language: Haskell2010
 
 library
