@@ -67,6 +67,8 @@ library
     Czz.Config.Type
     Czz.Concurrent.Lock
     Czz.Concurrent.Handle
+    Czz.Count
+    Czz.Freq
     Czz.Fuzz
     Czz.Fuzz.Type
     Czz.KLimited
