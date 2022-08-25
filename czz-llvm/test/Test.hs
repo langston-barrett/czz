@@ -90,7 +90,10 @@ tests = do
           noBug prog = expectNoBug conf (logger prog) prog
       in Tasty.testGroup "Tests"
            [ bug "argv00.c"
+           , bug "assert-argc-eq-0.c"
+           , bug "assert-argc-lt-0.c"
            , bug "getenv-deref.c"
+           , noBug "assert-argc-geq-0.c"
            , noBug "getenv-deref-2.c"  -- TODO(lb)
            , noBug "ret0-argv.c"
            , noBug "ret0-envp.c"
