@@ -4,7 +4,7 @@ module Czz.Coverage
   ( Coverage
   , empty
   , coverage
-  , bin
+  , bucket
   , withCoverage
   )
 where
@@ -30,8 +30,9 @@ import qualified Lang.Crucible.Simulator.CallFrame as C
 import qualified Lang.Crucible.Simulator.EvalStmt as C
 import qualified Lang.Crucible.Simulator.ExecutionTree as C
 
-import qualified Czz.Count as Count
 import qualified Czz.Coverage.BlockId as BlockId
+import           Czz.Coverage.Bucket (Bucketing)
+import qualified Czz.Coverage.Bucket as Bucket
 import           Czz.Coverage.Path (Path)
 import qualified Czz.Coverage.Path as Path
 import           Czz.Freq (Freq)
@@ -51,8 +52,8 @@ empty = Coverage Freq.empty
 addPath :: Path k -> Coverage k -> Coverage k
 addPath p = Coverage . Freq.inc p . getCoverage
 
-bin :: Coverage k -> Coverage k
-bin = Coverage . Freq.map (Count.log 2) . getCoverage
+bucket :: Bucketing -> Coverage k -> Coverage k
+bucket b = Coverage . Freq.map (Bucket.bucket b) . getCoverage
 
 -- TODO(lb): notion of maximum coverage? goal completed?
 coverage ::
@@ -86,9 +87,10 @@ coverage _proxy coverRef = do
 -- | Turn a non-feedback-guided fuzzer into a /k/-edge-coverage guided one.
 withCoverage ::
   IsKLimited k =>
+  Bucketing ->
   Fuzzer ext env eff () ->
   Fuzzer ext env eff (Coverage k)
-withCoverage fuzzer =
+withCoverage b fuzzer =
   fuzzer
   { Fuzz.nextSeed = Fuzz.nextSeed fuzzer . fmap (fmap (const ()))
   , Fuzz.onUpdate = \state -> Fuzz.onUpdate fuzzer (() <$ state)
@@ -99,7 +101,7 @@ withCoverage fuzzer =
       return
         bits
         { Fuzz.getFeedback = do
-            cover <- bin <$> IORef.readIORef coverageRef
+            cover <- bucket b <$> IORef.readIORef coverageRef
             return (cover, Rec.FeedbackId (Hash.hash cover))
         , Fuzz.instrumentation = [feat]
         }
