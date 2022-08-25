@@ -118,10 +118,10 @@ fprintfDecl ::
      ::> VarArgs)
     (BVType 32)
 fprintfDecl proxy effects inj =
-  [llvmOvr| i32 @fprintf( %struct._IO_FILE*, i8*, ... ) |] $
-  \memVar bak args ->
+  [llvmOvr| i32 @fprintf( %struct._IO_FILE*, i8*, ... ) |]
+  (\memVar bak args ->
     let ov = fprintfOverride proxy bak memVar
-    in COv.toOverride bak effects inj ov args
+    in COv.toOverride bak effects inj ov args)
 
 fprintfOverride ::
   Log.Has String =>
@@ -208,10 +208,10 @@ strcpyDecl ::
      ::> LLVMPointerType wptr)
     (LLVMPointerType wptr)
 strcpyDecl proxy effects inj =
-  [llvmOvr| i8* @strcpy( i8*, i8* ) |] $
-  \memVar bak args ->
+  [llvmOvr| i8* @strcpy( i8*, i8* ) |]
+  (\memVar bak args ->
     let ov = strcpyOverride proxy bak memVar
-    in COv.toOverride bak effects inj ov args
+    in COv.toOverride bak effects inj ov args)
 
 strcpyOverride ::
   OverrideConstraints sym arch wptr =>
