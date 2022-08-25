@@ -15,8 +15,6 @@ import           Data.Hashable (Hashable)
 import qualified Data.Hashable as Hash
 import           Data.IORef (IORef)
 import qualified Data.IORef as IORef
-import           Data.Map.Strict (Map)
-import qualified Data.Map.Strict as Map
 import           Data.Text (Text)
 import qualified Data.Text as Text
 
@@ -32,31 +30,29 @@ import qualified Lang.Crucible.Simulator.CallFrame as C
 import qualified Lang.Crucible.Simulator.EvalStmt as C
 import qualified Lang.Crucible.Simulator.ExecutionTree as C
 
+import qualified Czz.Count as Count
 import qualified Czz.Coverage.BlockId as BlockId
 import           Czz.Coverage.Path (Path)
 import qualified Czz.Coverage.Path as Path
+import           Czz.Freq (Freq)
+import qualified Czz.Freq as Freq
 import           Czz.Fuzz.Type (Fuzzer)
 import qualified Czz.Fuzz.Type as Fuzz
 import           Czz.KLimited (IsKLimited)
 import qualified Czz.Log as Log
 import qualified Czz.Record as Rec
 
-newtype Coverage k = Coverage { getCoverage :: Map (Path k) Word }
+newtype Coverage k = Coverage { getCoverage :: Freq (Path k) }
   deriving (Eq, Hashable, Ord, Show)
 
 empty :: IsKLimited k => Coverage k
-empty = Coverage Map.empty
+empty = Coverage Freq.empty
 
 addPath :: Path k -> Coverage k -> Coverage k
-addPath p = Coverage . Map.insertWith (+) p 1 . getCoverage
+addPath p = Coverage . Freq.inc p . getCoverage
 
 bin :: Coverage k -> Coverage k
-bin = Coverage . Map.map log2 . getCoverage
-  where
-    log2 n =
-      if n == 1 || n == 0
-      then 0
-      else 1 + log2 (div n 2)
+bin = Coverage . Freq.map (Count.log 2) . getCoverage
 
 -- TODO(lb): notion of maximum coverage? goal completed?
 coverage ::
