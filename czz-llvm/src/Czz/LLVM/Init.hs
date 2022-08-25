@@ -111,7 +111,7 @@ initState _proxy bak halloc translation envVarRef openedRef effectRef seed skip 
 
     -- Forward simulator logs to parent logger
     (_path, logHandle) <- IO.openTempFile "/tmp" "czz.temp"
-    let msg = "[ERROR] simulator logging thread exited! "
+    let msg = "simulator logging thread exited! "
     let onError = Log.error . (msg <>) . Text.pack . show
     _threadId <- CLog.forkReadHandle onError logHandle (Log.toDebug >$< ?logger)
 

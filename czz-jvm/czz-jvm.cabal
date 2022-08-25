@@ -93,3 +93,19 @@ executable czz-jvm
     -threaded
     -rtsopts
     "-with-rtsopts=-N"
+
+test-suite czz-jvm-test
+  import: common
+  type: exitcode-stdio-1.0
+  hs-source-dirs: test
+  main-is: Main.hs
+  other-modules:
+    Test
+
+  build-depends:
+    base,
+    czz,
+    czz-jvm,
+    tasty >= 1.4 && < 2.0,
+    tasty-hunit >= 0.10 && < 1.0,
+    text

@@ -112,6 +112,7 @@ library
     template-haskell,
     text < 2.0,
     what4,
+    unix >= 1.7,
     vector
 
 executable czz-llvm

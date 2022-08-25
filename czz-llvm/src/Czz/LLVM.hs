@@ -55,6 +55,8 @@ import qualified Czz.Record as Rec
 import qualified Czz.Result as Res
 import qualified Czz.Seed as Seed
 import           Czz.State (State)
+import           Czz.Stop (Stop)
+import qualified Czz.Stop as Stop
 
 import qualified Czz.LLVM.Config.CLI as CLI
 import           Czz.LLVM.Config.Type (Config)
@@ -181,23 +183,25 @@ llvmFuzzer conf translation =
 fuzz ::
   IsKLimited k =>
   Conf.Config ->
+  Stop ->
   Logger (Msg Text) ->
   Logger (Msg Text) ->
   IO (Either FuzzError (State Env Effect (Feedback k)))
-fuzz conf stdoutLogger stderrLogger = do
+fuzz conf stop stdoutLogger stderrLogger = do
   Log.with stdoutLogger $
     Log.info ("Fuzzing program " <> Text.pack (Conf.prog conf))
   translation <- Trans.translate conf  -- Allowed to fail/call exit
   let fuzzer = llvmFuzzer conf translation
-  Fuzz.fuzz (Conf.common conf) fuzzer stdoutLogger stderrLogger
+  Fuzz.fuzz (Conf.common conf) stop fuzzer stdoutLogger stderrLogger
 
 -- | CLI entry point
 main :: IO Exit.ExitCode
 main = do
+  stop <- Stop.new
   conf <- CLI.cliConfig
   translation <- Trans.translate conf  -- Allowed to fail/call exit
   KLimit.withKLimit (CConf.pathLen (Conf.common conf)) $ do
-    _finalState <- Fuzz.main (Conf.common conf) (llvmFuzzer conf translation)
+    _finalState <- Fuzz.main (Conf.common conf) stop (llvmFuzzer conf translation)
     return ()
   return Exit.ExitSuccess
 

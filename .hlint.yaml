@@ -129,6 +129,7 @@
     name: "Use Log.log"
     within:
       - "Czz.Fuzz"
+      - "Czz.Log.Concurrent"
       - "Czz.JVM"
       - "Czz.JVM.Translate"
       - "Czz.LLVM"

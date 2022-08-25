@@ -38,6 +38,7 @@ import qualified Czz.KLimited as KLimit
 import           Czz.State (State)
 import qualified Czz.State as State
 import qualified Czz.State.Stats as Stats
+import qualified Czz.Stop as Stop
 
 import qualified Czz.LLVM as CL
 import qualified Czz.LLVM.Config.CLI as CLI
@@ -115,13 +116,24 @@ app tz =
 
 main :: IO ExitCode
 main = do
+  stop <- Stop.new
   conf <- CLI.cliConfig
   translation <- Trans.translate conf  -- Allowed to fail/call exit
   KLimit.withKLimit (CConf.pathLen (Conf.common conf)) $ do
 
     eventChan <- BChan.newBChan 1
 
-    _threadId <- flip Con.forkFinally (error . show) $ do
+    let fuzzerDone =
+          \case
+            Left threadExc -> do
+              print threadExc
+              Exit.exitFailure
+            Right (Left fuzzExc) -> do
+              print fuzzExc
+              Exit.exitFailure
+            Right (Right final) -> BChan.writeBChan eventChan (FinalState final)
+
+    _threadId <- flip Con.forkFinally fuzzerDone $ do
         let fuzzer =
               (CL.llvmFuzzer conf translation)
               { Fuzz.onUpdate = \tstates -> do
@@ -129,14 +141,7 @@ main = do
                     BChan.writeBChanNonBlocking eventChan (NewState tstates)
                   return ()
               }
-        Fuzz.fuzz (Conf.common conf) fuzzer Log.void Log.void >>=
-          \case
-            Left err -> do
-              print err
-              Exit.exitFailure
-            Right finalState -> do
-              BChan.writeBChan eventChan (FinalState finalState)
-              return ()
+        Fuzz.fuzz (Conf.common conf) stop fuzzer Log.void Log.void
 
     let buildVty = Vty.mkVty Vty.defaultConfig
     initialVty <- buildVty

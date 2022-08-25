@@ -13,6 +13,9 @@ in pkgs.mkShell {
   buildInputs =  [
     pkgs.clang_11
     pkgs.llvm_11
+
+    pkgs.jdk
+
     pkgs.z3
 
     (hPkgs.haskell.packages.${ghc}.ghcWithPackages (hpkgs: with hpkgs; []))

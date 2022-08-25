@@ -85,6 +85,7 @@ library
     Czz.Seed
     Czz.State
     Czz.State.Stats
+    Czz.Stop
     Czz.SysTrace
 
   -- other-modules:
@@ -109,4 +110,5 @@ library
     text,
     time,
     what4 >= 1 && < 2,
+    unix >= 2.7,
     vector

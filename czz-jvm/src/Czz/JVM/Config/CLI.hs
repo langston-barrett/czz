@@ -47,14 +47,14 @@ cliConfig =
               <> Opt.help "JAR files"
             )
           )
-      <*> Opt.option Opt.auto
+      <*> Opt.strOption
           ( Opt.long "entry-class"
             <> Opt.short 'c'
             <> Opt.metavar "CLASS"
             <> Opt.value "Main"
             <> Opt.help "Class with entry point method (default: Main)"
           )
-      <*> Opt.option Opt.auto
+      <*> Opt.strOption
           ( Opt.long "entry-method"
             <> Opt.short 'e'
             <> Opt.metavar "METHOD"

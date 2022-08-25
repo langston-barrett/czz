@@ -6,7 +6,7 @@ module Test (tests) where
 import           Control.Category ((>>>))
 import           Data.Functor.Contravariant ((>$<))
 import qualified Data.Text as Text
- 
+
 import qualified Test.Tasty as Tasty
 import qualified Test.Tasty.HUnit as TastyH
 
@@ -17,6 +17,7 @@ import qualified Czz.Log as Log
 import qualified Czz.Log.Concurrent as CLog
 import qualified Czz.KLimited as KLimit
 import qualified Czz.State as State
+import qualified Czz.Stop as Stop
 
 import qualified Czz.LLVM as Main
 import qualified Czz.LLVM.Compile as Compile
@@ -26,6 +27,8 @@ import qualified Option as TestOpt
 
 tests :: IO Tasty.TestTree
 tests = do
+  stop <- Stop.new
+
   _bcFiles <-
     Compile.compileCFiles cFiles >>=
       (sequence >>>
@@ -58,7 +61,7 @@ tests = do
 
   let assertFinalState cf logger f =
         TastyH.testCase (Conf.prog cf) $ do
-          Main.fuzz cf logger logger >>=
+          Main.fuzz cf stop logger logger >>=
             \case
               Left err -> error (show err)
               Right finalState -> f finalState

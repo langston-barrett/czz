@@ -5,6 +5,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TupleSections #-}
 {-# OPTIONS_GHC -Wno-typed-holes #-}
 
 module Czz.Fuzz
@@ -30,6 +31,8 @@ import qualified Control.Lens as Lens
 import           Control.Monad ((<=<), forM_, forM, unless)
 import qualified System.Random as Random
 import qualified System.IO as IO
+
+import qualified System.Posix.Signals as Signal
 
 -- p-u
 import qualified Data.Parameterized.Nonce as Nonce
@@ -68,6 +71,8 @@ import qualified Czz.Seed as Seed
 import           Czz.State (State)
 import qualified Czz.State as State
 import qualified Czz.State.Stats as Stats
+import           Czz.Stop (Stop)
+import qualified Czz.Stop as Stop
 import           Czz.SysTrace (Time(Begin))
 
 -- | Not exported.
@@ -179,20 +184,22 @@ newtype FuzzError
 
 -- | Main entry point.
 --
--- TODO(lb): no quitting, configurable logging
 -- TODO(lb): notion of crashes, deduplication of crashes
 fuzz ::
   IsSyntaxExtension ext =>
   Conf.Config ->
+  Stop ->
   Fuzzer ext env eff fb ->
   Logger (Msg Text) ->
   Logger (Msg Text) ->
   IO (Either FuzzError (State env eff fb))
-fuzz conf fuzzer stdoutLogger stderrLogger = do
+fuzz conf stop fuzzer stdoutLogger stderrLogger = do
   initRandom (Conf.seed conf)
   runResultVar <- MVar.newEmptyMVar
   initialState <- State.newIO
-  Log.with stdoutLogger (go runResultVar 0 initialState)
+  catchSigint
+  Log.with stdoutLogger $ do
+    go runResultVar Set.empty initialState
   where
     initRandom =
       Random.setStdGen <=<
@@ -200,18 +207,37 @@ fuzz conf fuzzer stdoutLogger stderrLogger = do
           Nothing -> Random.initStdGen
           Just seed -> return (Random.mkStdGen seed)
 
-
     tooManyTries state =
       case Conf.tries conf of
         Nothing -> False
         Just maxTries -> State.tries state > fromIntegral maxTries
 
+    catchSigint = do
+      let handle = do
+            putStrLn "Handling SIGINT..."
+            Stop.send stop
+      _oldHandler <-
+        Signal.installHandler Signal.keyboardSignal (Signal.Catch handle) Nothing
+      return ()
+
     go runResultVar running state = do
-      if tooManyTries state
+      shouldStop <- Stop.should stop
+      if shouldStop || tooManyTries state
       then do
         Log.with stdoutLogger $ do
+          if shouldStop
+            then Log.warn "Interrupted! Waiting for threads to finish..."
+            else Log.info "Too many tries without new coverage! Giving up."
           now <- Now.now
-          Log.info "Too many tries without new coverage! Giving up."
+          -- TODO(lb): How to shut down stdout/stderr?
+          --
+          -- Current approach (blocking exceptions) works OK, but messages still
+          -- seem to get dropped?
+          let rn = Set.size running
+          forM_ (zip [1..] (Set.toList running)) $ \(i :: Int, _tid) -> do
+            Log.info (Text.pack ("Waiting for thread " ++ show i ++ " / " ++ show rn))
+            _result <- MVar.takeMVar runResultVar
+            return ()
           let stats = State.stats state
           Log.info "Stats:"
           Log.info ("execs: " <> Text.pack (show (Stats.execs stats)))
@@ -220,11 +246,11 @@ fuzz conf fuzzer stdoutLogger stderrLogger = do
           Log.info ("missing:\n" <> Text.unlines (Set.toList (Stats.missing stats)))
         return (Right state)
       else do
-        if running >= Conf.jobs conf
+        if Set.size running >= Conf.jobs conf
           then blockOnResult runResultVar state running
           else do
-            _threadId <- newThread runResultVar state
-            go runResultVar (running + 1) state
+            threadId <- newThread runResultVar state
+            go runResultVar (Set.insert threadId running) state
 
     blockOnResult runResultVar state running =
       MVar.takeMVar runResultVar >>=
@@ -233,18 +259,20 @@ fuzz conf fuzzer stdoutLogger stderrLogger = do
             Log.with stderrLogger $
               Log.error ("Thread exited with error! " <> Text.pack (show err))
             return (Left (ThreadError err))
-          Right record -> do
-            (new, state') <- State.record record state
+          Right (tid, record) -> do
+            (_newFeedback, state') <- State.record record state
             onUpdate fuzzer state'
-            Log.with stdoutLogger $
-              if new
-                then Log.info ("New coverage :)" :: Text)
-                else Log.info ("No new coverage :(" :: Text)
-            go runResultVar (running - 1) state'
+            -- Log.with stdoutLogger $
+            --   if new
+            --     then Log.info ("New coverage :)" :: Text)
+            --     else Log.info ("No new coverage :(" :: Text)
+            go runResultVar (Set.delete tid running) state'
 
     -- TODO(lb): is forkFinally enough to handle all exceptions?
     newThread runResultVar state =
       flip Con.forkFinally (MVar.putMVar runResultVar) $ do
+        catchSigint
+        tid <- Con.myThreadId
         logger <-
           if Conf.jobs conf > 1
           then CLog.pfxThreadId stdoutLogger
@@ -253,20 +281,21 @@ fuzz conf fuzzer stdoutLogger stderrLogger = do
         (seed, doMut) <- nextSeed fuzzer (State.pool state)
         withZ3 $ \bak -> do
           halloc <- C.newHandleAllocator
-          run conf bak halloc doMut seed fuzzer
+          (tid,) <$> run conf bak halloc doMut seed fuzzer
 
 main ::
   IsSyntaxExtension ext =>
   Conf.Config ->
+  Stop ->
   Fuzzer ext env eff fb ->
   IO (Either FuzzError (State env eff fb))
-main conf fuzzer = do
+main conf stop fuzzer = do
   let s = Conf.verbosity conf
   let cap = 4096 -- TODO(lb): Good default? Configurable?
   lss <- Lock.new Hand.stdStreams
-  (_tid, stdoutLogger) <- CLog.forkStdoutLogger s lss cap
-  (_tid, stderrLogger) <- CLog.forkStderrLogger s lss cap
-  fuzz conf fuzzer stdoutLogger stderrLogger
+  CLog.withStdoutLogger s lss cap $ \(_tid, stdoutLogger) ->
+    CLog.withStderrLogger s lss cap $ \(_tid, stderrLogger) -> do
+      fuzz conf stop fuzzer stdoutLogger stderrLogger
 
 -- TODO(lb)
 -- setSimulatorVerbosity :: (W4.IsSymExprBuilder sym) => Int -> sym -> IO ()

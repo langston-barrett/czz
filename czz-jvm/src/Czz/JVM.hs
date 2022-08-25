@@ -37,6 +37,8 @@ import qualified Czz.Record as Rec
 import qualified Czz.Result as Res
 import qualified Czz.Seed as Seed
 import           Czz.State (State)
+import           Czz.Stop (Stop)
+import qualified Czz.Stop as Stop
 
 import qualified Czz.JVM.Config.CLI as CLI
 import           Czz.JVM.Config.Type (Config)
@@ -95,21 +97,23 @@ jvmFuzzer _conf jvmCtx entryPoint =
 fuzz ::
   IsKLimited k =>
   Conf.Config ->
+  Stop ->
   Logger (Msg Text) ->
   Logger (Msg Text) ->
   IO (Either FuzzError (State () () (Coverage k)))
-fuzz conf stdoutLogger stderrLogger = do
+fuzz conf stop stdoutLogger stderrLogger = do
   (jvmCtx, entryPoint) <- Trans.translate conf  -- Allowed to fail/call exit
   let fuzzer = jvmFuzzer conf jvmCtx entryPoint
-  Fuzz.fuzz (Conf.common conf) fuzzer stdoutLogger stderrLogger
+  Fuzz.fuzz (Conf.common conf) stop fuzzer stdoutLogger stderrLogger
 
 -- | CLI entry point
 main :: IO Exit.ExitCode
 main = do
+  stop <- Stop.new
   conf <- CLI.cliConfig
   (jvmCtx, entryPoint) <- Trans.translate conf  -- Allowed to fail/call exit
   KLimit.withKLimit (CConf.pathLen (Conf.common conf)) $ do
     let fuzzer = jvmFuzzer conf jvmCtx entryPoint
-    _finalState <- Fuzz.main (Conf.common conf) fuzzer
+    _finalState <- Fuzz.main (Conf.common conf) stop fuzzer
     return ()
   return Exit.ExitSuccess
