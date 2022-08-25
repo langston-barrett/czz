@@ -1,6 +1,7 @@
 *.out
 *.txt
 *.sh
+out.bc
 
 # Haskell
 dist-*

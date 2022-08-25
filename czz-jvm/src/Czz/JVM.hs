@@ -26,6 +26,7 @@ import qualified Lang.Crucible.JVM.Context as CJVM
 import qualified Czz.Config.Type as CConf
 import           Czz.Coverage (Coverage)
 import qualified Czz.Coverage as Cover
+import qualified Czz.Coverage.Bucket as Bucket
 import           Czz.Log (Logger, Msg)
 import           Czz.Fuzz (Fuzzer, FuzzError)
 import qualified Czz.Fuzz as Fuzz
@@ -51,7 +52,7 @@ jvmFuzzer ::
   EntryPoint ->
   Fuzzer JVM () () (Coverage k)
 jvmFuzzer _conf jvmCtx entryPoint =
-  Cover.withCoverage $
+  Cover.withCoverage Bucket.log2 $
     Fuzz.Fuzzer
     { Fuzz.nextSeed = \records -> do
         record <- Rand.pickSeq records

@@ -62,6 +62,7 @@ library
   exposed-modules:
     Czz.Coverage
     Czz.Coverage.BlockId
+    Czz.Coverage.Bucket
     Czz.Coverage.Path
     Czz.Config.CLI
     Czz.Config.Type

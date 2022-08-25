@@ -43,6 +43,7 @@ import qualified Lang.Crucible.LLVM.MemModel.Partial as CLLVM
 
 import qualified Czz.Config.Type as CConf
 import qualified Czz.Coverage as Cover
+import qualified Czz.Coverage.Bucket as Bucket
 import           Czz.Log (Logger, Msg)
 import qualified Czz.Log as Log
 import           Czz.KLimited (IsKLimited)
@@ -134,7 +135,7 @@ llvmFuzzer conf translation =
             -- ones.
             readVars <- IORef.readIORef envVarRef
             opened <- IORef.readIORef openedRef
-            cover <- Cover.bin <$> IORef.readIORef coverageRef
+            cover <- Cover.bucket Bucket.log2 <$> IORef.readIORef coverageRef
             let fb =
                   FB.Feedback
                   { FB.envVarsRead = Set.fromList readVars
