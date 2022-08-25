@@ -207,10 +207,10 @@ acceptDecl ::
               ::> LLVMPointerType wptr)
     (BVType 32)
 acceptDecl proxy effects inj =
-  [llvmOvr| i32 @accept( i32, %struct.sockaddr*, i32* ) |] $
-  \memVar bak args ->
+  [llvmOvr| i32 @accept( i32, %struct.sockaddr*, i32* ) |]
+  (\memVar bak args ->
     let ov = acceptOverride proxy bak memVar
-    in COv.toOverride bak effects inj ov args
+    in COv.toOverride bak effects inj ov args)
 
 acceptOverride ::
   Log.Has String =>
@@ -274,10 +274,10 @@ bindDecl ::
   Lens.Prism' eff BindEffect ->
   [llvmOvrType| i32 @( i32, %struct.sockaddr*, i32 ) |]
 bindDecl proxy effects inj =
-  [llvmOvr| i32 @bind( i32, %struct.sockaddr*, i32 ) |] $
-  \memVar bak args ->
+  [llvmOvr| i32 @bind( i32, %struct.sockaddr*, i32 ) |]
+  (\memVar bak args ->
     let ov = bindOverride proxy bak memVar
-    in COv.toOverride bak effects inj ov args
+    in COv.toOverride bak effects inj ov args)
 
 bindOverride ::
   Log.Has String =>
@@ -334,10 +334,10 @@ listenDecl ::
   Lens.Prism' eff ListenEffect ->
   [llvmOvrType| i32 @( i32, i32 ) |]
 listenDecl proxy effects inj =
-  [llvmOvr| i32 @listen( i32, i32 ) |] $
-  \memVar bak args ->
+  [llvmOvr| i32 @listen( i32, i32 ) |]
+  (\memVar bak args ->
     let ov = listenOverride proxy bak memVar
-    in COv.toOverride bak effects inj ov args
+    in COv.toOverride bak effects inj ov args)
 
 listenOverride ::
   Log.Has String =>
@@ -393,10 +393,10 @@ recvDecl ::
   Lens.Prism' eff RecvEffect ->
   [llvmOvrType| ssize_t @(i32, i8*, size_t, i32) |]
 recvDecl proxy effects inj =
-  [llvmOvr| ssize_t @recv(i32, i8*, size_t, i32) |] $
-  \memVar bak args ->
+  [llvmOvr| ssize_t @recv(i32, i8*, size_t, i32) |]
+  (\memVar bak args ->
     let ov = recvOverride proxy bak memVar
-    in COv.toOverride bak effects inj ov args
+    in COv.toOverride bak effects inj ov args)
 
 recvOverride ::
   Log.Has String =>
@@ -496,10 +496,10 @@ sendDecl ::
   Lens.Prism' eff SendEffect ->
   [llvmOvrType| size_t @(i32, i8*, size_t, i32) |]
 sendDecl proxy effects inj =
-  [llvmOvr| size_t @send(i32, i8*, size_t, i32) |] $
-  \memVar bak args ->
+  [llvmOvr| size_t @send(i32, i8*, size_t, i32) |]
+  (\memVar bak args ->
     let ov = sendOverride proxy bak memVar
-    in COv.toOverride bak effects inj ov args
+    in COv.toOverride bak effects inj ov args)
 
 sendOverride ::
   Log.Has String =>
@@ -594,10 +594,10 @@ setSockOptDecl ::
   Lens.Prism' eff SetSockOptEffect ->
   [llvmOvrType| i32 @( i32, i32, i32, i8*, i32 ) |]
 setSockOptDecl proxy effects inj =
-  [llvmOvr| i32 @setsockopt( i32, i32, i32, i8*, i32 ) |] $
-  \memVar bak args ->
+  [llvmOvr| i32 @setsockopt( i32, i32, i32, i8*, i32 ) |]
+  (\memVar bak args ->
     let ov = setSockOptOverride proxy bak memVar
-    in COv.toOverride bak effects inj ov args
+    in COv.toOverride bak effects inj ov args)
 
 setSockOptOverride ::
   Log.Has String =>
@@ -661,10 +661,10 @@ socketDecl ::
   Lens.Prism' eff SocketEffect ->
   [llvmOvrType| i32 @( i32, i32, i32 ) |]
 socketDecl proxy effects inj =
-  [llvmOvr| i32 @socket( i32, i32, i32 ) |] $
-  \memVar bak args ->
+  [llvmOvr| i32 @socket( i32, i32, i32 ) |]
+  (\memVar bak args ->
     let ov = socketOverride proxy bak memVar
-    in COv.toOverride bak effects inj ov args
+    in COv.toOverride bak effects inj ov args)
 
 socketOverride ::
   Log.Has String =>

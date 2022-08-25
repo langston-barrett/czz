@@ -4,6 +4,8 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE ImplicitParams #-}
 {-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
 
@@ -33,7 +35,6 @@ import           Lang.Crucible.Types (BVType)
 
 -- crucible-llvm
 import           Lang.Crucible.LLVM.Extension (ArchWidth)
-import           Lang.Crucible.LLVM.QQ (llvmOvr)
 import           Lang.Crucible.LLVM.MemModel (HasLLVMAnn, MemOptions)
 import qualified Lang.Crucible.LLVM.MemModel as CLLVM
 import           Lang.Crucible.LLVM.MemModel.Pointer (LLVMPointerType)
@@ -41,6 +42,8 @@ import           Lang.Crucible.LLVM.TypeContext (TypeContext)
 import           Lang.Crucible.LLVM.Intrinsics (LLVMOverride)
 import qualified Lang.Crucible.LLVM.Intrinsics as CLLVM
 import qualified Lang.Crucible.LLVM.SymIO as CLLVM
+
+import           Czz.LLVM.QQ (llvmOvr)
 
 -- TODO(lb): newtype for bytestring
 -- TODO(lb): docstrings
@@ -65,6 +68,7 @@ overrides proxy pathRef fs =
   ]
 
 openDecl ::
+  forall proxy p sym arch wptr.
   IsSymInterface sym =>
   HasLLVMAnn sym =>
   (wptr ~ ArchWidth arch) =>
@@ -81,9 +85,9 @@ openDecl ::
               ::> BVType 32)
     (BVType 32)
 openDecl proxy pathRef fs =
-  [llvmOvr| i32 @open( i8*, i32 ) |] $
-  \memVar bak args ->
-    Ctx.uncurryAssignment (openImpl proxy pathRef bak memVar fs) args
+  [llvmOvr| i32 @open( i8*, i32 ) |]
+  (\memVar bak args ->
+    Ctx.uncurryAssignment (openImpl proxy pathRef bak memVar fs) args)
 
 openImpl ::
   IsSymBackend sym bak =>
