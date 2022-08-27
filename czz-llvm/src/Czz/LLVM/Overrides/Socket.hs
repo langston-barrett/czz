@@ -30,7 +30,6 @@ import           Data.IORef (IORef)
 import qualified System.Random as Random
 
 import           Data.Parameterized.Context ((::>), EmptyCtx)
-import qualified Data.Parameterized.Context as Ctx
 import           Data.Parameterized.NatRepr (knownNat)
 
 import qualified What4.Interface as What4
@@ -208,7 +207,7 @@ acceptDecl proxy effects inj =
   [llvmOvr| i32 @accept( i32, %struct.sockaddr*, i32* ) |]
   (\memVar bak args ->
     let ov = acceptOverride proxy bak memVar
-    in COv.toOverride effects inj ov args)
+    in COv.toOverride effects inj args ov)
 
 acceptOverride ::
   Log.Has String =>
@@ -228,9 +227,10 @@ acceptOverride ::
     (BVType 32)
 acceptOverride proxy bak memVar =
   COv.Override
-  { COv.genEffect = \_oldEff _args -> return AcceptSuccess
-  , COv.doEffect = \e args ->
-      Ctx.uncurryAssignment (acceptImpl proxy bak e memVar) args
+  { COv.genEffect = \_proxy _oldEff _sockFd _addr _addrLen ->
+      COv.AnyOverrideSim (return AcceptSuccess)
+  , COv.doEffect = \_proxy e sockFd addr addrLen ->
+      COv.AnyOverrideSim (acceptImpl proxy bak e memVar sockFd addr addrLen)
   }
 
 -- | Unsound!
@@ -275,7 +275,7 @@ bindDecl proxy effects inj =
   [llvmOvr| i32 @bind( i32, %struct.sockaddr*, i32 ) |]
   (\memVar bak args ->
     let ov = bindOverride proxy bak memVar
-    in COv.toOverride effects inj ov args)
+    in COv.toOverride effects inj args ov)
 
 bindOverride ::
   Log.Has String =>
@@ -288,10 +288,11 @@ bindOverride ::
 bindOverride proxy bak memVar =
   COv.Override
   { COv.genEffect =
-      \_oldEff _args -> return BindSuccess
+      \_proxy _oldEff _sockFd _addr _addrLen ->
+        COv.AnyOverrideSim (return BindSuccess)
   , COv.doEffect =
-      \e args ->
-        Ctx.uncurryAssignment (bindImpl proxy bak e memVar) args
+      \_proxy e sockFd addr addrLen ->
+        COv.AnyOverrideSim (bindImpl proxy bak e memVar sockFd addr addrLen)
   }
 
 -- | Unsound!
@@ -309,7 +310,7 @@ bindImpl ::
   RegEntry sym (LLVMPointerType wptr) ->
   RegEntry sym (BVType 32) ->
   OverrideSim p sym ext rtp args ret (RegValue sym (BVType 32))
-bindImpl _proxy bak e _memVar sockFd _addr _addrlen = do
+bindImpl _proxy bak e _memVar sockFd _addr _addrLen = do
   BindSuccess <- return e  -- check for missing pattern matches
   let sym = C.backendGetSym bak
   -- TODO(lb): Set errno to EBADF in this case, return -1
@@ -335,7 +336,7 @@ listenDecl proxy effects inj =
   [llvmOvr| i32 @listen( i32, i32 ) |]
   (\memVar bak args ->
     let ov = listenOverride proxy bak memVar
-    in COv.toOverride effects inj ov args)
+    in COv.toOverride effects inj args ov)
 
 listenOverride ::
   Log.Has String =>
@@ -347,11 +348,10 @@ listenOverride ::
   Override sym bak ListenEffect [llvmArgs| i32, i32 |] (BVType 32)
 listenOverride proxy bak memVar =
   COv.Override
-  { COv.genEffect =
-      \_oldEff _args -> return ListenSuccess
-  , COv.doEffect =
-      \e args ->
-        Ctx.uncurryAssignment (listenImpl proxy bak e memVar) args
+  { COv.genEffect = \_proxy _oldEff _sockFd _backlog ->
+      COv.AnyOverrideSim (return ListenSuccess)
+  , COv.doEffect = \_proxy e sockFd backlog ->
+      COv.AnyOverrideSim (listenImpl proxy bak e memVar sockFd backlog)
   }
 
 -- | Unsound!
@@ -394,7 +394,7 @@ recvDecl proxy effects inj =
   [llvmOvr| ssize_t @recv(i32, i8*, size_t, i32) |]
   (\memVar bak args ->
     let ov = recvOverride proxy bak memVar
-    in COv.toOverride effects inj ov args)
+    in COv.toOverride effects inj args ov)
 
 recvOverride ::
   Log.Has String =>
@@ -406,23 +406,22 @@ recvOverride ::
   Override sym bak RecvEffect [llvmArgs| i32, i8*, size_t, i32 |] (BVType wptr)
 recvOverride proxy bak memVar =
   COv.Override
-  { COv.genEffect =
-      -- TODO(lb): mutate oldEff
-      \_oldEff args -> do
-        flip Ctx.uncurryAssignment args $ \_sockFd _buf len _flags -> liftIO $ do
-          lenBv <-
-            case What4.asBV (C.regValue len) of
-              Nothing -> Unimpl.throw Unimpl.RecvSymbolicLen
-              Just bv -> return bv
-          let lenInteger = BV.asUnsigned lenBv
-          let lenInt = fromIntegral lenInteger
-          recvd <-
-            liftIO (Random.randomRIO (0, (lenInt `div` 8) - 1) :: IO Int)
-          str <- Rand.genByteString (0, recvd)  -- inclusivee
-          return (RecvSuccess str)
+    -- TODO(lb): mutate oldEff
+  { COv.genEffect = \_proxy _oldEff _sockFd _buf len _flags ->
+      COv.AnyOverrideSim $ liftIO $ do
+        lenBv <-
+          case What4.asBV (C.regValue len) of
+            Nothing -> Unimpl.throw Unimpl.RecvSymbolicLen
+            Just bv -> return bv
+        let lenInteger = BV.asUnsigned lenBv
+        let lenInt = fromIntegral lenInteger
+        recvd <-
+          liftIO (Random.randomRIO (0, (lenInt `div` 8) - 1) :: IO Int)
+        str <- Rand.genByteString (0, recvd)  -- inclusivee
+        return (RecvSuccess str)
   , COv.doEffect =
-      \e args ->
-        Ctx.uncurryAssignment (recvImpl proxy bak e memVar) args
+      \_proxy e  sockFd buf len flags ->
+        COv.AnyOverrideSim (recvImpl proxy bak e memVar sockFd buf len flags)
   }
 
 -- | Unsound!
@@ -497,25 +496,23 @@ sendDecl ::
 sendDecl proxy effects inj =
   [llvmOvr| size_t @send(i32, i8*, size_t, i32) |]
   (\memVar bak args ->
-    COv.toOverride'
+    COv.toOverride
       @([llvmArgs| i32, i8*, size_t, i32 |])
       @(BVType wptr)
       effects
       inj
       args
       (COv.Override
-       { COv.genEffect =
-           \_oldEff args' ->
-             flip Ctx.uncurryAssignment args' $ \_sockFd _buf len _flags -> do
-               case What4.asBV (C.regValue len) of
-                 Nothing -> Unimpl.throw Unimpl.SendSymbolicLen
-                 Just bv ->
-                   let len' = BV.asUnsigned bv
-                   in SendSuccess len' <$>
-                       liftIO (Random.randomRIO (0, len') :: IO Integer)
-       , COv.doEffect =
-           \e args' ->
-             Ctx.uncurryAssignment (sendImpl proxy bak e memVar) args'
+       { COv.genEffect = \_proxy _oldEff _sockFd _buf len _flags ->
+           COv.AnyOverrideSim $ do
+             case What4.asBV (C.regValue len) of
+               Nothing -> Unimpl.throw Unimpl.SendSymbolicLen
+               Just bv ->
+                 let len' = BV.asUnsigned bv
+                 in SendSuccess len' <$>
+                     liftIO (Random.randomRIO (0, len') :: IO Integer)
+       , COv.doEffect = \_proxy e sockFd buf len flags ->
+           COv.AnyOverrideSim (sendImpl proxy bak e memVar sockFd buf len flags)
        }))
 
 -- | Unsound!
@@ -589,7 +586,7 @@ setSockOptDecl ::
 setSockOptDecl proxy effects inj =
   [llvmOvr| i32 @setsockopt( i32, i32, i32, i8*, i32 ) |]
   (\memVar bak args ->
-    COv.toOverride'
+    COv.toOverride
       @([llvmArgs| i32, i32, i32, i8*, i32 |])
       @(BVType 32)
       effects
@@ -597,10 +594,11 @@ setSockOptDecl proxy effects inj =
       args
       (COv.Override
        { COv.genEffect =
-           \_oldEff _args -> return SetSockOptSuccess
+           \_proxy _oldEff _sockFd _level _optName _optVal _optLen ->
+             COv.AnyOverrideSim (return SetSockOptSuccess)
        , COv.doEffect =
-           \e args' ->
-             Ctx.uncurryAssignment (setSockOptImpl proxy bak e memVar) args'
+           \_proxy e sockFd level optName optVal optLen ->
+             COv.AnyOverrideSim (setSockOptImpl proxy bak e memVar sockFd level optName optVal optLen)
        }))
 
 -- | Unsound!
@@ -645,18 +643,17 @@ socketDecl ::
 socketDecl proxy effects inj =
   [llvmOvr| i32 @socket( i32, i32, i32 ) |]
   (\memVar bak args ->
-    COv.toOverride'
+    COv.toOverride
       @([llvmArgs| i32, i32, i32 |])
       @(BVType 32)
       effects
       inj
       args
       (COv.Override
-       { COv.genEffect =
-          \_oldEff _args -> return (SocketSuccess socketFd)
-       , COv.doEffect =
-          \e args' ->
-            Ctx.uncurryAssignment (socketImpl proxy bak e memVar) args'
+       { COv.genEffect = \_proxy _oldEff _domain _type _protocol ->
+           COv.AnyOverrideSim (return (SocketSuccess socketFd))
+       , COv.doEffect = \_proxy e domain type_ protocol ->
+           COv.AnyOverrideSim (socketImpl proxy bak e memVar domain type_ protocol )
        }))
 
 -- | Unsound!

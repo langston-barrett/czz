@@ -2,14 +2,16 @@
 {-# LANGUAGE ExplicitNamespaces #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeApplications #-}
 
 module Czz.Overrides
   ( EffectTrace
   , makeEffectTrace
   , extract
+  , AnyOverrideSim(..)
   , Override(..)
   , toOverride
-  , toOverride'
   )
 where
 
@@ -18,6 +20,7 @@ import qualified Control.Lens as Lens
 import           Control.Monad.IO.Class (liftIO)
 import           Data.IORef (IORef)
 import qualified Data.IORef as IORef
+import           Data.Proxy (Proxy(Proxy))
 
 -- p-u
 import qualified Data.Parameterized.Context as Ctx
@@ -44,37 +47,53 @@ makeEffectTrace = EffectTrace
 extract :: EffectTrace eff -> SysTrace 'End eff
 extract (EffectTrace trace _) = SysTrace.fastForward trace
 
+-- | Needed to avoid impredicative types
+newtype AnyOverrideSim sym ext a
+  = AnyOverrideSim
+      { getAnyOverrideSym ::
+          forall p rtp args ret. OverrideSim p sym ext rtp args ret a
+      }
+
 data Override sym bak e ovargs ovret
   = Override
     { genEffect ::
-        forall p ext rtp args ret.
+        forall proxy ext.
+        proxy ext ->
         -- Possible effect to mutate
         Maybe e ->
-        Ctx.Assignment (C.RegEntry sym) ovargs ->
-        OverrideSim p sym ext rtp args ret e
+        Ctx.CurryAssignment
+          ovargs
+          (C.RegEntry sym)
+          (AnyOverrideSim sym ext e)
       -- | Perform effect specified by 'genEffect'
     , doEffect ::
-        forall p ext rtp args ret.
+        forall proxy ext.
+        proxy ext ->
         e ->
-        Ctx.Assignment (C.RegEntry sym) ovargs ->
-        OverrideSim p sym ext rtp args ret (RegValue sym ovret)
+        Ctx.CurryAssignment
+          ovargs
+          (C.RegEntry sym)
+          (AnyOverrideSim sym ext (RegValue sym ovret))
     }
 
 toOverride ::
+  -- Type variables are in this order for convenient TypeApplications
+  -- TODO(lb): switch args and ret
+  forall ovargs ovret p sym bak ext rtp args ret eff e.
+  Ctx.CurryAssignmentClass ovargs =>
   IORef (EffectTrace eff) ->
   Lens.Prism' eff e ->
-  Override sym bak e ovargs ovret ->
   Ctx.Assignment (C.RegEntry sym) ovargs ->
+  Override sym bak e ovargs ovret ->
   OverrideSim p sym ext rtp args ret (RegValue sym ovret)
-toOverride traceRef inj ov args = do
+toOverride traceRef inj args ov = do
   Override gen act <- return ov
   EffectTrace trace modLast <- liftIO (IORef.readIORef traceRef)
+  let proxy = Proxy @ext
   case SysTrace.step trace of
     SysTrace.StepEnd trace' -> do
-      -- Execution has passed the end of the trace, generate new responses to
-      -- library calls.
-      e <- gen Nothing args
-      ret <- act e args
+      e <- getAnyOverrideSym (Ctx.uncurryAssignment (gen proxy Nothing) args)
+      ret <- getAnyOverrideSym (Ctx.uncurryAssignment (act proxy e) args)
       let trace'' = SysTrace.record (Lens.review inj e) trace'
       liftIO (IORef.writeIORef traceRef (EffectTrace trace'' modLast))
       return ret
@@ -93,19 +112,9 @@ toOverride traceRef inj ov args = do
                   -- Execution has reached the last library call in the trace,
                   -- and mutation of the response was requested. Mutate the
                   -- response and add it to the end of the trace.
-                  e' <- gen (Just e) args
+                  e' <- getAnyOverrideSym (Ctx.uncurryAssignment (gen proxy (Just e)) args)
                   let tr = SysTrace.snocEnd endTrace (Lens.review inj e)
                   return (e', SomeSysTrace tr)
 
           liftIO (IORef.writeIORef traceRef (EffectTrace trace'' modLast))
-          act eff' args
-
--- | Just for convenient TypeApplications to avoid extra type signatures
-toOverride' ::
-  forall ovargs ovret p sym bak ext rtp args ret eff e.
-  IORef (EffectTrace eff) ->
-  Lens.Prism' eff e ->
-  Ctx.Assignment (C.RegEntry sym) ovargs ->
-  Override sym bak e ovargs ovret ->
-  OverrideSim p sym ext rtp args ret (RegValue sym ovret)
-toOverride' traceRef inj args ov = toOverride traceRef inj ov args
+          getAnyOverrideSym (Ctx.uncurryAssignment (act proxy eff') args)

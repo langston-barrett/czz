@@ -23,7 +23,6 @@ import qualified Data.ByteString as BS
 import           Data.IORef (IORef)
 import           Data.Text (Text)
 
-import qualified Data.Parameterized.Context as Ctx
 import           Data.Parameterized.NatRepr (knownNat)
 
 import qualified What4.Interface as What4
@@ -94,17 +93,17 @@ getHostNameDecl ::
 getHostNameDecl proxy effects inj =
   [llvmOvr| i32 @gethostname( i8*, size_t ) |]
   (\memVar bak args ->
-    COv.toOverride'
+    COv.toOverride
       @([llvmArgs| i8*, size_t |])
       @(BVType 32)
       effects
       inj
       args
       (COv.Override
-       { COv.genEffect = \_oldEff _args ->
-           return GetHostNameSuccess
-       , COv.doEffect = \e args' ->
-           Ctx.uncurryAssignment (getHostNameImpl proxy bak e memVar) args'
+       { COv.genEffect = \_proxy _oldEff _ptr _len ->
+           COv.AnyOverrideSim (return GetHostNameSuccess)
+       , COv.doEffect = \_proxy e ptr len ->
+           COv.AnyOverrideSim (getHostNameImpl proxy bak e memVar ptr len)
        }))
 
 -- | Unsound!
