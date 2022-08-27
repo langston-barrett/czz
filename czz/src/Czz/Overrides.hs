@@ -78,8 +78,7 @@ data Override sym bak e ovargs ovret
 
 toOverride ::
   -- Type variables are in this order for convenient TypeApplications
-  -- TODO(lb): switch args and ret
-  forall ovargs ovret p sym bak ext rtp args ret eff e.
+  forall ovret ovargs p sym bak ext rtp args ret eff e.
   Ctx.CurryAssignmentClass ovargs =>
   IORef (EffectTrace eff) ->
   Lens.Prism' eff e ->

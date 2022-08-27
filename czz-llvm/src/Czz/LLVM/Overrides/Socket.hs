@@ -497,7 +497,6 @@ sendDecl proxy effects inj =
   [llvmOvr| size_t @send(i32, i8*, size_t, i32) |]
   (\memVar bak args ->
     COv.toOverride
-      @([llvmArgs| i32, i8*, size_t, i32 |])
       @(BVType wptr)
       effects
       inj
@@ -587,7 +586,6 @@ setSockOptDecl proxy effects inj =
   [llvmOvr| i32 @setsockopt( i32, i32, i32, i8*, i32 ) |]
   (\memVar bak args ->
     COv.toOverride
-      @([llvmArgs| i32, i32, i32, i8*, i32 |])
       @(BVType 32)
       effects
       inj
@@ -644,7 +642,6 @@ socketDecl proxy effects inj =
   [llvmOvr| i32 @socket( i32, i32, i32 ) |]
   (\memVar bak args ->
     COv.toOverride
-      @([llvmArgs| i32, i32, i32 |])
       @(BVType 32)
       effects
       inj

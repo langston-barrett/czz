@@ -48,7 +48,7 @@ import           Czz.Overrides (EffectTrace)
 import qualified Czz.Overrides as COv
 
 import           Czz.LLVM.Overrides.Util (OverrideConstraints)
-import           Czz.LLVM.QQ (llvmArgs, llvmOvr, llvmOvrType)
+import           Czz.LLVM.QQ (llvmOvr, llvmOvrType)
 import qualified Czz.LLVM.Unimplemented as Unimpl
 
 data Effect
@@ -94,7 +94,6 @@ getHostNameDecl proxy effects inj =
   [llvmOvr| i32 @gethostname( i8*, size_t ) |]
   (\memVar bak args ->
     COv.toOverride
-      @([llvmArgs| i8*, size_t |])
       @(BVType 32)
       effects
       inj
