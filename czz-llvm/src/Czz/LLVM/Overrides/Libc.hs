@@ -28,7 +28,6 @@ import           Data.IORef (IORef)
 import qualified Text.LLVM.AST as L
 
 import           Data.Parameterized.Context ((::>), EmptyCtx)
-import qualified Data.Parameterized.Context as Ctx
 import           Data.Parameterized.NatRepr (knownNat)
 
 import qualified What4.Interface as What4
@@ -121,7 +120,7 @@ fprintfDecl proxy effects inj =
   [llvmOvr| i32 @fprintf( %struct._IO_FILE*, i8*, ... ) |]
   (\memVar bak args ->
     let ov = fprintfOverride proxy bak memVar
-    in COv.toOverride effects inj ov args)
+    in COv.toOverride effects inj args ov)
 
 fprintfOverride ::
   Log.Has String =>
@@ -141,10 +140,10 @@ fprintfOverride ::
     (BVType 32)
 fprintfOverride proxy bak memVar =
   COv.Override
-  { COv.genEffect = \_oldEff _args ->
-      return FprintfSuccess
-  , COv.doEffect = \e args ->
-      Ctx.uncurryAssignment (fprintfImpl proxy bak e memVar) args
+  { COv.genEffect = \_proxy _oldEff _stream _format _varArgs ->
+      COv.AnyOverrideSim (return FprintfSuccess)
+  , COv.doEffect = \_proxy e stream format varArgs ->
+      COv.AnyOverrideSim (fprintfImpl proxy bak e memVar stream format varArgs)
   }
 
 fprintfImpl ::
@@ -211,7 +210,7 @@ strcpyDecl proxy effects inj =
   [llvmOvr| i8* @strcpy( i8*, i8* ) |]
   (\memVar bak args ->
     let ov = strcpyOverride proxy bak memVar
-    in COv.toOverride effects inj ov args)
+    in COv.toOverride effects inj args ov)
 
 strcpyOverride ::
   OverrideConstraints sym arch wptr =>
@@ -229,9 +228,10 @@ strcpyOverride ::
     (LLVMPointerType wptr)
 strcpyOverride proxy bak memVar =
   COv.Override
-  { COv.genEffect = \_oldEff _args -> return StrcpyEffect
-  , COv.doEffect = \e args ->
-      Ctx.uncurryAssignment (strcpyImpl proxy bak e memVar) args
+  { COv.genEffect = \_proxy _oldEff _dest _src ->
+      COv.AnyOverrideSim (return StrcpyEffect)
+  , COv.doEffect = \_proxy e dest src->
+      COv.AnyOverrideSim (strcpyImpl proxy bak e memVar dest src)
   }
 
 -- | Unsound!
