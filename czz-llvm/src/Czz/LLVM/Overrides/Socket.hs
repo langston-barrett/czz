@@ -5,6 +5,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE ViewPatterns #-}
@@ -496,32 +497,26 @@ sendDecl ::
 sendDecl proxy effects inj =
   [llvmOvr| size_t @send(i32, i8*, size_t, i32) |]
   (\memVar bak args ->
-    let ov = sendOverride proxy bak memVar
-    in COv.toOverride effects inj ov args)
-
-sendOverride ::
-  Log.Has String =>
-  OverrideConstraints sym arch wptr =>
-  IsSymBackend sym bak =>
-  proxy arch ->
-  bak ->
-  C.GlobalVar CLLVM.Mem ->
-  Override sym bak SendEffect [llvmArgs| i32, i8*, size_t, i32 |] (BVType wptr)
-sendOverride proxy bak memVar =
-  COv.Override
-  { COv.genEffect =
-      \_oldEff args ->
-        flip Ctx.uncurryAssignment args $ \_sockFd _buf len _flags -> do
-          case What4.asBV (C.regValue len) of
-            Nothing -> Unimpl.throw Unimpl.SendSymbolicLen
-            Just bv ->
-              let len' = BV.asUnsigned bv
-              in SendSuccess len' <$>
-                   liftIO (Random.randomRIO (0, len') :: IO Integer)
-  , COv.doEffect =
-      \e args ->
-        Ctx.uncurryAssignment (sendImpl proxy bak e memVar) args
-  }
+    COv.toOverride'
+      @([llvmArgs| i32, i8*, size_t, i32 |])
+      @(BVType wptr)
+      effects
+      inj
+      args
+      (COv.Override
+       { COv.genEffect =
+           \_oldEff args' ->
+             flip Ctx.uncurryAssignment args' $ \_sockFd _buf len _flags -> do
+               case What4.asBV (C.regValue len) of
+                 Nothing -> Unimpl.throw Unimpl.SendSymbolicLen
+                 Just bv ->
+                   let len' = BV.asUnsigned bv
+                   in SendSuccess len' <$>
+                       liftIO (Random.randomRIO (0, len') :: IO Integer)
+       , COv.doEffect =
+           \e args' ->
+             Ctx.uncurryAssignment (sendImpl proxy bak e memVar) args'
+       }))
 
 -- | Unsound!
 --
@@ -594,30 +589,19 @@ setSockOptDecl ::
 setSockOptDecl proxy effects inj =
   [llvmOvr| i32 @setsockopt( i32, i32, i32, i8*, i32 ) |]
   (\memVar bak args ->
-    let ov = setSockOptOverride proxy bak memVar
-    in COv.toOverride effects inj ov args)
-
-setSockOptOverride ::
-  Log.Has String =>
-  OverrideConstraints sym arch wptr =>
-  IsSymBackend sym bak =>
-  proxy arch ->
-  bak ->
-  C.GlobalVar CLLVM.Mem ->
-  Override
-    sym
-    bak
-    SetSockOptEffect
-    [llvmArgs| i32, i32, i32, i8*, i32 |]
-    (BVType 32)
-setSockOptOverride proxy bak memVar =
-  COv.Override
-  { COv.genEffect =
-      \_oldEff _args -> return SetSockOptSuccess
-  , COv.doEffect =
-      \e args ->
-        Ctx.uncurryAssignment (setSockOptImpl proxy bak e memVar) args
-  }
+    COv.toOverride'
+      @([llvmArgs| i32, i32, i32, i8*, i32 |])
+      @(BVType 32)
+      effects
+      inj
+      args
+      (COv.Override
+       { COv.genEffect =
+           \_oldEff _args -> return SetSockOptSuccess
+       , COv.doEffect =
+           \e args' ->
+             Ctx.uncurryAssignment (setSockOptImpl proxy bak e memVar) args'
+       }))
 
 -- | Unsound!
 --
@@ -661,25 +645,19 @@ socketDecl ::
 socketDecl proxy effects inj =
   [llvmOvr| i32 @socket( i32, i32, i32 ) |]
   (\memVar bak args ->
-    let ov = socketOverride proxy bak memVar
-    in COv.toOverride effects inj ov args)
-
-socketOverride ::
-  Log.Has String =>
-  OverrideConstraints sym arch wptr =>
-  IsSymBackend sym bak =>
-  proxy arch ->
-  bak ->
-  C.GlobalVar CLLVM.Mem ->
-  Override sym bak SocketEffect [llvmArgs| i32, i32, i32 |] (BVType 32)
-socketOverride proxy bak memVar =
-  COv.Override
-  { COv.genEffect =
-      \_oldEff _args -> return (SocketSuccess socketFd)
-  , COv.doEffect =
-      \e args ->
-        Ctx.uncurryAssignment (socketImpl proxy bak e memVar) args
-  }
+    COv.toOverride'
+      @([llvmArgs| i32, i32, i32 |])
+      @(BVType 32)
+      effects
+      inj
+      args
+      (COv.Override
+       { COv.genEffect =
+          \_oldEff _args -> return (SocketSuccess socketFd)
+       , COv.doEffect =
+          \e args' ->
+            Ctx.uncurryAssignment (socketImpl proxy bak e memVar) args'
+       }))
 
 -- | Unsound!
 --

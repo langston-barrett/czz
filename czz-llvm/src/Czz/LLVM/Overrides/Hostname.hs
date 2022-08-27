@@ -101,11 +101,11 @@ getHostNameDecl proxy effects inj =
       inj
       args
       (COv.Override
-        { COv.genEffect = \_oldEff _args ->
-            return GetHostNameSuccess
-        , COv.doEffect = \e args' ->
-            Ctx.uncurryAssignment (getHostNameImpl proxy bak e memVar) args'
-        }))
+       { COv.genEffect = \_oldEff _args ->
+           return GetHostNameSuccess
+       , COv.doEffect = \e args' ->
+           Ctx.uncurryAssignment (getHostNameImpl proxy bak e memVar) args'
+       }))
 
 -- | Unsound!
 --
