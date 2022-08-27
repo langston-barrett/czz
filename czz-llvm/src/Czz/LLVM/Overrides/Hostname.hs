@@ -97,7 +97,6 @@ getHostNameDecl proxy effects inj =
     COv.toOverride'
       @([llvmArgs| i8*, size_t |])
       @(BVType 32)
-      bak
       effects
       inj
       args

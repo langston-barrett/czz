@@ -23,7 +23,6 @@ import qualified Data.IORef as IORef
 import qualified Data.Parameterized.Context as Ctx
 
 -- crucible
-import           Lang.Crucible.Backend (IsSymBackend)
 import           Lang.Crucible.Simulator.OverrideSim (OverrideSim)
 import qualified Lang.Crucible.Simulator as C
 import           Lang.Crucible.Simulator.RegMap (RegValue)
@@ -62,14 +61,12 @@ data Override sym bak e ovargs ovret
     }
 
 toOverride ::
-  IsSymBackend sym bak =>
-  bak ->
   IORef (EffectTrace eff) ->
   Lens.Prism' eff e ->
   Override sym bak e ovargs ovret ->
   Ctx.Assignment (C.RegEntry sym) ovargs ->
   OverrideSim p sym ext rtp args ret (RegValue sym ovret)
-toOverride _bak traceRef inj ov args = do
+toOverride traceRef inj ov args = do
   Override gen act <- return ov
   EffectTrace trace modLast <- liftIO (IORef.readIORef traceRef)
   case SysTrace.step trace of
@@ -106,11 +103,9 @@ toOverride _bak traceRef inj ov args = do
 -- | Just for convenient TypeApplications to avoid extra type signatures
 toOverride' ::
   forall ovargs ovret p sym bak ext rtp args ret eff e.
-  IsSymBackend sym bak =>
-  bak ->
   IORef (EffectTrace eff) ->
   Lens.Prism' eff e ->
   Ctx.Assignment (C.RegEntry sym) ovargs ->
   Override sym bak e ovargs ovret ->
   OverrideSim p sym ext rtp args ret (RegValue sym ovret)
-toOverride' bak traceRef inj args ov = toOverride bak traceRef inj ov args
+toOverride' traceRef inj args ov = toOverride traceRef inj ov args
