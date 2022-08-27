@@ -9,7 +9,7 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE ViewPatterns #-}
 
-module Czz.LLVM.Overrides.Posix
+module Czz.LLVM.Overrides.Socket
   ( Effect(..)
   , AcceptEffect(..)
   , BindEffect(..)
@@ -135,9 +135,6 @@ overrides ::
 overrides proxy effects inj =
   [ ov (acceptDecl proxy effects (inj . _Accept))
   , ov (bindDecl proxy effects (inj . _Bind))
-  -- , ov (getEgidDecl proxy effects (inj . _))
-  -- , ov (getHostNameDecl proxy effects (inj . _))
-  -- , ov (getTimeOfDayDecl proxy effects (inj . _))
   , ov (listenDecl proxy effects (inj . _Listen))
   , ov (recvDecl proxy effects (inj . _Recv))
   , ov (sendDecl proxy effects (inj . _Send))
@@ -409,6 +406,7 @@ recvOverride ::
 recvOverride proxy bak memVar =
   COv.Override
   { COv.genEffect =
+      -- TODO(lb): mutate oldEff
       \_oldEff args -> do
         flip Ctx.uncurryAssignment args $ \_sockFd _buf len _flags -> liftIO $ do
           lenBv <-

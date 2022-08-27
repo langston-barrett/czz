@@ -1,5 +1,6 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 module Czz.LLVM.Overrides
   ( Effect(..)
@@ -20,30 +21,17 @@ import           Czz.Overrides (EffectTrace)
 import qualified Czz.Log as Log
 
 import qualified Czz.LLVM.Overrides.Libc as Libc
-import qualified Czz.LLVM.Overrides.Posix as Posix
+import qualified Czz.LLVM.Overrides.Hostname as Hostname
+import qualified Czz.LLVM.Overrides.Socket as Socket
 import           Czz.LLVM.Overrides.Util (OverrideConstraints)
 
 data Effect
   = Libc !Libc.Effect
-  | Posix !Posix.Effect
+  | Hostname !Hostname.Effect
+  | Socket !Socket.Effect
   deriving (Eq, Ord, Show)
 
-_Libc :: Lens.Prism' Effect Libc.Effect
-_Libc =
-  Lens.prism'
-    Libc
-    (\case
-      Libc eff -> Just eff
-      _ -> Nothing)
-
-_Posix :: Lens.Prism' Effect Posix.Effect
-_Posix =
-  Lens.prism'
-    Posix
-    (\case
-      Posix eff -> Just eff
-      _ -> Nothing)
-
+$(Lens.makePrisms ''Effect)
 
 overrides ::
   Log.Has Text =>
@@ -53,11 +41,9 @@ overrides ::
   IORef [ByteString] ->
   [OverrideTemplate p sym arch rtp l a]
 overrides proxy effects envVarRef =
-  Log.adjust Text.pack $  -- TODO(lb): structured logging
     concat
-      [ Libc.overrides proxy effects _Libc envVarRef
-      , Posix.overrides proxy effects _Posix
+      [ Log.adjust Text.pack $  -- TODO(lb): structured logging
+          Libc.overrides proxy effects _Libc envVarRef
+      , Log.adjust Text.pack $  -- TODO(lb): structured logging
+          Socket.overrides proxy effects _Socket
       ]
-
--- TODO(lb): stdout, stderr global FILE*
--- TODO(lb): llvm.va_start
