@@ -9,9 +9,11 @@ module Czz.Overrides
   , extract
   , Override(..)
   , toOverride
+  , toOverride'
   )
 where
 
+import           Prelude hiding (id)
 import qualified Control.Lens as Lens
 import           Control.Monad.IO.Class (liftIO)
 import           Data.IORef (IORef)
@@ -100,3 +102,15 @@ toOverride _bak traceRef inj ov args = do
 
           liftIO (IORef.writeIORef traceRef (EffectTrace trace'' modLast))
           act eff' args
+
+-- | Just for convenient TypeApplications to avoid extra type signatures
+toOverride' ::
+  forall ovargs ovret p sym bak ext rtp args ret eff e.
+  IsSymBackend sym bak =>
+  bak ->
+  IORef (EffectTrace eff) ->
+  Lens.Prism' eff e ->
+  Ctx.Assignment (C.RegEntry sym) ovargs ->
+  Override sym bak e ovargs ovret ->
+  OverrideSim p sym ext rtp args ret (RegValue sym ovret)
+toOverride' bak traceRef inj args ov = toOverride bak traceRef inj ov args

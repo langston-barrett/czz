@@ -76,7 +76,8 @@ library
     Czz.LLVM.Mutate
     Czz.LLVM.Overrides
     Czz.LLVM.Overrides.Libc
-    Czz.LLVM.Overrides.Posix
+    Czz.LLVM.Overrides.Hostname
+    Czz.LLVM.Overrides.Socket
     Czz.LLVM.Overrides.Skip
     Czz.LLVM.Overrides.State.Env
     Czz.LLVM.Overrides.SymIO
