@@ -65,6 +65,7 @@ overrides ::
   [OverrideTemplate p sym arch rtp l a]
 overrides proxy effects inj =
   [ ov (signalDecl proxy effects (inj . _Signal))
+  , ov (sysvSignalDecl proxy effects (inj . _Signal))
   ]
   where ov = CLLVM.basic_llvm_override
 
@@ -85,6 +86,29 @@ signalDecl ::
   [llvmOvrType| void (i32)* @( i32, void (i32)* ) |]
 signalDecl proxy effects inj =
   [llvmOvr| void (i32)* @signal( i32, void (i32)* ) |]
+  (\memVar bak args ->
+    COv.toOverride
+      @(LLVMPointerType wptr)
+      effects
+      inj
+      args
+      (COv.Override
+       { COv.genEffect = \_proxy _oldEff _sig _handler ->
+           COv.AnyOverrideSim (return SignalEffect)
+       , COv.doEffect = \_proxy e sig handler ->
+           COv.AnyOverrideSim (signalImpl proxy bak e memVar sig handler)
+       }))
+
+sysvSignalDecl ::
+  forall proxy p sym arch wptr eff.
+  Log.Has Text =>
+  OverrideConstraints sym arch wptr =>
+  proxy arch ->
+  IORef (EffectTrace eff) ->
+  Lens.Prism' eff SignalEffect ->
+  [llvmOvrType| void (i32)* @( i32, void (i32)* ) |]
+sysvSignalDecl proxy effects inj =
+  [llvmOvr| void (i32)* @__sysv_signal( i32, void (i32)* ) |]
   (\memVar bak args ->
     COv.toOverride
       @(LLVMPointerType wptr)
