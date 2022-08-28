@@ -10,6 +10,7 @@
 module Czz.LLVM.Env.Args
   ( Template
   , empty
+  , envp
   , argvLength
   , envpLength
   , addArg

@@ -12,6 +12,7 @@ where
 import qualified Control.Lens as Lens
 import           Control.Monad (forM_)
 import           Data.ByteString (ByteString)
+import qualified Data.Foldable as Fold
 import           Data.Functor.Contravariant ((>$<))
 import           Data.IORef (IORef)
 import qualified Data.Map as Map
@@ -20,6 +21,7 @@ import qualified Data.Text as Text
 import qualified Data.Text.Encoding as Text
 import qualified Data.Text.Encoding.Error as Text
 import qualified Data.Text.IO as TextIO
+import qualified Data.Vector as Vec
 import           System.IO (Handle)
 import qualified System.IO as IO
 
@@ -186,6 +188,7 @@ setupInitState halloc bak entryPoint trans memVar initFs envVarRef openedRef eff
   return ()
 
   where
+    sym = C.backendGetSym bak
     llvmAst = trans Lens.^. CLLVM.modTransModule
     llvmCtx = trans Lens.^. CLLVM.transContext
 
@@ -194,7 +197,8 @@ setupInitState halloc bak entryPoint trans memVar initFs envVarRef openedRef eff
         CLLVM.registerLazyModuleFn printWarn trans (L.decName decl)
 
     registerOverrides = do
-      envStateVar <- State.Env.mkEnvVar halloc
+      let initEnv = Vec.fromList (Fold.toList (Args.envp template))
+      envStateVar <- State.Env.mkEnvVar sym halloc initEnv
       let ?lc = llvmCtx Lens.^. CLLVM.llvmTypeCtx
       let decOvs = Ov.overrides trans effectRef envVarRef envStateVar ++
                      CzzSymIO.overrides trans openedRef initFs

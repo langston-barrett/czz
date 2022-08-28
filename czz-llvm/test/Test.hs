@@ -123,9 +123,9 @@ tests = do
                [ bug True "assert-argc-eq-0.c"
                , bug True "assert-argc-lt-0.c"
                , bug True "getenv-deref.c"
+               , bug False "getenv-deref-2.c"
                , noBug True "assert-argc-geq-0.c"
                -- , noBug "argv00.c"
-               , noBug False "getenv-deref-2.c"  -- TODO(lb)
                , noBug True "ret0-argv.c"
                , noBug True "ret0-envp.c"
                , noBug True "ret0-void.c"
