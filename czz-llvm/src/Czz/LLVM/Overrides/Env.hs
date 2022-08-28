@@ -132,14 +132,17 @@ getEnvImpl _proxy bak e envVarRef memVar envStateVar varNamePtr = do
   C.modifyGlobal memVar $ \mem -> do
     let ptr = C.regValue varNamePtr
     varNameStr <- liftIO (BS.pack <$> CLLVM.loadString bak mem ptr Nothing)
-    liftIO (Log.debug ("Program called `getenv`: " <> Text.pack (show varNameStr)))
+    let showVarName = Text.pack (show varNameStr)
+    liftIO (Log.debug ("Program called `getenv`: " <> showVarName))
     liftIO (IORef.modifyIORef envVarRef (varNameStr:))
     State.Env.getEnv bak envStateVar varNameStr >>=
       \case
         Nothing -> do
+          liftIO (Log.debug ("getenv(" <> showVarName <> ") = null"))
           nullPtr <- liftIO (CLLVM.mkNullPointer sym ?ptrWidth)
           return (nullPtr, mem)
         Just str -> do
+          liftIO (Log.debug ("getenv(" <> showVarName <> ") = " <> Text.pack (show str)))
           -- TODO(lb): lift allocate-then-write-bytestring to a helper
           -- NB: This is already null-terminated, since `setenv` requires that,
           -- and the initial values are CStrings.
