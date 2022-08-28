@@ -173,14 +173,14 @@ llvmFuzzer conf translation simLogs =
               Log.debug ("Missing implementation of " <> Text.pack nm)
               return (Res.MissingOverride (Text.pack nm))
             Just (callStack, badBehavior) -> do
-              let _msg =
+              let msg =
                     [ Text.pack (show (CLLVM.explainBB badBehavior))
                     , "At: " <> Text.pack (show (What4.plSourceLoc loc))
                     , Text.pack (show (CLLVM.ppBB badBehavior))
                     , "Callstack:"
                     , Text.pack (show (CLLVM.ppCallStack callStack))
                     ]
-              -- Log.log ?logger (Text.unlines msg)
+              Log.debug (Text.unlines msg)
               return bug
 
 -- | Library entry point

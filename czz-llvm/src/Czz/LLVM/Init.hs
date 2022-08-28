@@ -63,6 +63,7 @@ import qualified Czz.LLVM.Env.FileSystem as FS
 import qualified Czz.LLVM.Overrides as Ov
 import           Czz.LLVM.Overrides (Effect)
 import qualified Czz.LLVM.Overrides.Skip as Skip
+import           Czz.LLVM.Overrides.State.Env as State.Env
 import qualified Czz.LLVM.Overrides.SymIO as CzzSymIO
 import           Czz.LLVM.Translate (Translation, EntryPoint)
 import qualified Czz.LLVM.Translate as Trans
@@ -162,7 +163,7 @@ setupInitState ::
   [String] ->
   Args.Template ->
   C.OverrideSim p sym CLLVM.LLVM rtp args ret ()
-setupInitState _halloc bak entryPoint trans memVar initFs envVarRef openedRef effectRef skip template = do
+setupInitState halloc bak entryPoint trans memVar initFs envVarRef openedRef effectRef skip template = do
   registerDefinedFunctions
   -- TODO(lb): initial file system?
   mainArgs <- Args.genArgs bak trans memVar template
@@ -193,8 +194,9 @@ setupInitState _halloc bak entryPoint trans memVar initFs envVarRef openedRef ef
         CLLVM.registerLazyModuleFn printWarn trans (L.decName decl)
 
     registerOverrides = do
+      envStateVar <- State.Env.mkEnvVar halloc
       let ?lc = llvmCtx Lens.^. CLLVM.llvmTypeCtx
-      let decOvs = Ov.overrides trans effectRef envVarRef ++
+      let decOvs = Ov.overrides trans effectRef envVarRef envStateVar ++
                      CzzSymIO.overrides trans openedRef initFs
       let defOvs = Skip.overrides trans skip
       let ?intrinsicsOpts = CLLVM.defaultIntrinsicsOptions
