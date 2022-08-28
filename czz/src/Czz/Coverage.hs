@@ -1,15 +1,18 @@
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module Czz.Coverage
   ( Coverage
   , empty
   , coverage
   , bucket
+  , lastLoc
   , withCoverage
   )
 where
 
 import qualified Control.Lens as Lens
+import           Control.Monad (unless)
 import           Control.Monad.IO.Class (liftIO)
 import           Data.Hashable (Hashable)
 import qualified Data.Hashable as Hash
@@ -17,6 +20,7 @@ import           Data.IORef (IORef)
 import qualified Data.IORef as IORef
 import           Data.Text (Text)
 import qualified Data.Text as Text
+import           GHC.Generics (Generic)
 
 import qualified Data.Parameterized.Context as Ctx
 import qualified Data.Parameterized.Nonce as Nonce
@@ -43,17 +47,29 @@ import           Czz.KLimited (IsKLimited)
 import qualified Czz.Log as Log
 import qualified Czz.Record as Rec
 
-newtype Coverage k = Coverage { getCoverage :: Freq (Path k) }
-  deriving (Eq, Hashable, Ord, Show)
+data Coverage k =
+  Coverage
+  { covFreq :: !(Freq (Path k))
+  , covLastLoc :: !Text
+  }
+  deriving (Eq, Generic, Ord, Show)
+
+instance Hashable (Coverage k) where
 
 empty :: IsKLimited k => Coverage k
-empty = Coverage Freq.empty
+empty = Coverage Freq.empty "<start>"
+
+onPaths :: (Freq (Path k) -> Freq (Path k)) -> Coverage k -> Coverage k
+onPaths f c = c { covFreq = f (covFreq c) }
 
 addPath :: Path k -> Coverage k -> Coverage k
-addPath p = Coverage . Freq.inc p . getCoverage
+addPath p = onPaths (Freq.inc p)
 
 bucket :: Bucketing -> Coverage k -> Coverage k
-bucket b = Coverage . Freq.map (Bucket.bucket b) . getCoverage
+bucket b = onPaths (Freq.map (Bucket.bucket b))
+
+lastLoc :: Coverage k -> Text
+lastLoc = covLastLoc
 
 -- TODO(lb): notion of maximum coverage? goal completed?
 coverage ::
@@ -74,13 +90,16 @@ coverage _proxy coverRef = do
           let handle = C.cfgHandle cfg
           let _handleId = Nonce.indexValue (C.handleID handle)
           let loc = simState Lens.^. C.stateLocation . Lens.to (fmap What4.plSourceLoc)
-          let msg = show (C.handleName handle) ++ " " ++ show loc
-          liftIO $ Log.debug (Text.pack msg)
+          let txtLoc = Text.pack (maybe "<unknown>" show loc)
+          let msg = Text.pack (show (C.handleName handle)) <> " " <> txtLoc
+          liftIO $ Log.debug msg
           let blkId = BlockId.new (C.handleName handle) blockIdInt
           path <- IORef.readIORef pathRef
           let path' = Path.snoc path blkId
           IORef.writeIORef pathRef path'
           IORef.modifyIORef coverRef (addPath path')
+          unless (loc == Just What4.InternalPos) $
+            IORef.modifyIORef coverRef (\c -> c { covLastLoc = txtLoc })
         _ -> return ()
       return C.ExecutionFeatureNoChange
 

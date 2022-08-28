@@ -8,12 +8,14 @@ where
 import qualified Control.Concurrent as Con
 import           Control.Monad.IO.Class (liftIO)
 import qualified Control.Monad.State as MState
+import qualified Data.Foldable as Fold
 import qualified Data.Set as Set
 import           Data.Text (Text)
 import qualified Data.Text as Text
 import           Data.Time (NominalDiffTime, TimeZone)
 import qualified Data.Time.Format as TimeF
 import qualified Data.Time.LocalTime as TimeL
+import qualified Data.Sequence as Seq
 import           System.Exit (ExitCode)
 import qualified System.Exit as Exit
 import           System.Time.Utils (renderSecs)
@@ -26,15 +28,20 @@ import qualified Brick.Main as BMain
 import qualified Brick.Widgets.Border as BWB
 import qualified Brick.Widgets.Core as BW
 import qualified Brick.Widgets.Center as BWC
+import qualified Brick.Widgets.Table as BWT
 import qualified Graphics.Vty as Vty
 import qualified Graphics.Vty.Input.Events as VtyE
 
 import qualified Czz.Config.Type as CConf
+import qualified Czz.Count as Count
+import qualified Czz.Coverage as Cover
+import qualified Czz.Freq as Freq
 import qualified Czz.Fuzz as Fuzz
 import qualified Czz.Log as Log
 import           Czz.Now (Now)
 import qualified Czz.Now as Now
 import qualified Czz.KLimited as KLimit
+import qualified Czz.Record as Rec
 import           Czz.State (State)
 import qualified Czz.State as State
 import qualified Czz.State.Stats as Stats
@@ -43,6 +50,8 @@ import qualified Czz.Stop as Stop
 import qualified Czz.LLVM as CL
 import qualified Czz.LLVM.Config.CLI as CLI
 import qualified Czz.LLVM.Config.Type as Conf
+import           Czz.LLVM.Feedback (Feedback)
+import qualified Czz.LLVM.Feedback as FB
 import qualified Czz.LLVM.Init as Init
 import qualified Czz.LLVM.Translate as Trans
 
@@ -68,37 +77,58 @@ padded rpad lpad = B.vBox . map (uncurry row)
       B.padRight (BW.Pad (rpad - BW.textWidth l)) (BW.txt l) B.<+>
       B.padLeft (BW.Pad (lpad - BW.textWidth r)) (BW.txt r)
 
-draw :: TStates env eff fb -> B.Widget ()
+topStats :: TState env eff fb -> B.Widget ()
+topStats tstate =
+  let stats = State.stats (state tstate)
+      now = stateNow tstate
+  in padded
+        10
+        30
+        [ ("start:", localTime tstate (Stats.start (State.stats (state tstate))))
+        , ("now:", localTime tstate (Now.getNow (stateNow tstate)))
+        , ("duration:", showTime (Stats.sinceStart stats now))
+        , ("execs:", Text.pack (show (Stats.execs stats)))
+        , ("execs/sec:", Text.pack (show (Stats.execsPerSec stats now)))
+        , ("last new:", showTime (Stats.sinceLastNew stats now))
+        , ("pool:", Text.pack (show (Stats.poolSize stats)))
+        , ("missing:", Text.unlines (Set.toList (Stats.missing stats)))
+        ]
+  where
+    showTime :: NominalDiffTime -> Text
+    showTime = Text.pack . renderSecs . round
+
+    localTime ts t =
+      Text.pack $
+        TimeF.formatTime TimeF.defaultTimeLocale "%F %T" $
+          TimeL.utcToLocalTime (timeZone ts) t
+
+llvmStats :: TState env eff (Feedback k) -> B.Widget ()
+llvmStats tstate =
+  BW.txt "stuck:"
+  BW.<=>
+  padded 30 10 (Fold.toList topLastLocs)
+  where
+    lastLocs :: [Text]
+    lastLocs =
+      Fold.toList $ Cover.lastLoc . FB.coverage . Rec.feedback <$>
+        State.pool (state tstate)
+    topLastLocs :: Seq.Seq (Text, Text)
+    topLastLocs =
+      (\(loc, ct) -> (loc <> ":", Text.pack (show (Count.toWord ct)))) <$>
+        Seq.take 3 (Seq.reverse (Freq.sorted (Freq.count lastLocs)))
+
+draw :: TStates env eff (Feedback k) -> B.Widget ()
 draw tstates =
   BWC.center $
     BWB.borderWithLabel (BW.txt "czz") $
       case tstates of
         InitState _tstate -> BW.txt "Starting..."
         OtherState tstate ->
-          let stats = State.stats (state tstate)
-              now = stateNow tstate
-          in padded
-               10
-               30
-               [ ("start:", localTime tstate (Stats.start (State.stats (state tstate))))
-               , ("now:", localTime tstate (Now.getNow (stateNow tstate)))
-               , ("duration:", showTime (Stats.sinceStart stats now))
-               , ("execs:", Text.pack (show (Stats.execs stats)))
-               , ("execs/sec:", Text.pack (show (Stats.execsPerSec stats now)))
-               , ("last new:", showTime (Stats.sinceLastNew stats now))
-               , ("pool:", Text.pack (show (Stats.poolSize stats)))
-               , ("missing:", Text.unlines (Set.toList (Stats.missing stats)))
-               ]
-  where
-    showTime :: NominalDiffTime -> Text
-    showTime = Text.pack . renderSecs . round
+          BWT.renderTable (BWT.table [[topStats tstate], [llvmStats tstate]])
 
-    localTime tstate t =
-      Text.pack $
-        TimeF.formatTime TimeF.defaultTimeLocale "%F %T" $
-          TimeL.utcToLocalTime (timeZone tstate) t
-
-app :: TimeZone -> App (TStates env eff fb) (Event env eff fb) ()
+app ::
+  TimeZone ->
+  App (TStates env eff (Feedback k)) (Event env eff (Feedback k)) ()
 app tz =
   B.App
   { B.appDraw = \tstates -> [draw tstates]
