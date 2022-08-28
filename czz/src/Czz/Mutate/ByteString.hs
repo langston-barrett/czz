@@ -13,9 +13,14 @@ import           Prelude hiding (any)
 
 import           Data.ByteString (ByteString)
 import qualified Data.ByteString as BS
+import qualified Data.Char as Char
 import qualified Data.Maybe as Maybe
 import           Data.Sequence (Seq)
 import qualified Data.Sequence as Seq
+import           Data.Text (Text)
+import qualified Data.Text as Text
+import qualified Data.Text.Encoding as TextE
+import qualified Data.Text.Encoding.Error as TextEE
 import qualified System.Random as Random
 
 import qualified Czz.Random as Rand
@@ -27,6 +32,8 @@ muts =
     , replaceExact
     , dropFront
     , dropBack
+    , asAscii
+    , asUtf8
     ]
 
 any :: (Int, Int) -> ByteString -> IO ByteString
@@ -59,3 +66,13 @@ dropBack :: ByteString -> IO ByteString
 dropBack bs = do
   newSize <- Random.randomRIO (0, BS.length bs)
   return (BS.take newSize bs)
+
+mutAsUtf8 :: (Text -> IO Text) -> ByteString -> IO ByteString
+mutAsUtf8 mutText =
+  fmap TextE.encodeUtf8 . mutText . TextE.decodeUtf8With TextEE.lenientDecode
+
+asAscii :: ByteString -> IO ByteString
+asAscii = mutAsUtf8 (return . Text.filter Char.isAscii)
+
+asUtf8 :: ByteString -> IO ByteString
+asUtf8 = mutAsUtf8 return
