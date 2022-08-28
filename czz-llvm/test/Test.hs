@@ -113,20 +113,22 @@ tests = do
               fmap ((Text.pack prog <> ": ") <>) >$<
                 CLog.logStdout Log.Debug stdStreams
             else Log.void
-          bug prog = expectBug conf (logger prog) prog
-          noBug prog = expectNoBug conf (logger prog) prog
+          bug justOne prog =
+            expectBug (if justOne then oneExec conf else conf) (logger prog) prog
+          noBug justOne prog =
+            expectNoBug (if justOne then oneExec conf else conf) (logger prog) prog
           checkOut prog = checkOutput (conf { Conf.prog = prog }) (logger prog)
       in Tasty.testGroup "Tests"
            [ Tasty.testGroup "Bug tests"
-               [ bug "assert-argc-eq-0.c"
-               , bug "assert-argc-lt-0.c"
-               , bug "getenv-deref.c"
-               , noBug "assert-argc-geq-0.c"
+               [ bug True "assert-argc-eq-0.c"
+               , bug True "assert-argc-lt-0.c"
+               , bug True "getenv-deref.c"
+               , noBug True "assert-argc-geq-0.c"
                -- , noBug "argv00.c"
-               , noBug "getenv-deref-2.c"  -- TODO(lb)
-               , noBug "ret0-argv.c"
-               , noBug "ret0-envp.c"
-               , noBug "ret0-void.c"
+               , noBug False "getenv-deref-2.c"  -- TODO(lb)
+               , noBug True "ret0-argv.c"
+               , noBug True "ret0-envp.c"
+               , noBug True "ret0-void.c"
                ]
            , Tasty.testGroup "Simulator fidelity (golden) tests" $
                map checkOut bcFiles
