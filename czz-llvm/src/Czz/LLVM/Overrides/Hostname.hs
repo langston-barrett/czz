@@ -9,6 +9,7 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE ViewPatterns #-}
+
 module Czz.LLVM.Overrides.Hostname
   ( Effect(..)
   , GetHostNameEffect(..)
