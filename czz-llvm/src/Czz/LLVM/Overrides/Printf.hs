@@ -22,7 +22,7 @@ import qualified Control.Lens as Lens
 import           Control.Monad.IO.Class (liftIO)
 import qualified Control.Monad.State as State
 import qualified Data.BitVector.Sized as BV
-import qualified Data.ByteString.Char8 as BS
+import qualified Data.ByteString.Char8 as BSC8
 import           Data.IORef (IORef)
 import           Data.Text (Text)
 import qualified Data.Text as Text
@@ -77,6 +77,7 @@ overrides ::
   [OverrideTemplate p sym arch rtp l a]
 overrides proxy effects inj =
   [ ov (sprintfDecl proxy effects (inj . _Sprintf))
+  , ov (sprintfChkDecl proxy effects (inj . _Sprintf))
   ]
   where ov = CLLVM.basic_llvm_override
 
@@ -86,6 +87,30 @@ overrides proxy effects inj =
 data SprintfEffect
   = SprintfSuccess
   deriving (Eq, Ord, Show)
+
+-- TODO(lb): Probably unsound? What the heck are the params?
+sprintfChkDecl ::
+  forall proxy p sym arch wptr eff.
+  Log.Has Text =>
+  OverrideConstraints sym arch wptr =>
+  proxy arch ->
+  IORef (EffectTrace eff) ->
+  Lens.Prism' eff SprintfEffect ->
+  [llvmOvrType| i32 @( i8*, i32, i64, i8*, ... ) |]
+sprintfChkDecl proxy effects inj =
+  [llvmOvr| i32 @__sprintf_chk( i8*, i32, i64, i8*, ... ) |]
+  (\memVar bak args ->
+    COv.toOverride
+      @(BVType 32)
+      effects
+      inj
+      args
+      (COv.Override
+       { COv.genEffect = \_proxy _oldEff _str _what _ever _fmt _vaList ->
+           COv.AnyOverrideSim (return SprintfSuccess)
+       , COv.doEffect = \_proxy e  str _what _ever fmt vaList ->
+           COv.AnyOverrideSim (sprintfImpl proxy bak e memVar str fmt vaList)
+       }))
 
 sprintfDecl ::
   forall proxy p sym arch wptr eff.
@@ -168,14 +193,14 @@ sprintfImpl proxy bak e memVar (C.regValue -> str) fmt vaList = do
   let sym = C.backendGetSym bak
   (formatted, n) <- overrideRunFmtString proxy bak memVar fmt vaList
   liftIO (Log.debug ("Program called `sprintf`: " <> Text.pack formatted))
-  -- TODO(lb): null-terminated?
-  let val = CLLVM.LLVMValString (BS.pack formatted)
+  let val = CLLVM.LLVMValString (BSC8.pack (formatted <> "\0"))
   let ty = CLLVM.llvmValStorableType val
   -- TODO(lb): check for truncation
   -- TODO(lb): is storeRaw correct?
   () <-
     C.modifyGlobal memVar $ \mem -> liftIO $ do
       ((),) <$> CLLVM.storeRaw bak mem str ty CLLVM.noAlignment val
+
   liftIO $ What4.bvLit sym knownNat (BV.mkBV knownNat (toInteger n))
 
 -- TODO(lb): snprintf

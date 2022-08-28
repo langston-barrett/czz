@@ -43,6 +43,7 @@ import qualified Czz.Stop as Stop
 import qualified Czz.LLVM as CL
 import qualified Czz.LLVM.Config.CLI as CLI
 import qualified Czz.LLVM.Config.Type as Conf
+import qualified Czz.LLVM.Init as Init
 import qualified Czz.LLVM.Translate as Trans
 
 data Event env eff fb
@@ -133,9 +134,10 @@ main = do
               Exit.exitFailure
             Right (Right final) -> BChan.writeBChan eventChan (FinalState final)
 
+    let simLog = Log.with Log.void Init.logToTempFile
     _threadId <- flip Con.forkFinally fuzzerDone $ do
         let fuzzer =
-              (CL.llvmFuzzer conf translation)
+              (CL.llvmFuzzer conf translation simLog)
               { Fuzz.onUpdate = \tstates -> do
                   _didUpdate <-
                     BChan.writeBChanNonBlocking eventChan (NewState tstates)

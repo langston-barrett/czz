@@ -6,9 +6,11 @@ module Test (tests) where
 import           Control.Category ((>>>))
 import           Data.Functor.Contravariant ((>$<))
 import qualified Data.Text as Text
+import qualified System.IO as IO
 
 import qualified Test.Tasty as Tasty
 import qualified Test.Tasty.HUnit as TastyH
+import qualified Test.Tasty.Golden as TastyG
 
 import qualified Czz.Concurrent.Lock as Lock
 import qualified Czz.Concurrent.Handle as Hand
@@ -22,6 +24,7 @@ import qualified Czz.Stop as Stop
 import qualified Czz.LLVM as Main
 import qualified Czz.LLVM.Compile as Compile
 import qualified Czz.LLVM.Config.Type as Conf
+import qualified Czz.LLVM.Init as Init
 
 import qualified Option as TestOpt
 
@@ -29,7 +32,7 @@ tests :: IO Tasty.TestTree
 tests = do
   stop <- Stop.new
 
-  _bcFiles <-
+  bcFiles <-
     Compile.compileCFiles cFiles >>=
       (sequence >>>
         \case
@@ -47,7 +50,8 @@ tests = do
         Conf.Config
           { Conf.common =
               CConf.Config
-              { CConf.jobs = 1
+              { CConf.gas = Nothing
+              , CConf.jobs = 1
               , CConf.pathLen = 1
               , CConf.seed = Nothing  -- Just 0
               , CConf.tries = Just 10
@@ -59,9 +63,23 @@ tests = do
           , Conf.onlyNeeded = True
           }
 
+  -- TODO(lb): non-void logger
+  let oneExec cf = cf { Conf.common = (Conf.common cf) { CConf.gas = Just 1 } }
+  let checkOutput cf logger =
+        let gold = replaceSuf (".bc" :: String) ".out" (Conf.prog cf)
+            out = replaceSuf (".bc" :: String) ".czz.out" (Conf.prog cf)
+            simLog = IO.openFile out IO.WriteMode
+        in TastyG.goldenVsFile (Conf.prog cf <> " output") gold out $ do
+             KLimit.withKLimit 1 $
+               Main.fuzz (oneExec cf) stop simLog logger logger >>=
+                 \case
+                   Left err -> error (show err)
+                   Right _finalState -> return ()
+
+  let simLog = Log.with Log.void Init.logToTempFile
   let assertFinalState cf logger f =
         TastyH.testCase (Conf.prog cf) $ do
-          Main.fuzz cf stop logger logger >>=
+          Main.fuzz cf stop simLog logger logger >>=
             \case
               Left err -> error (show err)
               Right finalState -> f finalState
@@ -91,16 +109,21 @@ tests = do
             else Log.void
           bug prog = expectBug conf (logger prog) prog
           noBug prog = expectNoBug conf (logger prog) prog
+          checkOut prog = checkOutput (conf { Conf.prog = prog }) (logger prog)
       in Tasty.testGroup "Tests"
-           [ bug "argv00.c"
-           , bug "assert-argc-eq-0.c"
-           , bug "assert-argc-lt-0.c"
-           , bug "getenv-deref.c"
-           , noBug "assert-argc-geq-0.c"
-           , noBug "getenv-deref-2.c"  -- TODO(lb)
-           , noBug "ret0-argv.c"
-           , noBug "ret0-envp.c"
-           , noBug "ret0-void.c"
+           [ Tasty.testGroup "Bug tests"
+               [ bug "assert-argc-eq-0.c"
+               , bug "assert-argc-lt-0.c"
+               , bug "getenv-deref.c"
+               , noBug "assert-argc-geq-0.c"
+               -- , noBug "argv00.c"
+               , noBug "getenv-deref-2.c"  -- TODO(lb)
+               , noBug "ret0-argv.c"
+               , noBug "ret0-envp.c"
+               , noBug "ret0-void.c"
+               ]
+           , Tasty.testGroup "Simulator fidelity (golden) tests" $
+               map checkOut bcFiles
            ]
 
   where

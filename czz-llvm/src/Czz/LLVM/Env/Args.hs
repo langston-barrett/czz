@@ -74,7 +74,9 @@ data Template
 empty :: Template
 empty =
   Template
-    { argv = Seq.empty
+    -- Start with one arg (argv[0], i.e. name of the program) to more closely
+    -- match normal behavior
+    { argv = Seq.singleton (CString.terminate "fake")
     , envp = Seq.empty
     }
 
