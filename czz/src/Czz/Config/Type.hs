@@ -16,7 +16,8 @@ import           Czz.Log (Severity)
 -- - etc.
 
 data Config = Config
-  { jobs :: !Int
+  { gas :: !(Maybe Int)
+  , jobs :: !Int
   , pathLen :: !Int
   , seed :: !(Maybe Int)
   , tries :: !(Maybe Int)

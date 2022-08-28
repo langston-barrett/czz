@@ -28,7 +28,8 @@ tests = do
         Conf.Config
           { Conf.common =
               CConf.Config
-              { CConf.jobs = 1
+              { CConf.gas = Nothing
+              , CConf.jobs = 1
               , CConf.pathLen = 1
               , CConf.seed = Nothing  -- Just 0
               , CConf.tries = Just 10

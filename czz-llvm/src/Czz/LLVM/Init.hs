@@ -4,7 +4,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Czz.LLVM.Init
-  ( initState
+  ( logToTempFile
+  , initState
   )
 where
 
@@ -66,6 +67,15 @@ import qualified Czz.LLVM.Overrides.SymIO as CzzSymIO
 import           Czz.LLVM.Translate (Translation, EntryPoint)
 import qualified Czz.LLVM.Translate as Trans
 
+logToTempFile :: Log.Has Text => IO Handle
+logToTempFile = do
+  -- Forward simulator logs to parent logger
+  (_path, logHandle) <- IO.openTempFile "/tmp" "czz.temp"
+  let msg = "simulator logging thread exited! "
+  let onError = Log.error . (msg <>) . Text.pack . show
+  _threadId <- CLog.forkReadHandle onError logHandle (Log.toDebug >$< ?logger)
+  return logHandle
+
 -- | Caution: Prints and can exit
 initState ::
   Log.Has Text =>
@@ -76,6 +86,8 @@ initState ::
   bak ->
   C.HandleAllocator ->
   Translation ->
+  -- | Where to put simulator logs
+  IO Handle ->
   -- | Trace of read environment variables
   IORef [ByteString] ->
   -- | Trace of opened files
@@ -85,7 +97,7 @@ initState ::
   -- | Functions to skip
   [String] ->
   IO (Handle, C.ExecState CzzPersonality sym CLLVM.LLVM (C.RegEntry sym UnitType))
-initState _proxy bak halloc translation envVarRef openedRef effectRef seed skip = do
+initState _proxy bak halloc translation logHandle envVarRef openedRef effectRef seed skip = do
   Trans.Translation trans memVar entryPoint <- return translation
   let llvmAst = trans Lens.^. CLLVM.modTransModule
   let llvmCtx = trans Lens.^. CLLVM.transContext
@@ -109,18 +121,13 @@ initState _proxy bak halloc translation envVarRef openedRef effectRef seed skip 
     let intrinsicTypes =
           MapF.union CLLVM.llvmIntrinsicTypes CLLVM.llvmSymIOIntrinsicTypes
 
-    -- Forward simulator logs to parent logger
-    (_path, logHandle) <- IO.openTempFile "/tmp" "czz.temp"
-    let msg = "simulator logging thread exited! "
-    let onError = Log.error . (msg <>) . Text.pack . show
-    _threadId <- CLog.forkReadHandle onError logHandle (Log.toDebug >$< ?logger)
-
+    logHand <- logHandle
     let simCtx =
           C.initSimContext
             bak
             intrinsicTypes
             halloc
-            logHandle
+            logHand
             (C.fnBindingsFromList [])
             (CLLVM.llvmExtensionImpl ?memOpts)
             CzzPersonality
@@ -130,7 +137,7 @@ initState _proxy bak halloc translation envVarRef openedRef effectRef seed skip 
               act  -- see comment on initialLLVMFileSystem
               let args = Env.args (Seed.env seed)
               setupInitState halloc bak entryPoint trans memVar initFs envVarRef openedRef effectRef skip args
-    return (logHandle, st)
+    return (logHand, st)
 
 -- | Not exported.
 setupInitState ::

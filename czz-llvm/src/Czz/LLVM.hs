@@ -23,6 +23,7 @@ import           Data.Text (Text)
 import qualified Data.Text as Text
 import qualified Control.Lens as Lens
 import qualified System.Exit as Exit
+import           System.IO (Handle)
 import qualified System.Random as Random
 
 -- what4
@@ -81,8 +82,10 @@ llvmFuzzer ::
   IsKLimited k =>
   Config ->
   Translation ->
+  -- | Where to put simulator logs
+  IO Handle ->
   Fuzzer LLVM Env Effect (Feedback k)
-llvmFuzzer conf translation =
+llvmFuzzer conf translation simLogs =
   Fuzz.Fuzzer
   { Fuzz.nextSeed = \records -> do
       -- TODO(lb): power schedule, mutation schedule
@@ -118,6 +121,7 @@ llvmFuzzer conf translation =
               bak
               halloc
               translation
+              simLogs
               envVarRef
               openedRef
               effectRef
@@ -184,14 +188,15 @@ fuzz ::
   IsKLimited k =>
   Conf.Config ->
   Stop ->
+  IO Handle ->
   Logger (Msg Text) ->
   Logger (Msg Text) ->
   IO (Either FuzzError (State Env Effect (Feedback k)))
-fuzz conf stop stdoutLogger stderrLogger = do
+fuzz conf stop simLogs stdoutLogger stderrLogger = do
   Log.with stdoutLogger $
     Log.info ("Fuzzing program " <> Text.pack (Conf.prog conf))
   translation <- Trans.translate conf  -- Allowed to fail/call exit
-  let fuzzer = llvmFuzzer conf translation
+  let fuzzer = llvmFuzzer conf translation simLogs
   Fuzz.fuzz (Conf.common conf) stop fuzzer stdoutLogger stderrLogger
 
 -- | CLI entry point
@@ -201,7 +206,10 @@ main = do
   conf <- CLI.cliConfig
   translation <- Trans.translate conf  -- Allowed to fail/call exit
   KLimit.withKLimit (CConf.pathLen (Conf.common conf)) $ do
-    _finalState <- Fuzz.main (Conf.common conf) stop (llvmFuzzer conf translation)
+    -- TODO(lb): non-void logger
+    let simLog = Log.with Log.void Init.logToTempFile
+    let fuzzer = llvmFuzzer conf translation simLog
+    _finalState <- Fuzz.main (Conf.common conf) stop fuzzer
     return ()
   return Exit.ExitSuccess
 

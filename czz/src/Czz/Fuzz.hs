@@ -133,7 +133,7 @@ run _conf bak halloc doMut seed fuzzer = do
         Log.debug "Aborted!"
         Log.debug $
           case ar of
-            C.AbortedExec _reason _ -> "" -- show (C.ppAbortExecReason reason)
+            C.AbortedExec reason _ -> Text.pack (show (C.ppAbortExecReason reason))
             C.AbortedExit exitCode -> Text.pack (show exitCode)
             C.AbortedBranch{} -> "branch..."
       C.TimeoutResult{} -> Log.debug "Timeout!"
@@ -207,6 +207,12 @@ fuzz conf stop fuzzer stdoutLogger stderrLogger = do
           Nothing -> Random.initStdGen
           Just seed -> return (Random.mkStdGen seed)
 
+    tooLittleGas state =
+      case Conf.gas conf of
+        Nothing -> False
+        Just maxExecs ->
+          Stats.execs (State.stats state) >= fromIntegral maxExecs
+
     tooManyTries state =
       case Conf.tries conf of
         Nothing -> False
@@ -222,12 +228,15 @@ fuzz conf stop fuzzer stdoutLogger stderrLogger = do
 
     go runResultVar running state = do
       shouldStop <- Stop.should stop
-      if shouldStop || tooManyTries state
+      if shouldStop || tooManyTries state || tooLittleGas state
       then do
         Log.with stdoutLogger $ do
           if shouldStop
             then Log.warn "Interrupted! Waiting for threads to finish..."
-            else Log.info "Too many tries without new coverage! Giving up."
+            else
+              if tooManyTries state
+              then Log.info "Too many tries without new coverage! Giving up."
+              else Log.info "Out of gas."
           now <- Now.now
           -- TODO(lb): How to shut down stdout/stderr?
           --

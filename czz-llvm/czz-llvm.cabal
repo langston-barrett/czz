@@ -146,5 +146,6 @@ test-suite czz-llvm-test
     czz,
     czz-llvm,
     tasty >= 1.4 && < 2.0,
+    tasty-golden >= 2.0 && < 3.0,
     tasty-hunit >= 0.10 && < 1.0,
     text

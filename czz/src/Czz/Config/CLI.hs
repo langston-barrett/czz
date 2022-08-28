@@ -12,7 +12,15 @@ import qualified Czz.Config.Type as Conf
 parser :: Opt.Parser Config
 parser =
   Conf.Config
-  <$> Opt.option Opt.auto
+  <$> Opt.optional
+      ( Opt.option Opt.auto
+        ( Opt.long "gas"
+          <> Opt.short 'g'
+          <> Opt.metavar "NUM"
+          <> Opt.help "Maximum number of executions"
+        )
+      )
+  <*> Opt.option Opt.auto
       ( Opt.long "jobs"
         <> Opt.short 'j'
         <> Opt.metavar "NUM"
