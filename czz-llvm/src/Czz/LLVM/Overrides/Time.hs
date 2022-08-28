@@ -53,6 +53,7 @@ import qualified Czz.LLVM.Unimplemented as Unimpl
 
 data Effect
   = GetTimeOfDay !GetTimeOfDayEffect
+  | Time !TimeEffect
   deriving (Eq, Ord, Show)
 
 _GetTimeOfDay :: Lens.Prism' Effect GetTimeOfDayEffect
@@ -60,8 +61,16 @@ _GetTimeOfDay =
   Lens.prism'
     GetTimeOfDay
     (\case
-      GetTimeOfDay eff -> Just eff)
-      -- _ -> Nothing)
+      GetTimeOfDay eff -> Just eff
+      _ -> Nothing)
+
+_Time :: Lens.Prism' Effect TimeEffect
+_Time =
+  Lens.prism'
+    Time
+    (\case
+      Time eff -> Just eff
+      _ -> Nothing)
 
 overrides ::
   Log.Has Text =>
@@ -72,6 +81,7 @@ overrides ::
   [OverrideTemplate p sym arch rtp l a]
 overrides proxy effects inj =
   [ ov (getTimeOfDayDecl proxy effects (inj . _GetTimeOfDay))
+  , ov (timeDecl proxy effects (inj . _Time))
   ]
   where ov = CLLVM.basic_llvm_override
 
@@ -91,7 +101,7 @@ getTimeOfDayDecl ::
   Lens.Prism' eff GetTimeOfDayEffect ->
   [llvmOvrType| i32 @( %struct.timeval*, i8* ) |]
 getTimeOfDayDecl proxy effects inj =
-  [llvmOvr| i32 @gettimeofday(%struct.timeval*, i8*) |]
+  [llvmOvr| i32 @gettimeofday( %struct.timeval*, i8* ) |]
   (\memVar bak args ->
     COv.toOverride
       @(BVType 32)
@@ -142,6 +152,66 @@ getTimeOfDayImpl _proxy bak e memVar tv tz = do
           mem' <- CLLVM.doMemset bak (knownNat @64) mem ptr zero8 sz
           zero32 <- What4.bvLit sym (BV.knownNat @32) (BV.mkBV (BV.knownNat @32) 0)
           return (zero32, mem')
+      , Nothing
+      )
+    ]
+
+------------------------------------------------------------------------
+-- ** time
+
+data TimeEffect
+  = TimeEffect
+  deriving (Eq, Ord, Show)
+
+timeDecl ::
+  forall proxy p sym arch wptr eff.
+  Log.Has Text =>
+  OverrideConstraints sym arch wptr =>
+  proxy arch ->
+  IORef (EffectTrace eff) ->
+  Lens.Prism' eff TimeEffect ->
+  [llvmOvrType| size_t @( size_t* ) |]
+timeDecl proxy effects inj =
+  [llvmOvr| size_t @time( size_t* ) |]
+  (\memVar bak args ->
+    COv.toOverride
+      @(BVType wptr)
+      effects
+      inj
+      args
+      (COv.Override
+       { COv.genEffect = \_proxy _oldEff _tloc ->
+           COv.AnyOverrideSim (return TimeEffect)
+       , COv.doEffect = \_proxy e tloc ->
+           COv.AnyOverrideSim (timeImpl proxy bak e memVar tloc)
+       }))
+
+timeImpl ::
+  forall proxy arch p sym bak ext rtp args ret wptr.
+  Log.Has Text =>
+  OverrideConstraints sym arch wptr =>
+  IsSymBackend sym bak =>
+  proxy arch ->
+  bak ->
+  TimeEffect ->
+  C.GlobalVar CLLVM.Mem ->
+  RegEntry sym (LLVMPointerType wptr) ->
+  OverrideSim p sym ext rtp args ret (RegValue sym (BVType wptr))
+timeImpl _proxy bak e _memVar tloc = do
+  TimeEffect <- return e  -- check for missing pattern matches
+  let sym = C.backendGetSym bak
+  tlocNonNull <-
+    liftIO (What4.notPred sym =<< CLLVM.ptrIsNull sym ?ptrWidth (C.regValue tloc))
+  liftIO (Log.debug "In `time`")
+  C.symbolicBranches
+    C.emptyRegMap
+    [ ( tlocNonNull
+      , Unimpl.throw Unimpl.TimeLocNonNull
+      , Nothing
+      )
+    , ( What4.truePred sym,
+        -- TODO(lb): Randomize time?
+        liftIO (What4.bvLit sym ?ptrWidth (BV.mkBV ?ptrWidth 0))
       , Nothing
       )
     ]

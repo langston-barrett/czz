@@ -20,6 +20,7 @@ data Unimplemented
   | RecvSymbolicLen
   | SendFlagNonZero
   | SendSymbolicLen
+  | TimeLocNonNull
   deriving (Eq, Ord, Show)
 
 ppUnimplemented :: Unimplemented -> String
@@ -33,6 +34,7 @@ ppUnimplemented =
     RecvSymbolicLen -> "`recv` called with symbolic length"
     SendFlagNonZero -> "`send` called with a non-zero flag"
     SendSymbolicLen -> "`send` called with symbolic length"
+    TimeLocNonNull -> "`time` non-null tloc"
 
 instance Ex.Exception Unimplemented where
 
