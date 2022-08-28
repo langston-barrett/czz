@@ -27,6 +27,7 @@ import qualified Czz.LLVM.Overrides.Libc as Libc
 import qualified Czz.LLVM.Overrides.Hostname as Hostname
 import qualified Czz.LLVM.Overrides.Printf as Printf
 import qualified Czz.LLVM.Overrides.Socket as Socket
+import qualified Czz.LLVM.Overrides.Signal as Signal
 import           Czz.LLVM.Overrides.State.Env as State.Env
 import qualified Czz.LLVM.Overrides.Time as Time
 import           Czz.LLVM.Overrides.Util (OverrideConstraints)
@@ -37,6 +38,7 @@ data Effect
   | Hostname !Hostname.Effect
   | Printf !Printf.Effect
   | Socket !Socket.Effect
+  | Signal !Signal.Effect
   | Time !Time.Effect
   deriving (Eq, Ord, Show)
 
@@ -58,6 +60,7 @@ overrides proxy effects envVarRef envStateVar =
       , Log.adjust Text.pack $  -- TODO(lb): Text
           Libc.overrides proxy effects _Libc envVarRef
       , Printf.overrides proxy effects _Printf
+      , Signal.overrides proxy effects _Signal
       , Log.adjust Text.pack $  -- TODO(lb): Text
           Socket.overrides proxy effects _Socket
       , Time.overrides proxy effects _Time
