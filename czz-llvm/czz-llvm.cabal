@@ -81,6 +81,7 @@ library
     Czz.LLVM.Overrides.Printf
     Czz.LLVM.Overrides.Socket
     Czz.LLVM.Overrides.Skip
+    Czz.LLVM.Overrides.Signal
     Czz.LLVM.Overrides.State.Env
     Czz.LLVM.Overrides.SymIO
     Czz.LLVM.Overrides.Time
