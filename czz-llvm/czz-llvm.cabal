@@ -83,6 +83,7 @@ library
     Czz.LLVM.Overrides.Skip
     Czz.LLVM.Overrides.State.Env
     Czz.LLVM.Overrides.SymIO
+    Czz.LLVM.Overrides.Time
     Czz.LLVM.Overrides.Util
     Czz.LLVM.QQ
     Czz.LLVM.Translate
