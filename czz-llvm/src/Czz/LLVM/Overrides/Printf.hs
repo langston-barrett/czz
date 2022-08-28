@@ -58,6 +58,7 @@ import           Czz.LLVM.QQ (llvmOvr, llvmOvrType)
 
 data Effect
   = Sprintf !SprintfEffect
+  -- | Snprintf !SnprintfEffect
   deriving (Eq, Ord, Show)
 
 _Sprintf :: Lens.Prism' Effect SprintfEffect
@@ -67,6 +68,14 @@ _Sprintf =
     (\case
       Sprintf eff -> Just eff)
       -- _ -> Nothing)
+
+-- _Snprintf :: Lens.Prism' Effect SnprintfEffect
+-- _Snprintf =
+--   Lens.prism'
+--     Snprintf
+--     (\case
+--       Snprintf eff -> Just eff
+--       _ -> Nothing)
 
 overrides ::
   Log.Has Text =>
@@ -78,8 +87,51 @@ overrides ::
 overrides proxy effects inj =
   [ ov (sprintfDecl proxy effects (inj . _Sprintf))
   , ov (sprintfChkDecl proxy effects (inj . _Sprintf))
+  , ov (snprintfDecl proxy effects (inj . _Sprintf))
+  , ov (snprintfChkDecl proxy effects (inj . _Sprintf))
   ]
   where ov = CLLVM.basic_llvm_override
+
+------------------------------------------------------------------------
+-- ** utilities
+
+runFmtString ::
+  OverrideConstraints sym arch wptr =>
+  IsSymBackend sym bak =>
+  proxy arch ->
+  bak ->
+  CLLVM.MemImpl sym ->
+  [Word8] ->
+  RegValue sym (VectorType AnyType) ->
+  IO (Either String ((String, Int), CLLVM.MemImpl sym))
+runFmtString _proxy bak mem fmt vaList =
+  case CLLVM.parseDirectives fmt of
+    Left err -> return (Left err)
+    Right directives ->
+      Right <$>
+        State.runStateT
+          (CLLVM.executeDirectives (CLLVM.printfOps bak vaList) directives)
+          mem
+
+overrideRunFmtString ::
+  OverrideConstraints sym arch wptr =>
+  IsSymBackend sym bak =>
+  proxy arch ->
+  bak ->
+  C.GlobalVar CLLVM.Mem ->
+  RegEntry sym (LLVMPointerType wptr) ->
+  RegEntry sym (VectorType AnyType) ->
+  OverrideSim p sym ext rtp args ret (String, Int)
+overrideRunFmtString proxy bak memVar fmtPtr vaList = do
+  mem0 <- C.readGlobal memVar
+  fmt <- liftIO $ CLLVM.loadString bak mem0 (C.regValue fmtPtr) Nothing
+  C.modifyGlobal memVar $ \mem ->
+    liftIO (runFmtString proxy bak mem fmt (C.regValue vaList)) >>=
+      \case
+        Left err ->
+          C.overrideError $
+            C.AssertFailureSimError "Format string parsing failed" err
+        Right ret -> return ret
 
 ------------------------------------------------------------------------
 -- ** sprintf
@@ -135,44 +187,6 @@ sprintfDecl proxy effects inj =
            COv.AnyOverrideSim (sprintfImpl proxy bak e memVar str fmt vaList)
        }))
 
-runFmtString ::
-  OverrideConstraints sym arch wptr =>
-  IsSymBackend sym bak =>
-  proxy arch ->
-  bak ->
-  CLLVM.MemImpl sym ->
-  [Word8] ->
-  RegValue sym (VectorType AnyType) ->
-  IO (Either String ((String, Int), CLLVM.MemImpl sym))
-runFmtString _proxy bak mem fmt vaList =
-  case CLLVM.parseDirectives fmt of
-    Left err -> return (Left err)
-    Right directives ->
-      Right <$>
-        State.runStateT
-          (CLLVM.executeDirectives (CLLVM.printfOps bak vaList) directives)
-          mem
-
-overrideRunFmtString ::
-  OverrideConstraints sym arch wptr =>
-  IsSymBackend sym bak =>
-  proxy arch ->
-  bak ->
-  C.GlobalVar CLLVM.Mem ->
-  RegEntry sym (LLVMPointerType wptr) ->
-  RegEntry sym (VectorType AnyType) ->
-  OverrideSim p sym ext rtp args ret (String, Int)
-overrideRunFmtString proxy bak memVar fmtPtr vaList = do
-  mem0 <- C.readGlobal memVar
-  fmt <- liftIO $ CLLVM.loadString bak mem0 (C.regValue fmtPtr) Nothing
-  C.modifyGlobal memVar $ \mem ->
-    liftIO (runFmtString proxy bak mem fmt (C.regValue vaList)) >>=
-      \case
-        Left err ->
-          C.overrideError $
-            C.AssertFailureSimError "Format string parsing failed" err
-        Right ret -> return ret
-
 -- | Unsound!
 --
 -- TODO(lb): also generate error conditions
@@ -203,4 +217,57 @@ sprintfImpl proxy bak e memVar (C.regValue -> str) fmt vaList = do
 
   liftIO $ What4.bvLit sym knownNat (BV.mkBV knownNat (toInteger n))
 
--- TODO(lb): snprintf
+------------------------------------------------------------------------
+-- ** sprintf
+
+-- data SnprintfEffect
+--   = SnprintfSuccess
+--   deriving (Eq, Ord, Show)
+
+-- TODO(lb): Probably unsound? What the heck are the params?
+snprintfChkDecl ::
+  forall proxy p sym arch wptr eff.
+  Log.Has Text =>
+  OverrideConstraints sym arch wptr =>
+  proxy arch ->
+  IORef (EffectTrace eff) ->
+  Lens.Prism' eff SprintfEffect ->
+  [llvmOvrType| i32 @( i8*, size_t, i32, i64, i8*, ... ) |]
+snprintfChkDecl proxy effects inj =
+  [llvmOvr| i32 @__snprintf_chk( i8*, size_t, i32, i64, i8*, ... ) |]
+  (\memVar bak args ->
+    COv.toOverride
+      @(BVType 32)
+      effects
+      inj
+      args
+      (COv.Override
+       { COv.genEffect = \_proxy _oldEff _str _sz _what _ever _fmt _vaList ->
+           COv.AnyOverrideSim (return SprintfSuccess)
+       , COv.doEffect = \_proxy e  str _sz _what _ever fmt vaList ->
+           COv.AnyOverrideSim (sprintfImpl proxy bak e memVar str fmt vaList)
+       }))
+
+-- TODO(lb): unsound, don't ignore n
+snprintfDecl ::
+  forall proxy p sym arch wptr eff.
+  Log.Has Text =>
+  OverrideConstraints sym arch wptr =>
+  proxy arch ->
+  IORef (EffectTrace eff) ->
+  Lens.Prism' eff SprintfEffect ->
+  [llvmOvrType| i32 @( i8*, size_t, i8*, ... ) |]
+snprintfDecl proxy effects inj =
+  [llvmOvr| i32 @snprintf( i8*, size_t, i8*, ... ) |]
+  (\memVar bak args ->
+    COv.toOverride
+      @(BVType 32)
+      effects
+      inj
+      args
+      (COv.Override
+       { COv.genEffect = \_proxy _oldEff _str _sz _fmt _vaList ->
+           COv.AnyOverrideSim (return SprintfSuccess)
+       , COv.doEffect = \_proxy e  str _sz fmt vaList ->
+           COv.AnyOverrideSim (sprintfImpl proxy bak e memVar str fmt vaList)
+       }))
