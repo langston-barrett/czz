@@ -5,10 +5,12 @@ module Test (tests) where
 
 import           Control.Category ((>>>))
 import           Data.Functor.Contravariant ((>$<))
+import qualified Data.List as List
 import qualified Data.Text as Text
 import qualified System.IO as IO
 
 import qualified Test.Tasty as Tasty
+import           Test.Tasty.ExpectedFailure (expectFail)
 import qualified Test.Tasty.HUnit as TastyH
 import qualified Test.Tasty.Golden as TastyG
 
@@ -69,12 +71,16 @@ tests = do
         let gold = replaceSuf (".bc" :: String) ".out" (Conf.prog cf)
             out = replaceSuf (".bc" :: String) ".czz.out" (Conf.prog cf)
             simLog = IO.openFile out IO.WriteMode
-        in TastyG.goldenVsFile (Conf.prog cf <> " output") gold out $ do
-             KLimit.withKLimit 1 $
-               Main.fuzz (oneExec cf) stop simLog logger logger >>=
-                 \case
-                   Left err -> error (show err)
-                   Right _finalState -> return ()
+            maybeFail =
+              if "fail" `List.isInfixOf` Conf.prog cf then expectFail else id
+        in -- TODO(lb): expectFailBecause...?
+           maybeFail $
+             TastyG.goldenVsFile (Conf.prog cf <> " output") gold out $ do
+               KLimit.withKLimit 1 $
+                 Main.fuzz (oneExec cf) stop simLog logger logger >>=
+                   \case
+                     Left err -> error (show err)
+                     Right _finalState -> return ()
 
   let simLog = Log.with Log.void Init.logToTempFile
   let assertFinalState cf logger f =
