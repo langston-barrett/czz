@@ -28,6 +28,7 @@ import qualified Czz.LLVM.Overrides.Hostname as Hostname
 import qualified Czz.LLVM.Overrides.Printf as Printf
 import qualified Czz.LLVM.Overrides.Socket as Socket
 import           Czz.LLVM.Overrides.State.Env as State.Env
+import qualified Czz.LLVM.Overrides.Time as Time
 import           Czz.LLVM.Overrides.Util (OverrideConstraints)
 
 data Effect
@@ -36,6 +37,7 @@ data Effect
   | Hostname !Hostname.Effect
   | Printf !Printf.Effect
   | Socket !Socket.Effect
+  | Time !Time.Effect
   deriving (Eq, Ord, Show)
 
 $(Lens.makePrisms ''Effect)
@@ -58,4 +60,5 @@ overrides proxy effects envVarRef envStateVar =
       , Printf.overrides proxy effects _Printf
       , Log.adjust Text.pack $  -- TODO(lb): Text
           Socket.overrides proxy effects _Socket
+      , Time.overrides proxy effects _Time
       ]
