@@ -77,6 +77,7 @@ library
     Czz.LLVM.Overrides
     Czz.LLVM.Overrides.Libc
     Czz.LLVM.Overrides.Hostname
+    Czz.LLVM.Overrides.Printf
     Czz.LLVM.Overrides.Socket
     Czz.LLVM.Overrides.Skip
     Czz.LLVM.Overrides.State.Env
@@ -106,6 +107,7 @@ library
     lens,
     llvm-pretty,
     llvm-pretty-bc-parser,
+    mtl > 2.0,
     optparse-applicative,
     parameterized-utils,
     process,
