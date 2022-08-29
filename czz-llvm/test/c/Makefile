@@ -1,8 +1,13 @@
 CLANG := clang
+CLANG_FORMAT := clang-format
 PROGS := $(wildcard *.c)
 
 .PHONY: all
-all: $(PROGS:.c=.out) $(PROGS:.c=.bc)
+all: fmt $(PROGS:.c=.out) $(PROGS:.c=.bc)
+
+.PHONY: fmt
+fmt:
+	$(CLANG_FORMAT) -i *.c
 
 %.bc: %.c
 	$(CLANG) -fno-discard-value-names -emit-llvm -g -c $< -o $@
