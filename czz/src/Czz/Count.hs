@@ -1,7 +1,6 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE UnliftedDatatypes #-}
 
 module Czz.Count
   ( Count
@@ -34,8 +33,6 @@ import           GHC.Generics (Generic)
 -- * 'Numeric.Natural.Natural' is unbounded, and so doesn't support
 --   constant-time operations.
 -- * 'Int' is signed.
---
--- Also, this type is unlifted.
 newtype Count = Count { getCount :: Word }
   deriving (Bounded, Data, Eq, Enum, Hashable, Generic, Ord, Read, Show)
 

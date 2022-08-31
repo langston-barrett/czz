@@ -129,7 +129,7 @@ Limitations
 
 While whole-program fuzzing has some benefits, it also has its drawbacks:
 
-- Modeling libc and the host OS is challenging.
+- Modeling the standard library and host OS is challenging.
 
     * Some library calls may not be supported (e.g. ``stat``), and czz won't be
       able to fuzz the parts of the target that use them.
@@ -142,6 +142,15 @@ While whole-program fuzzing has some benefits, it also has its drawbacks:
   OS and CPU. This means fewer executions, fewer mutations, and less coverage
   for your CPU time. czz will never compete with traditional fuzzers on code
   which is suitable for traditional fuzzing.
+
+czz-llvm
+--------
+
+- czz-llvm only works on programs that can be statically compiled to a single
+  LLVM module with Clang.
+
+- czz-llvm does not work for parallel code (e.g., using ``pthreads``).
+
 - czz-llvm inherits `the limitations of Crucible-LLVM
   <https://github.com/GaloisInc/crucible/blob/master/crucible-llvm/doc/limitations.md>`_.
   Notably:
@@ -156,6 +165,35 @@ While whole-program fuzzing has some benefits, it also has its drawbacks:
 
 Coverage
 ========
+
+To determine whether or to keep a seed in the seed pool, czz tracks the
+*coverage* that the seed achieves. This tracking is configurable. Fine-grained
+coverage tracking results in a larger seed pool, which is beneficial if the
+difference in coverage reflects an interesting difference between the seeds, but
+can be harmful if it ends up adding fundamentally similar, redundant seeds to
+the pool.
+
+When executing the target with the seed, czz tracks how many times the program
+executes each *k*-length chain of edges between basic blocks. Particular choices
+of *k* reduce to more familiar coverage tracking schemes:
+
+- *k* = 1: Basic block coverage
+- *k* = 2: Edge coverage (like AFL)
+
+Higher values of *k* correspond to more fine-grained distinctions in coverage.
+
+Like AFL, czz tracks not just whether an edge was covered, but further tracks
+the *hit counts* of each *k*-edge chain (i.e., how many times the chain was
+executed). These hit counts are *bucketed* at the end of the execution, meaning
+they are collapsed into a more granular form. czz currently provides two
+bucketing strategies:
+
+- log2: Take the (integer) logarithm base 2 of each hit count
+- zero-one-many: Record only whether the edge was hit one or more than one time
+
+log2 is more fine-grained than zero-one-many.
+
+.. TODO(lb): examples
 
 .. _soundness:
 
