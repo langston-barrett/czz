@@ -15,6 +15,7 @@ in pkgs.mkShell {
     pkgs.llvm_11
 
     pkgs.jdk
+    pkgs.sphinx
 
     pkgs.z3
 
