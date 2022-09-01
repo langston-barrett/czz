@@ -2,8 +2,8 @@
 project = 'czz'
 copyright = '2022, Langston Barrett'
 author = 'Langston Barrett'
-extensions = []
+extensions = ['sphinx_book_theme']
 templates_path = []
 exclude_patterns = ['build', 'Thumbs.db', '.DS_Store']
-html_theme = 'alabaster'
+html_theme = 'sphinx_book_theme'
 html_static_path = []
