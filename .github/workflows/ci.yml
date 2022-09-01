@@ -89,6 +89,11 @@ jobs:
         sudo apt-get install -y llvm z3
         cabal test czz-llvm
 
+    - name: doc
+      uses: ammaraskar/sphinx-action@master
+      with:
+        docs-folder: "doc/"
+
     # TODO(lb)
 
     # - name: doc

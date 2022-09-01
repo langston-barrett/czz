@@ -8,9 +8,14 @@ PROF_FLAGS := \
   --enable-executable-profiling
 
 all: \
+  doc \
   lint \
   build \
   test
+
+.PHONY: doc
+doc:
+	$(MAKE) -C doc html
 
 .PHONY: lint
 lint:

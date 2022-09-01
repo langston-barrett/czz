@@ -41,7 +41,6 @@ developers have to write a *harness* that reads the input from the fuzzer and
 passes it on to some mostly-side-effect-free subset of the target.
 
 .. figure:: img/classic.svg
-   :scale: 35
 
    Classic coverage-guided fuzzing
 
@@ -51,7 +50,6 @@ Emulation). This allows czz to completely control the target's environment,
 responding to library calls with generated data.
 
 .. figure:: img/czz.svg
-   :scale: 35
 
    The czz approach
 
@@ -131,12 +129,12 @@ While whole-program fuzzing has some benefits, it also has its drawbacks:
 
 - Modeling the standard library and host OS is challenging.
 
-    * Some library calls may not be supported (e.g. ``stat``), and czz won't be
-      able to fuzz the parts of the target that use them.
+  * Some library calls may not be supported (e.g. ``stat``), and czz won't be
+    able to fuzz the parts of the target that use them.
 
-    * It's possible (though it should be considered a bug in czz) that some of
-      czz's models are :ref:`unsound <soundness>`, meaning it can report bugs
-      that can't actually occur.
+  * It's possible (though it should be considered a bug in czz) that some of
+    czz's models are :ref:`unsound <soundness>`, meaning it can report bugs
+    that can't actually occur.
 
 - Interpreting programs is *much* slower than running them natively on the host
   OS and CPU. This means fewer executions, fewer mutations, and less coverage
@@ -155,11 +153,11 @@ czz-llvm
   <https://github.com/GaloisInc/crucible/blob/master/crucible-llvm/doc/limitations.md>`_.
   Notably:
 
-    * It `can't handle <https://github.com/GaloisInc/crucible/issues/857>`_
-      variable-arity functions (other than overrides like ``printf``,
-      ``snprintf`` and friends).
+  * It `can't handle <https://github.com/GaloisInc/crucible/issues/857>`_
+    variable-arity functions (other than overrides like ``printf``,
+    ``snprintf`` and friends).
 
-    * It often lags a few versions behind the latest LLVM release.
+  * It often lags a few versions behind the latest LLVM release.
 
 .. _coverage:
 
@@ -170,8 +168,8 @@ To determine whether or to keep a seed in the seed pool, czz tracks the
 *coverage* that the seed achieves. This tracking is configurable. Fine-grained
 coverage tracking results in a larger seed pool, which is beneficial if the
 difference in coverage reflects an interesting difference between the seeds, but
-can be harmful if it ends up adding fundamentally similar, redundant seeds to
-the pool.
+can be detrimental if it ends up adding fundamentally similar, redundant seeds
+to the pool.
 
 When executing the target with the seed, czz tracks how many times the program
 executes each *k*-length chain of edges between basic blocks. Particular choices
