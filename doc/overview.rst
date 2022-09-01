@@ -89,18 +89,19 @@ supply arguments to ``main``, namely ``argc`` and ``argv``. Assume that it sets
 ``argc`` to ``0`` and ``argv`` to ``NULL``.
 
 After starting ``main``, the target will make some number of library calls,
-which czz-llvm must respond to. For example, the program might call ``time``,
-and czz-llvm might return a random integer, or the program could call ``send``,
-and ``czz-llvm`` would check that it's sending to a valid socket and return some
-random number indicating the number of bytes sent. At some point, the target
-will exit normally or crash.
+which czz-llvm must respond to (to a first approximation, "respond" means
+"generate a return value and possibly mutate program memory"). For example, the
+program might call ``time``, and czz-llvm might return a random integer, or the
+program could call ``send``, and ``czz-llvm`` would check that it's sending to a
+valid socket and return some random number indicating the number of bytes sent.
+At some point, the target will exit normally or crash.
 
 After the target exits, czz records the :ref:`coverage <coverage>` and the
 inputs it generated:
 
 1. Command-line arguments
 2. Initial environment, including environment variables and virtual file system
-3. The sequence of responses to system calls
+3. The sequence of responses to library calls
 
 These form a *seed*. czz-llvm then *mutates* this seed to try to find new
 coverage. It might:
@@ -120,6 +121,46 @@ If this new seed generates additional coverage, czz-llvm will add it to the
 Otherwise, it will discard it. This process of generating and evaluating seeds
 continues indefinitely.
 
+.. _model:
+
+Modeling the Environment
+========================
+
+It's easy for czz to respond appropriately to library calls like ``rand``: it
+has the freedom to choose an arbitrary ``int`` and return it to the program.
+Other library calls require more care. Consider ``getenv``:
+
+.. code-block:: c
+
+  #include <stdlib.h>
+  int main(int argc, char *argv[]) {
+    char *x = malloc(1);
+    if (strcmp(getenv("SHELL"), getenv("SHELL")) != 0) {
+      free(x);  // unreachable
+    }
+    free(x);
+    return 0;
+  }
+
+This program doesn't have a double-free---``getenv`` will return the same value
+when given the same argument twice in a row. czz-llvm needs to do the same to
+avoid *unsoundness*, that is, reporting a "false positive", a "bug" that can't
+actually arise in practice. In particular, czz can't simply respond completely
+randomly to each library call.
+
+The situation gets even more complicated when considering ``setenv``: ``getenv``
+must return the *latest* value of each environment variable, meaning czz-llvm
+must maintain *state* during the program's execution. Similarly, ``getenv``
+should agree with ``envp`` (the third argument to ``main``, for programs that
+take such an argument) on the values of the environment variables.
+
+To maintain soundness, czz must *under-approximate* the behavior of the standard
+library and host OS. Every response that czz generates for a library call must
+be a *possible* response that the standard library and host OS might generate.
+The test suite compares the behavior of programs that make library calls when
+interpreted by czz-llvm to when they're compiled by Clang and executed on the
+host, to ensure fidelity of czz-llvm's models.
+
 .. _limitations:
 
 Limitations
@@ -133,8 +174,8 @@ While whole-program fuzzing has some benefits, it also has its drawbacks:
     able to fuzz the parts of the target that use them.
 
   * It's possible (though it should be considered a bug in czz) that some of
-    czz's models are :ref:`unsound <soundness>`, meaning it can report bugs
-    that can't actually occur.
+    czz's models are unsound (see :ref:`model`), meaning it can report bugs that
+    can't actually occur.
 
 - Interpreting programs is *much* slower than running them natively on the host
   OS and CPU. This means fewer executions, fewer mutations, and less coverage
@@ -192,8 +233,3 @@ bucketing strategies:
 log2 is more fine-grained than zero-one-many.
 
 .. TODO(lb): examples
-
-.. _soundness:
-
-Soundness
-=========
