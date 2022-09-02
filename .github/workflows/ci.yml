@@ -50,6 +50,44 @@ jobs:
         czz-llvm/{exe,src,test}
         czz-llvm-tui/{exe,src}
 
+  doc:
+    name: doc
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: cancel
+      uses: styfle/cancel-workflow-action@0.10.0
+      with:
+        access_token: ${{ github.token }}
+
+    - name: get src
+      uses: actions/checkout@v3
+
+    - name: build docs
+      uses: ammaraskar/sphinx-action@master
+      with:
+        docs-folder: "doc/"
+
+    - name: push docs
+      uses: peaceiris/actions-gh-pages@v3
+      if: ${{ github.ref == 'refs/heads/main' }}
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: doc/build/html
+
+    - name: package docs
+      shell: bash
+      run: |
+        tar -cvf doc.tar.gz doc/build/html/*
+
+    - name: upload docs
+      uses: actions/upload-artifact@v3
+      if: github.repository == 'langston-barrett/czz'
+      with:
+        name: "${{ env.NAME }}-docs"
+        path: "*.tar.gz"
+        if-no-files-found: error
+
   build:
     name: ${{ matrix.os }} GHC-${{ matrix.ghc }}
     runs-on: ${{ matrix.os }}
@@ -67,9 +105,11 @@ jobs:
       with:
         access_token: ${{ github.token }}
 
-    - uses: actions/checkout@v3
+    - name: get src
+      uses: actions/checkout@v3
 
-    - uses: haskell/actions/setup@v1
+    - name: install deps
+      uses: haskell/actions/setup@v1
       id: setup-haskell
       with:
         ghc-version: ${{ matrix.ghc }}
@@ -126,15 +166,4 @@ jobs:
         name: "${{ env.NAME }}-bdist-${{ matrix.os }}"
         path: "*.tar.gz"
         if-no-files-found: error
-
-    - name: doc
-      uses: ammaraskar/sphinx-action@master
-      with:
-        docs-folder: "doc/"
-
-    - uses: peaceiris/actions-gh-pages@v3
-      if: ${{ github.ref == 'refs/heads/main' }}
-      with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        publish_dir: doc/build/html
 
