@@ -270,12 +270,220 @@ title="Print to PDF"
     </ul>
   </div>
 </div>
+<label for="__page-toc"
+  class="headerbtn headerbtn-page-toc"
+  
+>
+  
+
+<span class="headerbtn__icon-container">
+  <i class="fas fa-list"></i>
+  </span>
+
+</label>
 
     </div>
 </div>
 
 <!-- Table of contents -->
 <div class="col-md-3 bd-toc show noprint">
+    <div class="tocsection onthispage pt-5 pb-3">
+        <i class="fas fa-list"></i> Contents
+    </div>
+    <nav id="bd-toc-nav" aria-label="Page">
+        <ul class="visible nav section-nav flex-column">
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#overrides">
+   Overrides
+  </a>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#environment-variables">
+   Environment Variables
+  </a>
+  <ul class="nav section-nav flex-column">
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#id1">
+     Overrides
+    </a>
+   </li>
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#getenv">
+     <code class="docutils literal notranslate">
+      <span class="pre">
+       getenv
+      </span>
+     </code>
+    </a>
+   </li>
+  </ul>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#files">
+   Files
+  </a>
+  <ul class="nav section-nav flex-column">
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#fprintf">
+     <code class="docutils literal notranslate">
+      <span class="pre">
+       fprintf
+      </span>
+     </code>
+    </a>
+   </li>
+  </ul>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#formatting">
+   Formatting
+  </a>
+  <ul class="nav section-nav flex-column">
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#printf">
+     <code class="docutils literal notranslate">
+      <span class="pre">
+       printf
+      </span>
+     </code>
+    </a>
+   </li>
+  </ul>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#math">
+   Math
+  </a>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#memory">
+   Memory
+  </a>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#miscellaneous">
+   Miscellaneous
+  </a>
+  <ul class="nav section-nav flex-column">
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#signal">
+     <code class="docutils literal notranslate">
+      <span class="pre">
+       signal
+      </span>
+     </code>
+    </a>
+   </li>
+  </ul>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#network">
+   Network
+  </a>
+  <ul class="nav section-nav flex-column">
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#accept">
+     <code class="docutils literal notranslate">
+      <span class="pre">
+       accept
+      </span>
+     </code>
+    </a>
+   </li>
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#bind">
+     <code class="docutils literal notranslate">
+      <span class="pre">
+       bind
+      </span>
+     </code>
+    </a>
+   </li>
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#listen">
+     <code class="docutils literal notranslate">
+      <span class="pre">
+       listen
+      </span>
+     </code>
+    </a>
+   </li>
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#recv">
+     <code class="docutils literal notranslate">
+      <span class="pre">
+       recv
+      </span>
+     </code>
+    </a>
+   </li>
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#send">
+     <code class="docutils literal notranslate">
+      <span class="pre">
+       send
+      </span>
+     </code>
+    </a>
+   </li>
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#setsockopt">
+     <code class="docutils literal notranslate">
+      <span class="pre">
+       setsockopt
+      </span>
+     </code>
+    </a>
+   </li>
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#socket">
+     <code class="docutils literal notranslate">
+      <span class="pre">
+       socket
+      </span>
+     </code>
+    </a>
+   </li>
+  </ul>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#standard-i-o">
+   Standard I/O
+  </a>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#strings">
+   Strings
+  </a>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#time">
+   Time
+  </a>
+  <ul class="nav section-nav flex-column">
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#gettimeofday">
+     <code class="docutils literal notranslate">
+      <span class="pre">
+       gettimeofday
+      </span>
+     </code>
+    </a>
+   </li>
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#id14">
+     <code class="docutils literal notranslate">
+      <span class="pre">
+       time
+      </span>
+     </code>
+    </a>
+   </li>
+  </ul>
+ </li>
+</ul>
+
+    </nav>
 </div>
     </div>
     <div class="article row">
@@ -287,6 +495,203 @@ title="Print to PDF"
                 <div id="print-main-content">
                     <div id="jb-print-toc">
                         
+                        <div>
+                            <h2> Contents </h2>
+                        </div>
+                        <nav aria-label="Page">
+                            <ul class="visible nav section-nav flex-column">
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#overrides">
+   Overrides
+  </a>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#environment-variables">
+   Environment Variables
+  </a>
+  <ul class="nav section-nav flex-column">
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#id1">
+     Overrides
+    </a>
+   </li>
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#getenv">
+     <code class="docutils literal notranslate">
+      <span class="pre">
+       getenv
+      </span>
+     </code>
+    </a>
+   </li>
+  </ul>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#files">
+   Files
+  </a>
+  <ul class="nav section-nav flex-column">
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#fprintf">
+     <code class="docutils literal notranslate">
+      <span class="pre">
+       fprintf
+      </span>
+     </code>
+    </a>
+   </li>
+  </ul>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#formatting">
+   Formatting
+  </a>
+  <ul class="nav section-nav flex-column">
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#printf">
+     <code class="docutils literal notranslate">
+      <span class="pre">
+       printf
+      </span>
+     </code>
+    </a>
+   </li>
+  </ul>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#math">
+   Math
+  </a>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#memory">
+   Memory
+  </a>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#miscellaneous">
+   Miscellaneous
+  </a>
+  <ul class="nav section-nav flex-column">
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#signal">
+     <code class="docutils literal notranslate">
+      <span class="pre">
+       signal
+      </span>
+     </code>
+    </a>
+   </li>
+  </ul>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#network">
+   Network
+  </a>
+  <ul class="nav section-nav flex-column">
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#accept">
+     <code class="docutils literal notranslate">
+      <span class="pre">
+       accept
+      </span>
+     </code>
+    </a>
+   </li>
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#bind">
+     <code class="docutils literal notranslate">
+      <span class="pre">
+       bind
+      </span>
+     </code>
+    </a>
+   </li>
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#listen">
+     <code class="docutils literal notranslate">
+      <span class="pre">
+       listen
+      </span>
+     </code>
+    </a>
+   </li>
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#recv">
+     <code class="docutils literal notranslate">
+      <span class="pre">
+       recv
+      </span>
+     </code>
+    </a>
+   </li>
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#send">
+     <code class="docutils literal notranslate">
+      <span class="pre">
+       send
+      </span>
+     </code>
+    </a>
+   </li>
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#setsockopt">
+     <code class="docutils literal notranslate">
+      <span class="pre">
+       setsockopt
+      </span>
+     </code>
+    </a>
+   </li>
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#socket">
+     <code class="docutils literal notranslate">
+      <span class="pre">
+       socket
+      </span>
+     </code>
+    </a>
+   </li>
+  </ul>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#standard-i-o">
+   Standard I/O
+  </a>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#strings">
+   Strings
+  </a>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#time">
+   Time
+  </a>
+  <ul class="nav section-nav flex-column">
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#gettimeofday">
+     <code class="docutils literal notranslate">
+      <span class="pre">
+       gettimeofday
+      </span>
+     </code>
+    </a>
+   </li>
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#id14">
+     <code class="docutils literal notranslate">
+      <span class="pre">
+       time
+      </span>
+     </code>
+    </a>
+   </li>
+  </ul>
+ </li>
+</ul>
+
+                        </nav>
                     </div>
                 </div>
             </div>
@@ -304,7 +709,569 @@ be a <em>possible</em> response that the standard library and host OS might gene
 The test suite compares the behavior of programs that make library calls when
 interpreted by czz-llvm to when they’re compiled by Clang and executed on the
 host, to ensure fidelity of czz-llvm’s models.</p>
+<div class="section" id="overrides">
+<h2>Overrides<a class="headerlink" href="#overrides" title="Permalink to this heading">#</a></h2>
+<p>czz-llvm’s models of library functions are called <em>overrides</em>. The following
+table provides a high-level view of these overrides.</p>
+<p>The “Impl.” column is short for “implementation”, for which there are several
+possible options:</p>
+<ul class="simple">
+<li><p>“None”: no override is available</p></li>
+<li><p>“czz”: the override is implemented as part of czz-llvm.</p></li>
+<li><p>“cru.”: the override is implemented as part of Crucible-LLVM.
+These overrides are generally suitable for program verification, so they are
+almost always sound.</p></li>
+<li><p>“musl”: the definition of this function is compiled by Clang from musl libc
+and linked into the LLVM module before execution by czz-llvm. This is sound up
+to bugs in musl, Clang, and <code class="docutils literal notranslate"><span class="pre">llvm-link</span></code>.</p></li>
+</ul>
+<p>The “Sound” column is short for “soundness”, for which there are several possible
+options:</p>
+<ul class="simple">
+<li><p>“Yes?”: AFAIK this is sound, but more research may be needed to verify this.</p></li>
+<li><p>“Yes”: This is very likely sound based on my reading of the docs.</p></li>
+<li><p>“No”: This is known to be unsound (see documentation for specific overrides).</p></li>
+</ul>
+<table class="table">
+<colgroup>
+<col style="width: 36%" />
+<col style="width: 19%" />
+<col style="width: 5%" />
+<col style="width: 5%" />
+<col style="width: 5%" />
+<col style="width: 29%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Category</p></th>
+<th class="head"><p>Name</p></th>
+<th class="head"><p>Tests</p></th>
+<th class="head"><p>Impl.</p></th>
+<th class="head"><p>Sound</p></th>
+<th class="head"><p>Docs or Issue</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><a class="reference internal" href="#model-env-vars"><span class="std std-ref">Env. vars.</span></a></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">getenv</span></code></p></td>
+<td><p>2</p></td>
+<td><p>czz</p></td>
+<td><p>Yes?</p></td>
+<td><p><a class="reference internal" href="#getenv"><span class="std std-ref">Docs</span></a></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#model-env-vars"><span class="std std-ref">Env. vars.</span></a></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">setenv</span></code></p></td>
+<td><p>0</p></td>
+<td><p>None</p></td>
+<td><p>n/a</p></td>
+<td><p><a class="reference external" href="https://github.com/langston-barrett/czz/issues/29">#29</a></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#model-env-vars"><span class="std std-ref">Env. vars.</span></a></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">unsetenv</span></code></p></td>
+<td><p>0</p></td>
+<td><p>None</p></td>
+<td><p>n/a</p></td>
+<td><p><a class="reference external" href="https://github.com/langston-barrett/czz/issues/30">#30</a></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#model-files"><span class="std std-ref">Files</span></a></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">fclose</span></code></p></td>
+<td><p>0</p></td>
+<td><p>None</p></td>
+<td><p>n/a</p></td>
+<td><p><a class="reference external" href="https://github.com/langston-barrett/czz/issues/43">#43</a></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#model-files"><span class="std std-ref">Files</span></a></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">fopen</span></code></p></td>
+<td><p>0</p></td>
+<td><p>None</p></td>
+<td><p>n/a</p></td>
+<td><p><a class="reference external" href="https://github.com/langston-barrett/czz/issues/42">#42</a></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#model-files"><span class="std std-ref">Files</span></a></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">fprintf</span></code></p></td>
+<td></td>
+<td><p>czz</p></td>
+<td><p>n/a</p></td>
+<td><p><a class="reference internal" href="#fprintf"><span class="std std-ref">Docs</span></a></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#model-files"><span class="std std-ref">Files</span></a></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">fread</span></code></p></td>
+<td><p>0</p></td>
+<td><p>None</p></td>
+<td><p>n/a</p></td>
+<td><p><a class="reference external" href="https://github.com/langston-barrett/czz/issues/44">#44</a></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#model-files"><span class="std std-ref">Files</span></a></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">fwrite</span></code></p></td>
+<td><p>0</p></td>
+<td><p>None</p></td>
+<td><p>n/a</p></td>
+<td><p><a class="reference external" href="https://github.com/langston-barrett/czz/issues/45">#45</a></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#model-format"><span class="std std-ref">Formatting</span></a></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">__printf_chk</span></code></p></td>
+<td><p>n/a</p></td>
+<td><p>cru.</p></td>
+<td><p>No</p></td>
+<td><p><a class="reference internal" href="#printf"><span class="std std-ref">Docs</span></a></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#model-format"><span class="std std-ref">Formatting</span></a></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">printf</span></code></p></td>
+<td><p>n/a</p></td>
+<td><p>cru.</p></td>
+<td><p>No</p></td>
+<td><p><a class="reference internal" href="#printf"><span class="std std-ref">Docs</span></a></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#model-format"><span class="std std-ref">Formatting</span></a></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">sprintf</span></code></p></td>
+<td></td>
+<td><p>czz</p></td>
+<td><p>No</p></td>
+<td><p><a class="reference internal" href="#printf"><span class="std std-ref">Docs</span></a></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#model-format"><span class="std std-ref">Formatting</span></a></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">snprintf</span></code></p></td>
+<td></td>
+<td><p>czz</p></td>
+<td><p>No</p></td>
+<td><p><a class="reference internal" href="#printf"><span class="std std-ref">Docs</span></a></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#model-format"><span class="std std-ref">Formatting</span></a></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">__sprintf_chk</span></code></p></td>
+<td></td>
+<td><p>czz</p></td>
+<td><p>No</p></td>
+<td><p><a class="reference internal" href="#printf"><span class="std std-ref">Docs</span></a></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#model-format"><span class="std std-ref">Formatting</span></a></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">__snprintf_chk</span></code></p></td>
+<td></td>
+<td><p>czz</p></td>
+<td><p>No</p></td>
+<td><p><a class="reference internal" href="#printf"><span class="std std-ref">Docs</span></a></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#model-math"><span class="std std-ref">Math</span></a></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">abs</span></code></p></td>
+<td><p>n/a</p></td>
+<td><p>cru.</p></td>
+<td><p>Yes</p></td>
+<td><p>n/a</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#model-math"><span class="std std-ref">Math</span></a></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">labs</span></code></p></td>
+<td><p>n/a</p></td>
+<td><p>cru.</p></td>
+<td><p>Yes</p></td>
+<td><p>n/a</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#model-math"><span class="std std-ref">Math</span></a></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">llabs</span></code></p></td>
+<td><p>n/a</p></td>
+<td><p>cru.</p></td>
+<td><p>Yes</p></td>
+<td><p>n/a</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#model-memory"><span class="std std-ref">Memory</span></a></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">__memcpy_chk</span></code></p></td>
+<td><p>n/a</p></td>
+<td><p>cru.</p></td>
+<td><p>Yes</p></td>
+<td><p>n/a</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#model-memory"><span class="std std-ref">Memory</span></a></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">__memset_chk</span></code></p></td>
+<td><p>n/a</p></td>
+<td><p>cru.</p></td>
+<td><p>Yes</p></td>
+<td><p>n/a</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#model-memory"><span class="std std-ref">Memory</span></a></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">calloc</span></code></p></td>
+<td><p>n/a</p></td>
+<td><p>cru.</p></td>
+<td><p>Yes</p></td>
+<td><p>n/a</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#model-memory"><span class="std std-ref">Memory</span></a></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">free</span></code></p></td>
+<td><p>n/a</p></td>
+<td><p>cru.</p></td>
+<td><p>Yes</p></td>
+<td><p>n/a</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#model-memory"><span class="std std-ref">Memory</span></a></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">htonl</span></code></p></td>
+<td><p>n/a</p></td>
+<td><p>cru.</p></td>
+<td><p>Yes</p></td>
+<td><p>n/a</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#model-memory"><span class="std std-ref">Memory</span></a></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">htons</span></code></p></td>
+<td><p>n/a</p></td>
+<td><p>cru.</p></td>
+<td><p>Yes</p></td>
+<td><p>n/a</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#model-memory"><span class="std std-ref">Memory</span></a></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">malloc</span></code></p></td>
+<td><p>n/a</p></td>
+<td><p>cru.</p></td>
+<td><p>Yes</p></td>
+<td><p>n/a</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#model-memory"><span class="std std-ref">Memory</span></a></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">memcmp</span></code></p></td>
+<td><p>n/a</p></td>
+<td><p>musl</p></td>
+<td><p>Yes</p></td>
+<td><p>n/a</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#model-memory"><span class="std std-ref">Memory</span></a></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">memcpy</span></code></p></td>
+<td><p>n/a</p></td>
+<td><p>cru.</p></td>
+<td><p>Yes</p></td>
+<td><p>n/a</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#model-memory"><span class="std std-ref">Memory</span></a></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">memmove</span></code></p></td>
+<td><p>n/a</p></td>
+<td><p>cru.</p></td>
+<td><p>Yes</p></td>
+<td><p>n/a</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#model-memory"><span class="std std-ref">Memory</span></a></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">memrchr</span></code></p></td>
+<td><p>n/a</p></td>
+<td><p>musl</p></td>
+<td><p>Yes</p></td>
+<td><p>n/a</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#model-memory"><span class="std std-ref">Memory</span></a></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">memset</span></code></p></td>
+<td><p>n/a</p></td>
+<td><p>cru.</p></td>
+<td><p>Yes</p></td>
+<td><p>n/a</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#model-memory"><span class="std std-ref">Memory</span></a></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">ntohl</span></code></p></td>
+<td><p>n/a</p></td>
+<td><p>cru.</p></td>
+<td><p>Yes</p></td>
+<td><p>n/a</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#model-memory"><span class="std std-ref">Memory</span></a></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">ntohs</span></code></p></td>
+<td><p>n/a</p></td>
+<td><p>cru.</p></td>
+<td><p>Yes</p></td>
+<td><p>n/a</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#model-memory"><span class="std std-ref">Memory</span></a></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">posix_memalign</span></code></p></td>
+<td><p>n/a</p></td>
+<td><p>cru.</p></td>
+<td><p>Yes</p></td>
+<td><p>n/a</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#model-memory"><span class="std std-ref">Memory</span></a></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">realloc</span></code></p></td>
+<td><p>n/a</p></td>
+<td><p>cru.</p></td>
+<td><p>Yes</p></td>
+<td><p>n/a</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#model-misc"><span class="std std-ref">Misc</span></a></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">__lctrans_cur</span></code></p></td>
+<td><p>n/a</p></td>
+<td><p>musl</p></td>
+<td><p>Yes</p></td>
+<td><p>n/a</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#model-misc"><span class="std std-ref">Misc</span></a></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">__lctrans</span></code></p></td>
+<td><p>n/a</p></td>
+<td><p>musl</p></td>
+<td><p>Yes</p></td>
+<td><p>n/a</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#model-misc"><span class="std std-ref">Misc</span></a></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">atoi</span></code></p></td>
+<td><p>n/a</p></td>
+<td><p>musl</p></td>
+<td><p>Yes</p></td>
+<td><p>n/a</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#model-misc"><span class="std std-ref">Misc</span></a></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">getopt_long</span></code></p></td>
+<td><p>n/a</p></td>
+<td><p>musl</p></td>
+<td><p>Yes</p></td>
+<td><p>n/a</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#model-misc"><span class="std std-ref">Misc</span></a></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">mbtowc</span></code></p></td>
+<td><p>n/a</p></td>
+<td><p>musl</p></td>
+<td><p>Yes</p></td>
+<td><p>n/a</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#model-misc"><span class="std std-ref">Misc</span></a></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">rand</span></code></p></td>
+<td><p>n/a</p></td>
+<td><p>musl</p></td>
+<td><p>Yes</p></td>
+<td><p>n/a</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#model-misc"><span class="std std-ref">Misc</span></a></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">srand</span></code></p></td>
+<td><p>n/a</p></td>
+<td><p>musl</p></td>
+<td><p>Yes</p></td>
+<td><p>n/a</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#model-misc"><span class="std std-ref">Misc</span></a></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">signal</span></code></p></td>
+<td></td>
+<td><p>czz</p></td>
+<td><p>Yes?</p></td>
+<td><p><a class="reference internal" href="#signal"><span class="std std-ref">Docs</span></a></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#model-network"><span class="std std-ref">Network</span></a></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">accept</span></code></p></td>
+<td></td>
+<td><p>czz</p></td>
+<td><p>No</p></td>
+<td><p><a class="reference internal" href="#accept"><span class="std std-ref">Docs</span></a></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#model-network"><span class="std std-ref">Network</span></a></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">bind</span></code></p></td>
+<td></td>
+<td><p>czz</p></td>
+<td><p>No</p></td>
+<td><p><a class="reference internal" href="#bind"><span class="std std-ref">Docs</span></a></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#model-network"><span class="std std-ref">Network</span></a></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">listen</span></code></p></td>
+<td></td>
+<td><p>czz</p></td>
+<td><p>No</p></td>
+<td><p><a class="reference internal" href="#listen"><span class="std std-ref">Docs</span></a></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#model-network"><span class="std std-ref">Network</span></a></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">recv</span></code></p></td>
+<td></td>
+<td><p>czz</p></td>
+<td><p>No</p></td>
+<td><p><a class="reference internal" href="#recv"><span class="std std-ref">Docs</span></a></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#model-network"><span class="std std-ref">Network</span></a></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">send</span></code></p></td>
+<td></td>
+<td><p>czz</p></td>
+<td><p>No</p></td>
+<td><p><a class="reference internal" href="#send"><span class="std std-ref">Docs</span></a></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#model-network"><span class="std std-ref">Network</span></a></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">setsockopt</span></code></p></td>
+<td></td>
+<td><p>czz</p></td>
+<td><p>No</p></td>
+<td><p><a class="reference internal" href="#setsockopt"><span class="std std-ref">Docs</span></a></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#model-network"><span class="std std-ref">Network</span></a></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">socket</span></code></p></td>
+<td></td>
+<td><p>czz</p></td>
+<td><p>No</p></td>
+<td><p><a class="reference internal" href="#socket"><span class="std std-ref">Docs</span></a></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#model-stdio"><span class="std std-ref">Standard I/O</span></a></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">putchar</span></code></p></td>
+<td><p>n/a</p></td>
+<td><p>cru.</p></td>
+<td><p>No</p></td>
+<td><p>n/a</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#model-stdio"><span class="std std-ref">Standard I/O</span></a></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">puts</span></code></p></td>
+<td><p>n/a</p></td>
+<td><p>cru.</p></td>
+<td><p>No</p></td>
+<td><p>n/a</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#model-strings"><span class="std std-ref">Strings</span></a></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">stpncpy</span></code></p></td>
+<td><p>n/a</p></td>
+<td><p>musl</p></td>
+<td><p>Yes</p></td>
+<td><p>n/a</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#model-strings"><span class="std std-ref">Strings</span></a></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">strcmp</span></code></p></td>
+<td><p>n/a</p></td>
+<td><p>musl</p></td>
+<td><p>Yes</p></td>
+<td><p>n/a</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#model-strings"><span class="std std-ref">Strings</span></a></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">strdup</span></code></p></td>
+<td><p>n/a</p></td>
+<td><p>musl</p></td>
+<td><p>Yes</p></td>
+<td><p>n/a</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#model-strings"><span class="std std-ref">Strings</span></a></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">strlen</span></code></p></td>
+<td><p>n/a</p></td>
+<td><p>cru.</p></td>
+<td><p>Yes</p></td>
+<td><p>n/a</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#model-strings"><span class="std std-ref">Strings</span></a></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">strcpy</span></code></p></td>
+<td></td>
+<td><p>czz</p></td>
+<td><p>Yes</p></td>
+<td><p>None</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#model-strings"><span class="std std-ref">Strings</span></a></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">strncpy</span></code></p></td>
+<td><p>n/a</p></td>
+<td><p>musl</p></td>
+<td><p>Yes</p></td>
+<td><p>n/a</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#model-strings"><span class="std std-ref">Strings</span></a></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">strrchr</span></code></p></td>
+<td><p>n/a</p></td>
+<td><p>musl</p></td>
+<td><p>Yes</p></td>
+<td><p>n/a</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#model-time"><span class="std std-ref">Time</span></a></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">gettimeofday</span></code></p></td>
+<td><p>1</p></td>
+<td><p>czz</p></td>
+<td><p>Yes</p></td>
+<td><p><a class="reference internal" href="#gettimeofday"><span class="std std-ref">Docs</span></a></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#model-time"><span class="std std-ref">Time</span></a></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">time</span></code></p></td>
+<td><p>1</p></td>
+<td><p>czz</p></td>
+<td><p>Yes?</p></td>
+<td><p><a class="reference internal" href="#id14"><span class="std std-ref">Docs</span></a></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="environment-variables">
+<span id="model-env-vars"></span><h2>Environment Variables<a class="headerlink" href="#environment-variables" title="Permalink to this heading">#</a></h2>
+<p>czz-llvm models environment variables as an array of null-terminated strings.
+Each seed stores an initial array of environment variables that is propagated to
+the <code class="docutils literal notranslate"><span class="pre">envp</span></code> parameter of <code class="docutils literal notranslate"><span class="pre">main</span></code> (if present). This array is part of the
+interpreter state, it may be modified by calls to <code class="docutils literal notranslate"><span class="pre">setenv</span></code> and <code class="docutils literal notranslate"><span class="pre">unsetenv</span></code>
+and these modifications will be reflected in subsequent calls to <code class="docutils literal notranslate"><span class="pre">getenv</span></code>.</p>
+<div class="section" id="id1">
+<h3>Overrides<a class="headerlink" href="#id1" title="Permalink to this heading">#</a></h3>
+</div>
+<div class="section" id="getenv">
+<span id="id2"></span><h3><code class="docutils literal notranslate"><span class="pre">getenv</span></code><a class="headerlink" href="#getenv" title="Permalink to this heading">#</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">getenv(s)</span></code> scans through the array of environment variables, tries to find
+one of the form <code class="docutils literal notranslate"><span class="pre">${s}=${v}</span></code> (where <code class="docutils literal notranslate"><span class="pre">${s}</span></code> is the value of <code class="docutils literal notranslate"><span class="pre">s</span></code>). If such a
+value is not found, it returns <code class="docutils literal notranslate"><span class="pre">NULL</span></code>. Otherwise, it allocates fresh memory
+big enough to contain <code class="docutils literal notranslate"><span class="pre">v</span></code>, writes <code class="docutils literal notranslate"><span class="pre">v</span></code> to it, and returns a pointer to that
+allocation.</p>
+</div>
+</div>
+<div class="section" id="files">
+<span id="model-files"></span><h2>Files<a class="headerlink" href="#files" title="Permalink to this heading">#</a></h2>
+<div class="section" id="fprintf">
+<span id="id3"></span><h3><code class="docutils literal notranslate"><span class="pre">fprintf</span></code><a class="headerlink" href="#fprintf" title="Permalink to this heading">#</a></h3>
+<p>Only works for <code class="docutils literal notranslate"><span class="pre">stdout</span></code> and <code class="docutils literal notranslate"><span class="pre">stderr</span></code>. See also <a class="reference internal" href="#printf"><span class="std std-ref">printf</span></a>.</p>
+</div>
+</div>
+<div class="section" id="formatting">
+<span id="model-format"></span><h2>Formatting<a class="headerlink" href="#formatting" title="Permalink to this heading">#</a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">_chk</span></code> overrides don’t do any extra checking, but this might be OK since
+Crucible-LLVM will detect any memory errors or undefined behavior.</p>
+<div class="section" id="printf">
+<span id="id4"></span><h3><code class="docutils literal notranslate"><span class="pre">printf</span></code><a class="headerlink" href="#printf" title="Permalink to this heading">#</a></h3>
+<p>See <a class="reference external" href="https://github.com/GaloisInc/crucible/blob/ce682842f8908a04036cf651df38b131736d7068/crucible-llvm/doc/limitations.md#printf-accuracy">the upstream docs</a>.</p>
+</div>
+</div>
+<div class="section" id="math">
+<span id="model-math"></span><h2>Math<a class="headerlink" href="#math" title="Permalink to this heading">#</a></h2>
+</div>
+<div class="section" id="memory">
+<span id="model-memory"></span><h2>Memory<a class="headerlink" href="#memory" title="Permalink to this heading">#</a></h2>
+<p>See <a class="reference external" href="https://github.com/GaloisInc/crucible/blob/master/crucible-llvm/doc/memory-model.md">upstream documentation</a>.</p>
+</div>
+<div class="section" id="miscellaneous">
+<span id="model-misc"></span><h2>Miscellaneous<a class="headerlink" href="#miscellaneous" title="Permalink to this heading">#</a></h2>
+<div class="section" id="signal">
+<span id="id5"></span><h3><code class="docutils literal notranslate"><span class="pre">signal</span></code><a class="headerlink" href="#signal" title="Permalink to this heading">#</a></h3>
+<p>czz-llvm never sends signals to the target. Thus, it’s sound to ignore the
+signal handler passed to <code class="docutils literal notranslate"><span class="pre">signal</span></code>, and this is what czz-llvm does. It returns
+a null pointer, which may not actually be sound (null pointers are not mentioned
+in the docs).</p>
+</div>
+</div>
+<div class="section" id="network">
+<span id="model-network"></span><h2>Network<a class="headerlink" href="#network" title="Permalink to this heading">#</a></h2>
+<div class="section" id="accept">
+<span id="model-stdio"></span><span id="id6"></span><h3><code class="docutils literal notranslate"><span class="pre">accept</span></code><a class="headerlink" href="#accept" title="Permalink to this heading">#</a></h3>
 <p>TODO(lb)</p>
+</div>
+<div class="section" id="bind">
+<span id="id7"></span><h3><code class="docutils literal notranslate"><span class="pre">bind</span></code><a class="headerlink" href="#bind" title="Permalink to this heading">#</a></h3>
+<p>TODO(lb)</p>
+</div>
+<div class="section" id="listen">
+<span id="id8"></span><h3><code class="docutils literal notranslate"><span class="pre">listen</span></code><a class="headerlink" href="#listen" title="Permalink to this heading">#</a></h3>
+<p>TODO(lb)</p>
+</div>
+<div class="section" id="recv">
+<span id="id9"></span><h3><code class="docutils literal notranslate"><span class="pre">recv</span></code><a class="headerlink" href="#recv" title="Permalink to this heading">#</a></h3>
+<p>TODO(lb)</p>
+</div>
+<div class="section" id="send">
+<span id="id10"></span><h3><code class="docutils literal notranslate"><span class="pre">send</span></code><a class="headerlink" href="#send" title="Permalink to this heading">#</a></h3>
+<p>TODO(lb)</p>
+</div>
+<div class="section" id="setsockopt">
+<span id="id11"></span><h3><code class="docutils literal notranslate"><span class="pre">setsockopt</span></code><a class="headerlink" href="#setsockopt" title="Permalink to this heading">#</a></h3>
+<p>TODO(lb)</p>
+</div>
+<div class="section" id="socket">
+<span id="id12"></span><h3><code class="docutils literal notranslate"><span class="pre">socket</span></code><a class="headerlink" href="#socket" title="Permalink to this heading">#</a></h3>
+<p>TODO(lb)</p>
+</div>
+</div>
+<div class="section" id="standard-i-o">
+<h2>Standard I/O<a class="headerlink" href="#standard-i-o" title="Permalink to this heading">#</a></h2>
+</div>
+<div class="section" id="strings">
+<span id="model-strings"></span><h2>Strings<a class="headerlink" href="#strings" title="Permalink to this heading">#</a></h2>
+</div>
+<div class="section" id="time">
+<span id="model-time"></span><h2>Time<a class="headerlink" href="#time" title="Permalink to this heading">#</a></h2>
+<div class="section" id="gettimeofday">
+<span id="id13"></span><h3><code class="docutils literal notranslate"><span class="pre">gettimeofday</span></code><a class="headerlink" href="#gettimeofday" title="Permalink to this heading">#</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">gettimeofday</span></code> always returns 0. This is sound, see the manpage:</p>
+<blockquote>
+<div><p>The time returned by gettimeofday() is affected by discontinuous jumps in the
+system time (e.g., if the sys‐ tem administrator manually changes the system
+time).</p>
+</div></blockquote>
+</div>
+<div class="section" id="id14">
+<span id="id15"></span><h3><code class="docutils literal notranslate"><span class="pre">time</span></code><a class="headerlink" href="#id14" title="Permalink to this heading">#</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">time</span></code> always returns 0.</p>
+</div>
+</div>
 </div>
 
 
