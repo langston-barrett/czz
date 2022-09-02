@@ -105,8 +105,15 @@ jobs:
       with:
         docs-folder: "doc/"
 
-    # TODO(lb)
+    # TODO(#52)
 
     # - name: doc
     #   shell: bash
     #   run: cabal haddock all
+
+    - name: Create binary artifact
+      shell: bash
+      run: |
+        ./scripts/dist.sh czz-llvm-tui
+      env:
+        OS_TAG: ${{ matrix.os }}
