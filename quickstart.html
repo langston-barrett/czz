@@ -5,7 +5,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>czz: Whole-Program Fuzzing &#8212; czz  documentation</title>
+    <title>Quick Start &#8212; czz  documentation</title>
     
   <!-- Loaded before other Sphinx assets -->
   <link href="_static/styles/theme.css?digest=1999514e3f237ded88cf" rel="stylesheet">
@@ -33,7 +33,8 @@
     <script src="_static/scripts/sphinx-book-theme.js?digest=9c920249402e914e316237a7dbc6769907cce411"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Overview" href="overview.html" />
+    <link rel="next" title="System Model" href="llvm/model.html" />
+    <link rel="prev" title="Overview" href="overview.html" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="docsearch:language" content="en">
     
@@ -68,7 +69,7 @@
 <div class="bd-sidebar noprint" id="site-navigation">
     <div class="bd-sidebar__content">
         <div class="bd-sidebar__top"><div class="navbar-brand-box">
-    <a class="navbar-brand text-wrap" href="#">
+    <a class="navbar-brand text-wrap" href="index.html">
       
       
       
@@ -85,14 +86,14 @@
   Start Here
  </span>
 </p>
-<ul class="nav bd-sidenav">
+<ul class="current nav bd-sidenav">
  <li class="toctree-l1">
   <a class="reference internal" href="overview.html">
    Overview
   </a>
  </li>
- <li class="toctree-l1">
-  <a class="reference internal" href="quickstart.html">
+ <li class="toctree-l1 current active">
+  <a class="current reference internal" href="#">
    Quick Start
   </a>
  </li>
@@ -198,7 +199,7 @@ title="Fullscreen mode"
   <div class="menu-dropdown__content">
     <ul>
       <li>
-        <a href="_sources/index.rst.txt"
+        <a href="_sources/quickstart.rst.txt"
    class="headerbtn"
    data-toggle="tooltip"
 data-placement="left"
@@ -257,17 +258,49 @@ title="Print to PDF"
     </div>
     <nav id="bd-toc-nav" aria-label="Page">
         <ul class="visible nav section-nav flex-column">
- <li class="toc-h1 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#">
-   czz: Whole-Program Fuzzing
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#dependencies">
+   Dependencies
   </a>
-  <ul class="visible nav section-nav flex-column">
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#obtaining-binaries">
+   Obtaining Binaries
+  </a>
+  <ul class="nav section-nav flex-column">
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#download-pre-built-binaries">
+     Download Pre-Built Binaries
+    </a>
+   </li>
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#build-from-source">
+     Build from Source
+    </a>
+   </li>
   </ul>
  </li>
- <li class="toc-h1 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#indices-and-tables">
-   Indices and tables
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#configure-and-run">
+   Configure and Run
   </a>
+  <ul class="nav section-nav flex-column">
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#build-the-target">
+     Build the Target
+    </a>
+   </li>
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#run-the-tui">
+     Run the TUI
+    </a>
+   </li>
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#configure">
+     Configure
+    </a>
+   </li>
+  </ul>
  </li>
 </ul>
 
@@ -278,7 +311,7 @@ title="Print to PDF"
         <div class="col pl-md-3 pl-lg-5 content-container">
             <!-- Table of contents that is only displayed when printing the page -->
             <div id="jb-print-docs-body" class="onlyprint">
-                <h1>czz: Whole-Program Fuzzing</h1>
+                <h1>Quick Start</h1>
                 <!-- Table of contents -->
                 <div id="print-main-content">
                     <div id="jb-print-toc">
@@ -288,17 +321,49 @@ title="Print to PDF"
                         </div>
                         <nav aria-label="Page">
                             <ul class="visible nav section-nav flex-column">
- <li class="toc-h1 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#">
-   czz: Whole-Program Fuzzing
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#dependencies">
+   Dependencies
   </a>
-  <ul class="visible nav section-nav flex-column">
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#obtaining-binaries">
+   Obtaining Binaries
+  </a>
+  <ul class="nav section-nav flex-column">
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#download-pre-built-binaries">
+     Download Pre-Built Binaries
+    </a>
+   </li>
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#build-from-source">
+     Build from Source
+    </a>
+   </li>
   </ul>
  </li>
- <li class="toc-h1 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#indices-and-tables">
-   Indices and tables
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#configure-and-run">
+   Configure and Run
   </a>
+  <ul class="nav section-nav flex-column">
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#build-the-target">
+     Build the Target
+    </a>
+   </li>
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#run-the-tui">
+     Run the TUI
+    </a>
+   </li>
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#configure">
+     Configure
+    </a>
+   </li>
+  </ul>
  </li>
 </ul>
 
@@ -310,38 +375,77 @@ title="Print to PDF"
                 
               <div>
                 
-  <div class="section" id="czz-whole-program-fuzzing">
-<h1>czz: Whole-Program Fuzzing<a class="headerlink" href="#czz-whole-program-fuzzing" title="Permalink to this heading">#</a></h1>
-<p>czz is a <em>whole-program</em> coverage-guided mutational fuzzer. Instead of feeding
-input to the target program via a file or stdin, czz executes target from
-<code class="docutils literal notranslate"><span class="pre">main</span></code> and provides it with manufactured data by intercepting calls to library
-functions like <code class="docutils literal notranslate"><span class="pre">recv</span></code>, <code class="docutils literal notranslate"><span class="pre">fopen</span></code>, and <code class="docutils literal notranslate"><span class="pre">rand</span></code>. This approach has two primary
-benefits:</p>
+  <div class="section" id="quick-start">
+<h1>Quick Start<a class="headerlink" href="#quick-start" title="Permalink to this heading">#</a></h1>
+<p>This guide is intended to get you started fuzzing a C program with czz-llvm as
+soon as possible. For more detail on the various steps taken here, refer to the
+rest of the documentation.</p>
+<div class="section" id="dependencies">
+<h2>Dependencies<a class="headerlink" href="#dependencies" title="Permalink to this heading">#</a></h2>
+<p>The following tools must be present on your <code class="docutils literal notranslate"><span class="pre">$PATH</span></code> to run czz-llvm:</p>
 <ul class="simple">
-<li><p>It requires very little setup. In particular, it does not require users to
-write a fuzzing harness.</p></li>
-<li><p>It can exercise effectful, non-deterministic code that is not amenable to
-traditional fuzzing techniques.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">z3</span></code>, the <a class="reference external" href="https://github.com/Z3Prover/z3/releases">Z3 SMT solver</a></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">llvm-link</span></code> (version &lt;= 12), shipped with <a class="reference external" href="https://llvm.org/">LLVM</a></p></li>
 </ul>
-<p>czz currently targets languages that compile to LLVM (e.g., C, C++, Rust, etc.),
-but is built on the language-agnostic
-<a class="reference external" href="https://github.com/GaloisInc/crucible">Crucible</a> library, and also includes
-a proof-of-concept fuzzer for JVM code.</p>
-<p>Read more at <a class="reference internal" href="overview.html"><span class="doc">Overview</span></a>.</p>
-<div class="toctree-wrapper compound">
-</div>
-<div class="toctree-wrapper compound">
-</div>
-<div class="toctree-wrapper compound">
+<p>On Ubuntu, these can be installed with</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>sudo apt-get install -y llvm z3
+</pre></div>
 </div>
 </div>
-<div class="section" id="indices-and-tables">
-<h1>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this heading">#</a></h1>
+<div class="section" id="obtaining-binaries">
+<h2>Obtaining Binaries<a class="headerlink" href="#obtaining-binaries" title="Permalink to this heading">#</a></h2>
+<p>You can either download pre-built binaries, or build them yourself from source.</p>
+<div class="section" id="download-pre-built-binaries">
+<span id="download"></span><h3>Download Pre-Built Binaries<a class="headerlink" href="#download-pre-built-binaries" title="Permalink to this heading">#</a></h3>
+<p>The CI system uploads artifacts to GitHub. To download a pre-built binary,
+navigate to <a class="reference external" href="https://github.com/langston-barrett/czz/actions?query=branch%3Amain+event%3Apush">the “Actions” tab</a>
+of <a class="reference external" href="https://github.com/langston-barrett/czz">the czz GitHub repo</a>, select the
+latest completed build of <code class="docutils literal notranslate"><span class="pre">main</span></code>, and click on the appropriate “bdist” (binary
+distribution) artifact for your OS.</p>
+</div>
+<div class="section" id="build-from-source">
+<h3>Build from Source<a class="headerlink" href="#build-from-source" title="Permalink to this heading">#</a></h3>
+<p>To build czz you’ll need GHC and <code class="docutils literal notranslate"><span class="pre">cabal</span></code>, which can be installed with
+<a class="reference external" href="https://www.haskell.org/ghcup/">ghcup</a>.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git clone https://github.com/langston-barrett/czz.git
+<span class="nb">cd</span> czz
+git submodule update --init
+cabal build exe:czz-llvm-tui
+</pre></div>
+</div>
+<p>You can locate the built executable with <code class="docutils literal notranslate"><span class="pre">cabal</span> <span class="pre">list-bin</span> <span class="pre">exe:czz-llvm-tui</span></code>, or
+install it under <code class="docutils literal notranslate"><span class="pre">~/.cabal/bin</span></code> with <code class="docutils literal notranslate"><span class="pre">cabal</span> <span class="pre">install</span>
+<span class="pre">exe:czz-llvm-tui</span> <span class="pre">--overwrite-policy=always</span></code>.</p>
+</div>
+</div>
+<div class="section" id="configure-and-run">
+<h2>Configure and Run<a class="headerlink" href="#configure-and-run" title="Permalink to this heading">#</a></h2>
+<div class="section" id="build-the-target">
+<h3>Build the Target<a class="headerlink" href="#build-the-target" title="Permalink to this heading">#</a></h3>
+<p>To run czz-llvm, you’ll need to compile your program to LLVM bitcode. You can do
+this with <a class="reference external" href="https://github.com/SRI-CSL/gllvm">gllvm</a> or <a class="reference external" href="https://github.com/travitch/build-bom">build-bom</a>, or for single-file C programs you can run</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>clang -g -emit-llvm -fno-discard-value-names -c prog.c -o prog.bc
+</pre></div>
+</div>
+<p>(To view the resulting LLVM module, try using <code class="docutils literal notranslate"><span class="pre">llvm-dis</span></code>.)</p>
+</div>
+<div class="section" id="run-the-tui">
+<h3>Run the TUI<a class="headerlink" href="#run-the-tui" title="Permalink to this heading">#</a></h3>
+<p>Then you can run the TUI (Terminal User Interface) like so:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>czz-llvm-tui prog.bc
+</pre></div>
+</div>
+<p>Press ESC to exit the TUI.</p>
+</div>
+<div class="section" id="configure">
+<h3>Configure<a class="headerlink" href="#configure" title="Permalink to this heading">#</a></h3>
+<p>Some interesting options:</p>
 <ul class="simple">
-<li><p><a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></p></li>
-<li><p><a class="reference internal" href="py-modindex.html"><span class="std std-ref">Module Index</span></a></p></li>
-<li><p><a class="reference internal" href="search.html"><span class="std std-ref">Search Page</span></a></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--jobs</span></code>: Control the number of fuzzing threads</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--tries</span></code></p></li>
 </ul>
+</div>
+</div>
 </div>
 
 
@@ -352,10 +456,17 @@ a proof-of-concept fuzzer for JVM code.</p>
                 
     <!-- Previous / next buttons -->
 <div class='prev-next-area'>
-    <a class='right-next' id="next-link" href="overview.html" title="next page">
+    <a class='left-prev' id="prev-link" href="overview.html" title="previous page">
+        <i class="fas fa-angle-left"></i>
+        <div class="prev-next-info">
+            <p class="prev-next-subtitle">previous</p>
+            <p class="prev-next-title">Overview</p>
+        </div>
+    </a>
+    <a class='right-next' id="next-link" href="llvm/model.html" title="next page">
     <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">Overview</p>
+        <p class="prev-next-title">System Model</p>
     </div>
     <i class="fas fa-angle-right"></i>
     </a>

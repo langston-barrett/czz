@@ -28,6 +28,7 @@ Read more at :doc:`overview`.
    :caption: Start Here
 
    overview
+   quickstart
 
 .. toctree::
    :hidden:
