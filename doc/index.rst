@@ -16,12 +16,15 @@ benefits:
 - It can exercise effectful, non-deterministic code that is not amenable to
   traditional fuzzing techniques.
 
+Of course, it also has some notable :ref:`drawbacks and limitations
+<limitations>`.
+
 czz currently targets languages that compile to LLVM (e.g., C, C++, Rust, etc.),
 but is built on the language-agnostic
 `Crucible <https://github.com/GaloisInc/crucible>`_ library, and also includes
 a proof-of-concept fuzzer for JVM code.
 
-Read more at :doc:`overview`.
+Read more at the :doc:`overview`.
 
 .. toctree::
    :hidden:
@@ -32,7 +35,21 @@ Read more at :doc:`overview`.
 
 .. toctree::
    :hidden:
-   :caption: LLVM
+   :caption: Reference
+
+   architecture
+   fuzzing
+
+.. toctree::
+   :hidden:
+   :caption: czz-llvm Usage
+
+   llvm/config
+   llvm/tui
+
+.. toctree::
+   :hidden:
+   :caption: czz-llvm Reference
 
    llvm/model
    llvm/status
@@ -40,7 +57,7 @@ Read more at :doc:`overview`.
 
 .. toctree::
    :hidden:
-   :caption: JVM
+   :caption: czz-jvm Reference
 
    jvm/status
 
