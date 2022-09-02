@@ -16,6 +16,9 @@ benefits:
 - It can exercise effectful, non-deterministic code that is not amenable to
   traditional fuzzing techniques.
 
+Of course, it also has some notable :ref:`drawbacks and limitations
+<limitations>`.
+
 czz currently targets languages that compile to LLVM (e.g., C, C++, Rust, etc.),
 but is built on the language-agnostic
 `Crucible <https://github.com/GaloisInc/crucible>`_ library, and also includes
@@ -27,9 +30,10 @@ Introduction
 .. note::
 
   This section compares czz to AFL-style mutational, coverage-guided fuzzers. If
-  you're not familiar with how these work, you may want to read `the AFL
-  whitepaper <https://lcamtuf.coredump.cx/afl/technical_details.txt>`_ before
-  continuing.
+  you're not familiar with how these work, you may want to read `the fuzzing
+  book <https://www.fuzzingbook.org/>`_ up through chapter 2 ("Lexical Fuzzing")
+  and `the AFL whitepaper
+  <https://lcamtuf.coredump.cx/afl/technical_details.txt>`_ before continuing.
 
 Mutational, coverage-guided fuzzers like AFL, honggfuzz, and libFuzzer place
 strict requirements on their targets: they must take a single string of bytes as
@@ -44,10 +48,10 @@ passes it on to some mostly-side-effect-free subset of the target.
 
    Classic coverage-guided fuzzing
 
-czz works differently. Instead of executing code directly on the host CPU and
-OS, it acts as an *interpreter* for target program (like QEMU User Mode
-Emulation). This allows czz to completely control the target's environment,
-responding to library calls with generated data.
+czz works differently. Instead of executing code directly on the host, it acts
+as an *interpreter* for target program (like QEMU User Mode Emulation). This
+allows czz to completely control the target's environment, responding to library
+calls with generated data.
 
 .. figure:: img/czz.svg
 
@@ -62,8 +66,9 @@ how to respond to them. Consider the following target:
   #include <stdlib.h>
   #include <time.h>
   void harness(char *data, size_t size) {
-    srand(time(NULL)); // set seed for random number generator based on time
-    if (rand()) {
+    // set seed of random number generator to current time
+    srand(time(NULL));
+    if (rand() % 2 == 0) {
       do_a_thing(data, size);
     } else {
       something_else(data, size);
@@ -161,6 +166,8 @@ The test suite compares the behavior of programs that make library calls when
 interpreted by czz-llvm to when they're compiled by Clang and executed on the
 host, to ensure fidelity of czz-llvm's models.
 
+See :doc:`llvm/model` for more information about czz-llvm's modeling.
+
 .. _limitations:
 
 Limitations
@@ -199,37 +206,5 @@ czz-llvm
     ``snprintf`` and friends).
 
   * It often lags a few versions behind the latest LLVM release.
-
-.. _coverage:
-
-Coverage
-========
-
-To determine whether or to keep a seed in the seed pool, czz tracks the
-*coverage* that the seed achieves. This tracking is configurable. Fine-grained
-coverage tracking results in a larger seed pool, which is beneficial if the
-difference in coverage reflects an interesting difference between the seeds, but
-can be detrimental if it ends up adding fundamentally similar, redundant seeds
-to the pool.
-
-When executing the target with the seed, czz tracks how many times the program
-executes each *k*-length chain of edges between basic blocks. Particular choices
-of *k* reduce to more familiar coverage tracking schemes:
-
-- *k* = 1: Basic block coverage
-- *k* = 2: Edge coverage (like AFL)
-
-Higher values of *k* correspond to more fine-grained distinctions in coverage.
-
-Like AFL, czz tracks not just whether an edge was covered, but further tracks
-the *hit counts* of each *k*-edge chain (i.e., how many times the chain was
-executed). These hit counts are *bucketed* at the end of the execution, meaning
-they are collapsed into a more granular form. czz currently provides two
-bucketing strategies:
-
-- log2: Take the (integer) logarithm base 2 of each hit count
-- zero-one-many: Record only whether the edge was hit one or more than one time
-
-log2 is more fine-grained than zero-one-many.
 
 .. TODO(lb): examples
