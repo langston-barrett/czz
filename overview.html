@@ -1,0 +1,599 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Overview &#8212; czz  documentation</title>
+    
+  <!-- Loaded before other Sphinx assets -->
+  <link href="_static/styles/theme.css?digest=1999514e3f237ded88cf" rel="stylesheet">
+<link href="_static/styles/pydata-sphinx-theme.css?digest=1999514e3f237ded88cf" rel="stylesheet">
+
+    
+  <link rel="stylesheet"
+    href="_static/vendor/fontawesome/5.13.0/css/all.min.css">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="_static/vendor/fontawesome/5.13.0/webfonts/fa-solid-900.woff2">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="_static/vendor/fontawesome/5.13.0/webfonts/fa-brands-400.woff2">
+
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" href="_static/styles/sphinx-book-theme.css?digest=5115cc725059bd94278eecd172e13a965bf8f5a9" type="text/css" />
+    
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=1999514e3f237ded88cf">
+
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/scripts/sphinx-book-theme.js?digest=9c920249402e914e316237a7dbc6769907cce411"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="System Model" href="llvm/model.html" />
+    <link rel="prev" title="czz: Whole-Program Fuzzing" href="index.html" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="docsearch:language" content="en">
+    
+
+    <!-- Google Analytics -->
+    
+  </head>
+  <body data-spy="scroll" data-target="#bd-toc-nav" data-offset="60">
+<!-- Checkboxes to toggle the left sidebar -->
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation" aria-label="Toggle navigation sidebar">
+<label class="overlay overlay-navbar" for="__navigation">
+    <div class="visually-hidden">Toggle navigation sidebar</div>
+</label>
+<!-- Checkboxes to toggle the in-page toc -->
+<input type="checkbox" class="sidebar-toggle" name="__page-toc" id="__page-toc" aria-label="Toggle in-page Table of Contents">
+<label class="overlay overlay-pagetoc" for="__page-toc">
+    <div class="visually-hidden">Toggle in-page Table of Contents</div>
+</label>
+<!-- Headers at the top -->
+<div class="announcement header-item noprint"></div>
+<div class="header header-item noprint"></div>
+
+    
+    <div class="container-fluid" id="banner"></div>
+
+    
+
+    <div class="container-xl">
+      <div class="row">
+          
+<!-- Sidebar -->
+<div class="bd-sidebar noprint" id="site-navigation">
+    <div class="bd-sidebar__content">
+        <div class="bd-sidebar__top"><div class="navbar-brand-box">
+    <a class="navbar-brand text-wrap" href="index.html">
+      
+      
+      
+      <h1 class="site-logo" id="site-title">czz  documentation</h1>
+      
+    </a>
+</div><form class="bd-search d-flex align-items-center" action="search.html" method="get">
+  <i class="icon fas fa-search"></i>
+  <input type="search" class="form-control" name="q" id="search-input" placeholder="Search the docs ..." aria-label="Search the docs ..." autocomplete="off" >
+</form><nav class="bd-links" id="bd-docs-nav" aria-label="Main">
+    <div class="bd-toc-item active">
+        <p aria-level="2" class="caption" role="heading">
+ <span class="caption-text">
+  Start Here
+ </span>
+</p>
+<ul class="current nav bd-sidenav">
+ <li class="toctree-l1 current active">
+  <a class="current reference internal" href="#">
+   Overview
+  </a>
+ </li>
+</ul>
+<p aria-level="2" class="caption" role="heading">
+ <span class="caption-text">
+  LLVM
+ </span>
+</p>
+<ul class="nav bd-sidenav">
+ <li class="toctree-l1">
+  <a class="reference internal" href="llvm/model.html">
+   System Model
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="llvm/status.html">
+   Status
+  </a>
+ </li>
+</ul>
+<p aria-level="2" class="caption" role="heading">
+ <span class="caption-text">
+  JVM
+ </span>
+</p>
+<ul class="nav bd-sidenav">
+ <li class="toctree-l1">
+  <a class="reference internal" href="jvm/status.html">
+   Status
+  </a>
+ </li>
+</ul>
+
+    </div>
+</nav></div>
+        <div class="bd-sidebar__bottom">
+             <!-- To handle the deprecated key -->
+            
+            <div class="navbar_extra_footer">
+            Theme by the <a href="https://ebp.jupyterbook.org">Executable Book Project</a>
+            </div>
+            
+        </div>
+    </div>
+    <div id="rtd-footer-container"></div>
+</div>
+
+
+          
+
+
+          
+<!-- A tiny helper pixel to detect if we've scrolled -->
+<div class="sbt-scroll-pixel-helper"></div>
+<!-- Main content -->
+<div class="col py-0 content-container">
+    
+    <div class="header-article row sticky-top noprint">
+        
+
+
+
+<div class="col py-1 d-flex header-article-main">
+    <div class="header-article__left">
+        
+        <label for="__navigation"
+  class="headerbtn"
+  data-toggle="tooltip"
+data-placement="right"
+title="Toggle navigation"
+>
+  
+
+<span class="headerbtn__icon-container">
+  <i class="fas fa-bars"></i>
+  </span>
+
+</label>
+
+        
+    </div>
+    <div class="header-article__right">
+<button onclick="toggleFullScreen()"
+  class="headerbtn"
+  data-toggle="tooltip"
+data-placement="bottom"
+title="Fullscreen mode"
+>
+  
+
+<span class="headerbtn__icon-container">
+  <i class="fas fa-expand"></i>
+  </span>
+
+</button>
+
+<div class="menu-dropdown menu-dropdown-download-buttons">
+  <button class="headerbtn menu-dropdown__trigger"
+      aria-label="Download this page">
+      <i class="fas fa-download"></i>
+  </button>
+  <div class="menu-dropdown__content">
+    <ul>
+      <li>
+        <a href="_sources/overview.rst.txt"
+   class="headerbtn"
+   data-toggle="tooltip"
+data-placement="left"
+title="Download source file"
+>
+  
+
+<span class="headerbtn__icon-container">
+  <i class="fas fa-file"></i>
+  </span>
+<span class="headerbtn__text-container">.rst</span>
+</a>
+
+      </li>
+      
+      <li>
+        
+<button onclick="printPdf(this)"
+  class="headerbtn"
+  data-toggle="tooltip"
+data-placement="left"
+title="Print to PDF"
+>
+  
+
+<span class="headerbtn__icon-container">
+  <i class="fas fa-file-pdf"></i>
+  </span>
+<span class="headerbtn__text-container">.pdf</span>
+</button>
+
+      </li>
+      
+    </ul>
+  </div>
+</div>
+<label for="__page-toc"
+  class="headerbtn headerbtn-page-toc"
+  
+>
+  
+
+<span class="headerbtn__icon-container">
+  <i class="fas fa-list"></i>
+  </span>
+
+</label>
+
+    </div>
+</div>
+
+<!-- Table of contents -->
+<div class="col-md-3 bd-toc show noprint">
+    <div class="tocsection onthispage pt-5 pb-3">
+        <i class="fas fa-list"></i> Contents
+    </div>
+    <nav id="bd-toc-nav" aria-label="Page">
+        <ul class="visible nav section-nav flex-column">
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#introduction">
+   Introduction
+  </a>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#how-it-works">
+   How it Works
+  </a>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#modeling-the-environment">
+   Modeling the Environment
+  </a>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#limitations">
+   Limitations
+  </a>
+  <ul class="nav section-nav flex-column">
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#czz-llvm">
+     czz-llvm
+    </a>
+   </li>
+  </ul>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#coverage">
+   Coverage
+  </a>
+ </li>
+</ul>
+
+    </nav>
+</div>
+    </div>
+    <div class="article row">
+        <div class="col pl-md-3 pl-lg-5 content-container">
+            <!-- Table of contents that is only displayed when printing the page -->
+            <div id="jb-print-docs-body" class="onlyprint">
+                <h1>Overview</h1>
+                <!-- Table of contents -->
+                <div id="print-main-content">
+                    <div id="jb-print-toc">
+                        
+                        <div>
+                            <h2> Contents </h2>
+                        </div>
+                        <nav aria-label="Page">
+                            <ul class="visible nav section-nav flex-column">
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#introduction">
+   Introduction
+  </a>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#how-it-works">
+   How it Works
+  </a>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#modeling-the-environment">
+   Modeling the Environment
+  </a>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#limitations">
+   Limitations
+  </a>
+  <ul class="nav section-nav flex-column">
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#czz-llvm">
+     czz-llvm
+    </a>
+   </li>
+  </ul>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#coverage">
+   Coverage
+  </a>
+ </li>
+</ul>
+
+                        </nav>
+                    </div>
+                </div>
+            </div>
+            <main id="main-content" role="main">
+                
+              <div>
+                
+  <div class="section" id="overview">
+<h1>Overview<a class="headerlink" href="#overview" title="Permalink to this heading">#</a></h1>
+<p>czz is a <em>whole-program</em> coverage-guided mutational fuzzer. Instead of feeding
+input to the target program via a file or stdin, czz executes target from
+<code class="docutils literal notranslate"><span class="pre">main</span></code> and provides it with manufactured data by intercepting calls to library
+functions like <code class="docutils literal notranslate"><span class="pre">recv</span></code>, <code class="docutils literal notranslate"><span class="pre">fopen</span></code>, and <code class="docutils literal notranslate"><span class="pre">rand</span></code>. This approach has two primary
+benefits:</p>
+<ul class="simple">
+<li><p>It requires very little setup. In particular, it does not require users to
+write a fuzzing harness.</p></li>
+<li><p>It can exercise effectful, non-deterministic code that is not amenable to
+traditional fuzzing techniques.</p></li>
+</ul>
+<p>czz currently targets languages that compile to LLVM (e.g., C, C++, Rust, etc.),
+but is built on the language-agnostic
+<a class="reference external" href="https://github.com/GaloisInc/crucible">Crucible</a> library, and also includes
+a proof-of-concept fuzzer for JVM code.</p>
+<div class="section" id="introduction">
+<h2>Introduction<a class="headerlink" href="#introduction" title="Permalink to this heading">#</a></h2>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This section compares czz to AFL-style mutational, coverage-guided fuzzers. If
+you’re not familiar with how these work, you may want to read <a class="reference external" href="https://lcamtuf.coredump.cx/afl/technical_details.txt">the AFL
+whitepaper</a> before
+continuing.</p>
+</div>
+<p>Mutational, coverage-guided fuzzers like AFL, honggfuzz, and libFuzzer place
+strict requirements on their targets: they must take a single string of bytes as
+input and run deterministically. Side-effects in the target, like accessing the
+network or file system, can introduce non-determinism that adversely affects the
+fuzzing algorithm. Since most programs don’t take a single file as an input and
+do in fact use such side-effects, in practice these requirements mean that
+developers have to write a <em>harness</em> that reads the input from the fuzzer and
+passes it on to some mostly-side-effect-free subset of the target.</p>
+<div class="figure align-default" id="id3">
+<img alt="_images/classic.svg" src="_images/classic.svg" /><p class="caption"><span class="caption-text">Classic coverage-guided fuzzing</span><a class="headerlink" href="#id3" title="Permalink to this image">#</a></p>
+</div>
+<p>czz works differently. Instead of executing code directly on the host CPU and
+OS, it acts as an <em>interpreter</em> for target program (like QEMU User Mode
+Emulation). This allows czz to completely control the target’s environment,
+responding to library calls with generated data.</p>
+<div class="figure align-default" id="id4">
+<img alt="_images/czz.svg" src="_images/czz.svg" /><p class="caption"><span class="caption-text">The czz approach</span><a class="headerlink" href="#id4" title="Permalink to this image">#</a></p>
+</div>
+<p>In this paradigm, side-effects from library calls present no obstacle to
+mutational fuzzing—they don’t introduce non-determinism, because czz chooses
+how to respond to them. Consider the following target:</p>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span> <span class="cpf">&lt;stdlib.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span> <span class="cpf">&lt;time.h&gt;</span><span class="cp"></span>
+<span class="kt">void</span> <span class="nf">harness</span><span class="p">(</span><span class="kt">char</span> <span class="o">*</span><span class="n">data</span><span class="p">,</span> <span class="kt">size_t</span> <span class="n">size</span><span class="p">)</span> <span class="p">{</span>
+  <span class="n">srand</span><span class="p">(</span><span class="n">time</span><span class="p">(</span><span class="nb">NULL</span><span class="p">));</span> <span class="c1">// set seed for random number generator based on time</span>
+  <span class="k">if</span> <span class="p">(</span><span class="n">rand</span><span class="p">())</span> <span class="p">{</span>
+    <span class="n">do_a_thing</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">size</span><span class="p">);</span>
+  <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+    <span class="n">something_else</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">size</span><span class="p">);</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>For AFL, this target would present a challenge - When mutating the input, it
+wouldn’t be clear if new coverage arises from the mutation, or from a different
+result from <code class="docutils literal notranslate"><span class="pre">rand</span></code>. czz, on the other hand, can choose to <em>either</em> respond to
+<code class="docutils literal notranslate"><span class="pre">rand</span></code> identically when mutating the input, or to keep the <em>input</em> constant
+while changing the output of <code class="docutils literal notranslate"><span class="pre">rand</span></code>. In either case, the effect of the
+mutation on coverage is clear.</p>
+</div>
+<div class="section" id="how-it-works">
+<h2>How it Works<a class="headerlink" href="#how-it-works" title="Permalink to this heading">#</a></h2>
+<p>Here’s what happens when running czz-llvm on a new target. For the sake of
+simplicity, assume no corpus is available.</p>
+<p>First, czz-llvm translates the target LLVM code into its internal representation
+(the Crucible-LLVM IR). To start running the target at <code class="docutils literal notranslate"><span class="pre">main</span></code>, czz-llvm must
+supply arguments to <code class="docutils literal notranslate"><span class="pre">main</span></code>, namely <code class="docutils literal notranslate"><span class="pre">argc</span></code> and <code class="docutils literal notranslate"><span class="pre">argv</span></code>. Assume that it sets
+<code class="docutils literal notranslate"><span class="pre">argc</span></code> to <code class="docutils literal notranslate"><span class="pre">0</span></code> and <code class="docutils literal notranslate"><span class="pre">argv</span></code> to <code class="docutils literal notranslate"><span class="pre">NULL</span></code>.</p>
+<p>After starting <code class="docutils literal notranslate"><span class="pre">main</span></code>, the target will make some number of library calls,
+which czz-llvm must respond to (to a first approximation, “respond” means
+“generate a return value and possibly mutate program memory”). For example, the
+program might call <code class="docutils literal notranslate"><span class="pre">time</span></code>, and czz-llvm might return a random integer, or the
+program could call <code class="docutils literal notranslate"><span class="pre">send</span></code>, and <code class="docutils literal notranslate"><span class="pre">czz-llvm</span></code> would check that it’s sending to a
+valid socket and return some random number indicating the number of bytes sent.
+At some point, the target will exit normally or crash.</p>
+<p>After the target exits, czz records the <a class="reference internal" href="#coverage"><span class="std std-ref">coverage</span></a> and the
+inputs it generated:</p>
+<ol class="arabic simple">
+<li><p>Command-line arguments</p></li>
+<li><p>Initial environment, including environment variables and virtual file system</p></li>
+<li><p>The sequence of responses to library calls</p></li>
+</ol>
+<p>These form a <em>seed</em>. czz-llvm then <em>mutates</em> this seed to try to find new
+coverage. It might:</p>
+<ul class="simple">
+<li><p>Add, drop, or alter a command-line argument</p></li>
+<li><p>Add, drop, or alter an environment variable</p></li>
+<li><p>Add, drop, or alter a file in the initial file system</p></li>
+<li><p>Alter the response to a library call</p></li>
+</ul>
+<p>After mutating the seed, czz-llvm executes the program again in the new
+environment. If it mutated the response to a library call, it will respond
+identically to all library calls that precede it (forcing this portion of the
+execution to be deterministic), and then respond differently to that call.</p>
+<p>If this new seed generates additional coverage, czz-llvm will add it to the
+<em>seed pool</em>, the collection of seeds that are candidates for mutation.
+Otherwise, it will discard it. This process of generating and evaluating seeds
+continues indefinitely.</p>
+</div>
+<div class="section" id="modeling-the-environment">
+<span id="model"></span><h2>Modeling the Environment<a class="headerlink" href="#modeling-the-environment" title="Permalink to this heading">#</a></h2>
+<p>It’s easy for czz to respond appropriately to library calls like <code class="docutils literal notranslate"><span class="pre">rand</span></code>: it
+has the freedom to choose an arbitrary <code class="docutils literal notranslate"><span class="pre">int</span></code> and return it to the program.
+Other library calls require more care. Consider <code class="docutils literal notranslate"><span class="pre">getenv</span></code>:</p>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span> <span class="cpf">&lt;stdlib.h&gt;</span><span class="cp"></span>
+<span class="kt">int</span> <span class="nf">main</span><span class="p">(</span><span class="kt">int</span> <span class="n">argc</span><span class="p">,</span> <span class="kt">char</span> <span class="o">*</span><span class="n">argv</span><span class="p">[])</span> <span class="p">{</span>
+  <span class="kt">char</span> <span class="o">*</span><span class="n">x</span> <span class="o">=</span> <span class="n">malloc</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
+  <span class="k">if</span> <span class="p">(</span><span class="n">strcmp</span><span class="p">(</span><span class="n">getenv</span><span class="p">(</span><span class="s">&quot;SHELL&quot;</span><span class="p">),</span> <span class="n">getenv</span><span class="p">(</span><span class="s">&quot;SHELL&quot;</span><span class="p">))</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">free</span><span class="p">(</span><span class="n">x</span><span class="p">);</span>  <span class="c1">// unreachable</span>
+  <span class="p">}</span>
+  <span class="n">free</span><span class="p">(</span><span class="n">x</span><span class="p">);</span>
+  <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>This program doesn’t have a double-free—<code class="docutils literal notranslate"><span class="pre">getenv</span></code> will return the same value
+when given the same argument twice in a row. czz-llvm needs to do the same to
+avoid <em>unsoundness</em>, that is, reporting a “false positive”, a “bug” that can’t
+actually arise in practice. In particular, czz can’t simply respond completely
+randomly to each library call.</p>
+<p>The situation gets even more complicated when considering <code class="docutils literal notranslate"><span class="pre">setenv</span></code>: <code class="docutils literal notranslate"><span class="pre">getenv</span></code>
+must return the <em>latest</em> value of each environment variable, meaning czz-llvm
+must maintain <em>state</em> during the program’s execution. Similarly, <code class="docutils literal notranslate"><span class="pre">getenv</span></code>
+should agree with <code class="docutils literal notranslate"><span class="pre">envp</span></code> (the third argument to <code class="docutils literal notranslate"><span class="pre">main</span></code>, for programs that
+take such an argument) on the values of the environment variables.</p>
+<p>To maintain soundness, czz must <em>under-approximate</em> the behavior of the standard
+library and host OS. Every response that czz generates for a library call must
+be a <em>possible</em> response that the standard library and host OS might generate.
+The test suite compares the behavior of programs that make library calls when
+interpreted by czz-llvm to when they’re compiled by Clang and executed on the
+host, to ensure fidelity of czz-llvm’s models.</p>
+</div>
+<div class="section" id="limitations">
+<span id="id1"></span><h2>Limitations<a class="headerlink" href="#limitations" title="Permalink to this heading">#</a></h2>
+<p>While whole-program fuzzing has some benefits, it also has its drawbacks:</p>
+<ul class="simple">
+<li><p>Modeling the standard library and host OS is challenging.</p>
+<ul>
+<li><p>Some library calls may not be supported (e.g. <code class="docutils literal notranslate"><span class="pre">stat</span></code>), and czz won’t be
+able to fuzz the parts of the target that use them.</p></li>
+<li><p>It’s possible (though it should be considered a bug in czz) that some of
+czz’s models are unsound (see <a class="reference internal" href="#model"><span class="std std-ref">Modeling the Environment</span></a>), meaning it can report bugs that
+can’t actually occur.</p></li>
+</ul>
+</li>
+<li><p>Interpreting programs is <em>much</em> slower than running them natively on the host
+OS and CPU. This means fewer executions, fewer mutations, and less coverage
+for your CPU time. czz will never compete with traditional fuzzers on code
+which is suitable for traditional fuzzing.</p></li>
+</ul>
+<div class="section" id="czz-llvm">
+<h3>czz-llvm<a class="headerlink" href="#czz-llvm" title="Permalink to this heading">#</a></h3>
+<ul class="simple">
+<li><p>czz-llvm only works on programs that can be statically compiled to a single
+LLVM module with Clang.</p></li>
+<li><p>czz-llvm does not work for parallel code (e.g., using <code class="docutils literal notranslate"><span class="pre">pthreads</span></code>).</p></li>
+<li><p>czz-llvm inherits <a class="reference external" href="https://github.com/GaloisInc/crucible/blob/master/crucible-llvm/doc/limitations.md">the limitations of Crucible-LLVM</a>.
+Notably:</p>
+<ul>
+<li><p>It <a class="reference external" href="https://github.com/GaloisInc/crucible/issues/857">can’t handle</a>
+variable-arity functions (other than overrides like <code class="docutils literal notranslate"><span class="pre">printf</span></code>,
+<code class="docutils literal notranslate"><span class="pre">snprintf</span></code> and friends).</p></li>
+<li><p>It often lags a few versions behind the latest LLVM release.</p></li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+<div class="section" id="coverage">
+<span id="id2"></span><h2>Coverage<a class="headerlink" href="#coverage" title="Permalink to this heading">#</a></h2>
+<p>To determine whether or to keep a seed in the seed pool, czz tracks the
+<em>coverage</em> that the seed achieves. This tracking is configurable. Fine-grained
+coverage tracking results in a larger seed pool, which is beneficial if the
+difference in coverage reflects an interesting difference between the seeds, but
+can be detrimental if it ends up adding fundamentally similar, redundant seeds
+to the pool.</p>
+<p>When executing the target with the seed, czz tracks how many times the program
+executes each <em>k</em>-length chain of edges between basic blocks. Particular choices
+of <em>k</em> reduce to more familiar coverage tracking schemes:</p>
+<ul class="simple">
+<li><p><em>k</em> = 1: Basic block coverage</p></li>
+<li><p><em>k</em> = 2: Edge coverage (like AFL)</p></li>
+</ul>
+<p>Higher values of <em>k</em> correspond to more fine-grained distinctions in coverage.</p>
+<p>Like AFL, czz tracks not just whether an edge was covered, but further tracks
+the <em>hit counts</em> of each <em>k</em>-edge chain (i.e., how many times the chain was
+executed). These hit counts are <em>bucketed</em> at the end of the execution, meaning
+they are collapsed into a more granular form. czz currently provides two
+bucketing strategies:</p>
+<ul class="simple">
+<li><p>log2: Take the (integer) logarithm base 2 of each hit count</p></li>
+<li><p>zero-one-many: Record only whether the edge was hit one or more than one time</p></li>
+</ul>
+<p>log2 is more fine-grained than zero-one-many.</p>
+</div>
+</div>
+
+
+              </div>
+              
+            </main>
+            <footer class="footer-article noprint">
+                
+    <!-- Previous / next buttons -->
+<div class='prev-next-area'>
+    <a class='left-prev' id="prev-link" href="index.html" title="previous page">
+        <i class="fas fa-angle-left"></i>
+        <div class="prev-next-info">
+            <p class="prev-next-subtitle">previous</p>
+            <p class="prev-next-title">czz: Whole-Program Fuzzing</p>
+        </div>
+    </a>
+    <a class='right-next' id="next-link" href="llvm/model.html" title="next page">
+    <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">System Model</p>
+    </div>
+    <i class="fas fa-angle-right"></i>
+    </a>
+</div>
+            </footer>
+        </div>
+    </div>
+    <div class="footer-content row">
+        <footer class="col footer"><p>
+  
+    By Langston Barrett<br/>
+  
+      &copy; Copyright 2022, Langston Barrett.<br/>
+</p>
+        </footer>
+    </div>
+    
+</div>
+
+
+      </div>
+    </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script src="_static/scripts/pydata-sphinx-theme.js?digest=1999514e3f237ded88cf"></script>
+
+
+  </body>
+</html>
