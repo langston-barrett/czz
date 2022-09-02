@@ -13,6 +13,7 @@ on:
 # (e.g. cabal complains it can't find a valid version of the "happy"
 # tool).
 env:
+  NAME: czz
   CACHE_VERSION: 1
 
 jobs:
@@ -117,7 +118,7 @@ jobs:
       uses: actions/upload-artifact@v3
       if: github.repository == 'langston-barrett/czz'
       with:
-        name: bdist
+        name: "${{ env.NAME }}-bdist-${{ matrix.os }}"
         path: "*.tar.gz"
         if-no-files-found: error
 
