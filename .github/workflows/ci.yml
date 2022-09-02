@@ -111,9 +111,18 @@ jobs:
     #   shell: bash
     #   run: cabal haddock all
 
-    - name: Create binary artifact
+    - name: build bdist
       shell: bash
       run: |
         ./scripts/dist.sh czz-llvm-tui
       env:
         OS_TAG: ${{ matrix.os }}
+
+    - name: upload bdist
+      uses: actions/upload-artifact@v3
+      if: github.repository == 'langston-barrett/czz'
+      with:
+        name: bdist
+        path: "*.tar.gz"
+        if-no-files-found: error
+
