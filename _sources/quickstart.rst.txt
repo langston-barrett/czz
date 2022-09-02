@@ -54,8 +54,8 @@ You can locate the built executable with ``cabal list-bin exe:czz-llvm-tui``, or
 install it under ``~/.cabal/bin`` with ``cabal install
 exe:czz-llvm-tui --overwrite-policy=always``.
 
-Configure and Run
-=================
+Run
+===
 
 Build the Target
 ----------------
@@ -80,13 +80,7 @@ Then you can run the TUI (Terminal User Interface) like so:
 
 Press ESC to exit the TUI.
 
-Configure
----------
-
-Some interesting options:
-
-* ``--jobs``: Control the number of fuzzing threads
-* ``--tries``
+See :doc:`llvm/conf` for information on configuring czz-llvm.
 
 .. _LLVM: https://llvm.org/
 .. _ghcup: https://www.haskell.org/ghcup/

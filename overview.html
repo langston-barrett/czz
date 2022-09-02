@@ -100,7 +100,41 @@
 </ul>
 <p aria-level="2" class="caption" role="heading">
  <span class="caption-text">
-  LLVM
+  Reference
+ </span>
+</p>
+<ul class="nav bd-sidenav">
+ <li class="toctree-l1">
+  <a class="reference internal" href="architecture.html">
+   Architecture
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="fuzzing.html">
+   Fuzzing Approach
+  </a>
+ </li>
+</ul>
+<p aria-level="2" class="caption" role="heading">
+ <span class="caption-text">
+  czz-llvm Usage
+ </span>
+</p>
+<ul class="nav bd-sidenav">
+ <li class="toctree-l1">
+  <a class="reference internal" href="llvm/config.html">
+   Configuration
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="llvm/tui.html">
+   Terminal User Interface
+  </a>
+ </li>
+</ul>
+<p aria-level="2" class="caption" role="heading">
+ <span class="caption-text">
+  czz-llvm Reference
  </span>
 </p>
 <ul class="nav bd-sidenav">
@@ -117,7 +151,7 @@
 </ul>
 <p aria-level="2" class="caption" role="heading">
  <span class="caption-text">
-  JVM
+  czz-jvm Reference
  </span>
 </p>
 <ul class="nav bd-sidenav">
@@ -285,11 +319,6 @@ title="Print to PDF"
    </li>
   </ul>
  </li>
- <li class="toc-h2 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#coverage">
-   Coverage
-  </a>
- </li>
 </ul>
 
     </nav>
@@ -336,11 +365,6 @@ title="Print to PDF"
    </li>
   </ul>
  </li>
- <li class="toc-h2 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#coverage">
-   Coverage
-  </a>
- </li>
 </ul>
 
                         </nav>
@@ -364,6 +388,7 @@ write a fuzzing harness.</p></li>
 <li><p>It can exercise effectful, non-deterministic code that is not amenable to
 traditional fuzzing techniques.</p></li>
 </ul>
+<p>Of course, it also has some notable <a class="reference internal" href="#limitations"><span class="std std-ref">drawbacks and limitations</span></a>.</p>
 <p>czz currently targets languages that compile to LLVM (e.g., C, C++, Rust, etc.),
 but is built on the language-agnostic
 <a class="reference external" href="https://github.com/GaloisInc/crucible">Crucible</a> library, and also includes
@@ -373,9 +398,9 @@ a proof-of-concept fuzzer for JVM code.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>This section compares czz to AFL-style mutational, coverage-guided fuzzers. If
-you’re not familiar with how these work, you may want to read <a class="reference external" href="https://lcamtuf.coredump.cx/afl/technical_details.txt">the AFL
-whitepaper</a> before
-continuing.</p>
+you’re not familiar with how these work, you may want to read <a class="reference external" href="https://www.fuzzingbook.org/">the fuzzing
+book</a> up through chapter 2 (“Lexical Fuzzing”)
+and <a class="reference external" href="https://lcamtuf.coredump.cx/afl/technical_details.txt">the AFL whitepaper</a> before continuing.</p>
 </div>
 <p>Mutational, coverage-guided fuzzers like AFL, honggfuzz, and libFuzzer place
 strict requirements on their targets: they must take a single string of bytes as
@@ -385,15 +410,15 @@ fuzzing algorithm. Since most programs don’t take a single file as an input an
 do in fact use such side-effects, in practice these requirements mean that
 developers have to write a <em>harness</em> that reads the input from the fuzzer and
 passes it on to some mostly-side-effect-free subset of the target.</p>
-<div class="figure align-default" id="id3">
-<img alt="_images/classic.svg" src="_images/classic.svg" /><p class="caption"><span class="caption-text">Classic coverage-guided fuzzing</span><a class="headerlink" href="#id3" title="Permalink to this image">#</a></p>
+<div class="figure align-default" id="id2">
+<img alt="_images/classic.svg" src="_images/classic.svg" /><p class="caption"><span class="caption-text">Classic coverage-guided fuzzing</span><a class="headerlink" href="#id2" title="Permalink to this image">#</a></p>
 </div>
-<p>czz works differently. Instead of executing code directly on the host CPU and
-OS, it acts as an <em>interpreter</em> for target program (like QEMU User Mode
-Emulation). This allows czz to completely control the target’s environment,
-responding to library calls with generated data.</p>
-<div class="figure align-default" id="id4">
-<img alt="_images/czz.svg" src="_images/czz.svg" /><p class="caption"><span class="caption-text">The czz approach</span><a class="headerlink" href="#id4" title="Permalink to this image">#</a></p>
+<p>czz works differently. Instead of executing code directly on the host, it acts
+as an <em>interpreter</em> for target program (like QEMU User Mode Emulation). This
+allows czz to completely control the target’s environment, responding to library
+calls with generated data.</p>
+<div class="figure align-default" id="id3">
+<img alt="_images/czz.svg" src="_images/czz.svg" /><p class="caption"><span class="caption-text">The czz approach</span><a class="headerlink" href="#id3" title="Permalink to this image">#</a></p>
 </div>
 <p>In this paradigm, side-effects from library calls present no obstacle to
 mutational fuzzing—they don’t introduce non-determinism, because czz chooses
@@ -401,8 +426,9 @@ how to respond to them. Consider the following target:</p>
 <div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span> <span class="cpf">&lt;stdlib.h&gt;</span><span class="cp"></span>
 <span class="cp">#include</span> <span class="cpf">&lt;time.h&gt;</span><span class="cp"></span>
 <span class="kt">void</span> <span class="nf">harness</span><span class="p">(</span><span class="kt">char</span> <span class="o">*</span><span class="n">data</span><span class="p">,</span> <span class="kt">size_t</span> <span class="n">size</span><span class="p">)</span> <span class="p">{</span>
-  <span class="n">srand</span><span class="p">(</span><span class="n">time</span><span class="p">(</span><span class="nb">NULL</span><span class="p">));</span> <span class="c1">// set seed for random number generator based on time</span>
-  <span class="k">if</span> <span class="p">(</span><span class="n">rand</span><span class="p">())</span> <span class="p">{</span>
+  <span class="c1">// set seed of random number generator to current time</span>
+  <span class="n">srand</span><span class="p">(</span><span class="n">time</span><span class="p">(</span><span class="nb">NULL</span><span class="p">));</span>
+  <span class="k">if</span> <span class="p">(</span><span class="n">rand</span><span class="p">()</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
     <span class="n">do_a_thing</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">size</span><span class="p">);</span>
   <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
     <span class="n">something_else</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">size</span><span class="p">);</span>
@@ -432,7 +458,7 @@ program might call <code class="docutils literal notranslate"><span class="pre">
 program could call <code class="docutils literal notranslate"><span class="pre">send</span></code>, and <code class="docutils literal notranslate"><span class="pre">czz-llvm</span></code> would check that it’s sending to a
 valid socket and return some random number indicating the number of bytes sent.
 At some point, the target will exit normally or crash.</p>
-<p>After the target exits, czz records the <a class="reference internal" href="#coverage"><span class="std std-ref">coverage</span></a> and the
+<p>After the target exits, czz records the <a class="reference internal" href="fuzzing.html#coverage"><span class="std std-ref">coverage</span></a> and the
 inputs it generated:</p>
 <ol class="arabic simple">
 <li><p>Command-line arguments</p></li>
@@ -488,6 +514,7 @@ be a <em>possible</em> response that the standard library and host OS might gene
 The test suite compares the behavior of programs that make library calls when
 interpreted by czz-llvm to when they’re compiled by Clang and executed on the
 host, to ensure fidelity of czz-llvm’s models.</p>
+<p>See <a class="reference internal" href="llvm/model.html"><span class="doc">System Model</span></a> for more information about czz-llvm’s modeling.</p>
 </div>
 <div class="section" id="limitations">
 <span id="id1"></span><h2>Limitations<a class="headerlink" href="#limitations" title="Permalink to this heading">#</a></h2>
@@ -524,33 +551,6 @@ variable-arity functions (other than overrides like <code class="docutils litera
 </li>
 </ul>
 </div>
-</div>
-<div class="section" id="coverage">
-<span id="id2"></span><h2>Coverage<a class="headerlink" href="#coverage" title="Permalink to this heading">#</a></h2>
-<p>To determine whether or to keep a seed in the seed pool, czz tracks the
-<em>coverage</em> that the seed achieves. This tracking is configurable. Fine-grained
-coverage tracking results in a larger seed pool, which is beneficial if the
-difference in coverage reflects an interesting difference between the seeds, but
-can be detrimental if it ends up adding fundamentally similar, redundant seeds
-to the pool.</p>
-<p>When executing the target with the seed, czz tracks how many times the program
-executes each <em>k</em>-length chain of edges between basic blocks. Particular choices
-of <em>k</em> reduce to more familiar coverage tracking schemes:</p>
-<ul class="simple">
-<li><p><em>k</em> = 1: Basic block coverage</p></li>
-<li><p><em>k</em> = 2: Edge coverage (like AFL)</p></li>
-</ul>
-<p>Higher values of <em>k</em> correspond to more fine-grained distinctions in coverage.</p>
-<p>Like AFL, czz tracks not just whether an edge was covered, but further tracks
-the <em>hit counts</em> of each <em>k</em>-edge chain (i.e., how many times the chain was
-executed). These hit counts are <em>bucketed</em> at the end of the execution, meaning
-they are collapsed into a more granular form. czz currently provides two
-bucketing strategies:</p>
-<ul class="simple">
-<li><p>log2: Take the (integer) logarithm base 2 of each hit count</p></li>
-<li><p>zero-one-many: Record only whether the edge was hit one or more than one time</p></li>
-</ul>
-<p>log2 is more fine-grained than zero-one-many.</p>
 </div>
 </div>
 

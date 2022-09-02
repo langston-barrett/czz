@@ -33,7 +33,7 @@
     <script src="_static/scripts/sphinx-book-theme.js?digest=9c920249402e914e316237a7dbc6769907cce411"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="System Model" href="llvm/model.html" />
+    <link rel="next" title="Architecture" href="architecture.html" />
     <link rel="prev" title="Overview" href="overview.html" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="docsearch:language" content="en">
@@ -100,7 +100,41 @@
 </ul>
 <p aria-level="2" class="caption" role="heading">
  <span class="caption-text">
-  LLVM
+  Reference
+ </span>
+</p>
+<ul class="nav bd-sidenav">
+ <li class="toctree-l1">
+  <a class="reference internal" href="architecture.html">
+   Architecture
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="fuzzing.html">
+   Fuzzing Approach
+  </a>
+ </li>
+</ul>
+<p aria-level="2" class="caption" role="heading">
+ <span class="caption-text">
+  czz-llvm Usage
+ </span>
+</p>
+<ul class="nav bd-sidenav">
+ <li class="toctree-l1">
+  <a class="reference internal" href="llvm/config.html">
+   Configuration
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="llvm/tui.html">
+   Terminal User Interface
+  </a>
+ </li>
+</ul>
+<p aria-level="2" class="caption" role="heading">
+ <span class="caption-text">
+  czz-llvm Reference
  </span>
 </p>
 <ul class="nav bd-sidenav">
@@ -117,7 +151,7 @@
 </ul>
 <p aria-level="2" class="caption" role="heading">
  <span class="caption-text">
-  JVM
+  czz-jvm Reference
  </span>
 </p>
 <ul class="nav bd-sidenav">
@@ -281,8 +315,8 @@ title="Print to PDF"
   </ul>
  </li>
  <li class="toc-h2 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#configure-and-run">
-   Configure and Run
+  <a class="reference internal nav-link" href="#run">
+   Run
   </a>
   <ul class="nav section-nav flex-column">
    <li class="toc-h3 nav-item toc-entry">
@@ -293,11 +327,6 @@ title="Print to PDF"
    <li class="toc-h3 nav-item toc-entry">
     <a class="reference internal nav-link" href="#run-the-tui">
      Run the TUI
-    </a>
-   </li>
-   <li class="toc-h3 nav-item toc-entry">
-    <a class="reference internal nav-link" href="#configure">
-     Configure
     </a>
    </li>
   </ul>
@@ -344,8 +373,8 @@ title="Print to PDF"
   </ul>
  </li>
  <li class="toc-h2 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#configure-and-run">
-   Configure and Run
+  <a class="reference internal nav-link" href="#run">
+   Run
   </a>
   <ul class="nav section-nav flex-column">
    <li class="toc-h3 nav-item toc-entry">
@@ -356,11 +385,6 @@ title="Print to PDF"
    <li class="toc-h3 nav-item toc-entry">
     <a class="reference internal nav-link" href="#run-the-tui">
      Run the TUI
-    </a>
-   </li>
-   <li class="toc-h3 nav-item toc-entry">
-    <a class="reference internal nav-link" href="#configure">
-     Configure
     </a>
    </li>
   </ul>
@@ -418,8 +442,8 @@ install it under <code class="docutils literal notranslate"><span class="pre">~/
 <span class="pre">exe:czz-llvm-tui</span> <span class="pre">--overwrite-policy=always</span></code>.</p>
 </div>
 </div>
-<div class="section" id="configure-and-run">
-<h2>Configure and Run<a class="headerlink" href="#configure-and-run" title="Permalink to this heading">#</a></h2>
+<div class="section" id="run">
+<h2>Run<a class="headerlink" href="#run" title="Permalink to this heading">#</a></h2>
 <div class="section" id="build-the-target">
 <h3>Build the Target<a class="headerlink" href="#build-the-target" title="Permalink to this heading">#</a></h3>
 <p>To run czz-llvm, you’ll need to compile your program to LLVM bitcode. You can do
@@ -436,14 +460,7 @@ this with <a class="reference external" href="https://github.com/SRI-CSL/gllvm">
 </pre></div>
 </div>
 <p>Press ESC to exit the TUI.</p>
-</div>
-<div class="section" id="configure">
-<h3>Configure<a class="headerlink" href="#configure" title="Permalink to this heading">#</a></h3>
-<p>Some interesting options:</p>
-<ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">--jobs</span></code>: Control the number of fuzzing threads</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">--tries</span></code></p></li>
-</ul>
+<p>See <span class="xref std std-doc">llvm/conf</span> for information on configuring czz-llvm.</p>
 </div>
 </div>
 </div>
@@ -463,10 +480,10 @@ this with <a class="reference external" href="https://github.com/SRI-CSL/gllvm">
             <p class="prev-next-title">Overview</p>
         </div>
     </a>
-    <a class='right-next' id="next-link" href="llvm/model.html" title="next page">
+    <a class='right-next' id="next-link" href="architecture.html" title="next page">
     <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">System Model</p>
+        <p class="prev-next-title">Architecture</p>
     </div>
     <i class="fas fa-angle-right"></i>
     </a>

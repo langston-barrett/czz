@@ -34,7 +34,7 @@
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="Status" href="status.html" />
-    <link rel="prev" title="Quick Start" href="../quickstart.html" />
+    <link rel="prev" title="Terminal User Interface" href="tui.html" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="docsearch:language" content="en">
     
@@ -100,7 +100,41 @@
 </ul>
 <p aria-level="2" class="caption" role="heading">
  <span class="caption-text">
-  LLVM
+  Reference
+ </span>
+</p>
+<ul class="nav bd-sidenav">
+ <li class="toctree-l1">
+  <a class="reference internal" href="../architecture.html">
+   Architecture
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="../fuzzing.html">
+   Fuzzing Approach
+  </a>
+ </li>
+</ul>
+<p aria-level="2" class="caption" role="heading">
+ <span class="caption-text">
+  czz-llvm Usage
+ </span>
+</p>
+<ul class="nav bd-sidenav">
+ <li class="toctree-l1">
+  <a class="reference internal" href="config.html">
+   Configuration
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="tui.html">
+   Terminal User Interface
+  </a>
+ </li>
+</ul>
+<p aria-level="2" class="caption" role="heading">
+ <span class="caption-text">
+  czz-llvm Reference
  </span>
 </p>
 <ul class="current nav bd-sidenav">
@@ -117,7 +151,7 @@
 </ul>
 <p aria-level="2" class="caption" role="heading">
  <span class="caption-text">
-  JVM
+  czz-jvm Reference
  </span>
 </p>
 <ul class="nav bd-sidenav">
@@ -236,41 +270,12 @@ title="Print to PDF"
     </ul>
   </div>
 </div>
-<label for="__page-toc"
-  class="headerbtn headerbtn-page-toc"
-  
->
-  
-
-<span class="headerbtn__icon-container">
-  <i class="fas fa-list"></i>
-  </span>
-
-</label>
 
     </div>
 </div>
 
 <!-- Table of contents -->
 <div class="col-md-3 bd-toc show noprint">
-    <div class="tocsection onthispage pt-5 pb-3">
-        <i class="fas fa-list"></i> Contents
-    </div>
-    <nav id="bd-toc-nav" aria-label="Page">
-        <ul class="visible nav section-nav flex-column">
- <li class="toc-h2 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#environment-variables">
-   Environment Variables
-  </a>
- </li>
- <li class="toc-h2 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#files">
-   Files
-  </a>
- </li>
-</ul>
-
-    </nav>
 </div>
     </div>
     <div class="article row">
@@ -282,24 +287,6 @@ title="Print to PDF"
                 <div id="print-main-content">
                     <div id="jb-print-toc">
                         
-                        <div>
-                            <h2> Contents </h2>
-                        </div>
-                        <nav aria-label="Page">
-                            <ul class="visible nav section-nav flex-column">
- <li class="toc-h2 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#environment-variables">
-   Environment Variables
-  </a>
- </li>
- <li class="toc-h2 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#files">
-   Files
-  </a>
- </li>
-</ul>
-
-                        </nav>
                     </div>
                 </div>
             </div>
@@ -309,12 +296,15 @@ title="Print to PDF"
                 
   <div class="section" id="system-model">
 <h1>System Model<a class="headerlink" href="#system-model" title="Permalink to this heading">#</a></h1>
-<div class="section" id="environment-variables">
-<h2>Environment Variables<a class="headerlink" href="#environment-variables" title="Permalink to this heading">#</a></h2>
-</div>
-<div class="section" id="files">
-<h2>Files<a class="headerlink" href="#files" title="Permalink to this heading">#</a></h2>
-</div>
+<p>This page describes how czz-llvm <a class="reference internal" href="../overview.html#model"><span class="std std-ref">models various aspects of libc and the
+host operating system</span></a>.</p>
+<p>To maintain soundness, czz must <em>under-approximate</em> the behavior of the standard
+library and host OS. Every response that czz generates for a library call must
+be a <em>possible</em> response that the standard library and host OS might generate.
+The test suite compares the behavior of programs that make library calls when
+interpreted by czz-llvm to when they’re compiled by Clang and executed on the
+host, to ensure fidelity of czz-llvm’s models.</p>
+<p>TODO(lb)</p>
 </div>
 
 
@@ -325,11 +315,11 @@ title="Print to PDF"
                 
     <!-- Previous / next buttons -->
 <div class='prev-next-area'>
-    <a class='left-prev' id="prev-link" href="../quickstart.html" title="previous page">
+    <a class='left-prev' id="prev-link" href="tui.html" title="previous page">
         <i class="fas fa-angle-left"></i>
         <div class="prev-next-info">
             <p class="prev-next-subtitle">previous</p>
-            <p class="prev-next-title">Quick Start</p>
+            <p class="prev-next-title">Terminal User Interface</p>
         </div>
     </a>
     <a class='right-next' id="next-link" href="status.html" title="next page">
