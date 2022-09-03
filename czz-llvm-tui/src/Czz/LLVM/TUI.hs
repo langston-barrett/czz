@@ -68,7 +68,8 @@ data TState env eff fb
 
 data TStates env eff fb
   = InitState (TState env eff fb)
-  | OtherState (TState env eff fb)
+  | HelpState (TState env eff fb)
+  | NormalState (TState env eff fb)
 
 padded :: Int -> Int -> [(Text, Text)] -> B.Widget ()
 padded rpad lpad = B.vBox . map (uncurry row)
@@ -117,14 +118,47 @@ llvmStats tstate =
       (\(loc, ct) -> (loc <> ":", Text.pack (show (Count.toWord ct)))) <$>
         Seq.take 3 (Seq.reverse (Freq.sorted (Freq.count lastLocs)))
 
+helpNumbers :: B.Widget()
+helpNumbers = B.vBox (map BW.txt expls)
+  where
+    expls =
+      [ "start: time when czz was started"
+      , "now: current time"
+      , "duration: difference between now and start"
+      , "execs: total number of executions of target"
+      , "execs/sec: executions per second"
+      , "last new: time since last new coverage"
+      , "pool: number of seeds in seed pool"
+      , "missing: library functions with no model"
+      ]
+
+helpKbd :: B.Widget()
+helpKbd = B.vBox (map BW.txt kbds)
+  where
+    kbds =
+      [ "ESC: exit"
+      , "up: toggle help"  -- TODO(lb): SPC? h? ??
+      ]
+
+-- TODO(lb): include url to docs
+drawHelp :: B.Widget ()
+drawHelp = BWT.renderTable (BWT.table [[helpNumbers], [helpKbd]])
+
 draw :: TStates env eff (Feedback k) -> B.Widget ()
 draw tstates =
   BWC.center $
     BWB.borderWithLabel (BW.txt "czz") $
       case tstates of
         InitState _tstate -> BW.txt "Starting..."
-        OtherState tstate ->
-          BWT.renderTable (BWT.table [[topStats tstate], [llvmStats tstate]])
+        HelpState _tstate -> drawHelp
+        NormalState tstate ->
+          BWT.renderTable $
+            BWT.table
+              [ [topStats tstate]
+              , [llvmStats tstate]
+              -- TODO(lb): center, SPC/h/?
+              , [BW.txt "Press UP for help"]
+              ]
 
 app ::
   TimeZone ->
@@ -136,9 +170,22 @@ app tz =
   , B.appHandleEvent =
       \case
         B.VtyEvent (VtyE.EvKey VtyE.KEsc _) -> BMain.halt
+        B.VtyEvent (VtyE.EvKey VtyE.KUp _) -> do
+          now <- liftIO Now.now
+          tstates <- MState.get
+          case tstates of
+            InitState{} -> return ()
+            HelpState tstate ->
+              MState.put (NormalState (tstate { stateNow = now }))
+            NormalState tstate ->
+              MState.put (HelpState (tstate { stateNow = now }))
         B.AppEvent (NewState st) -> do
           now <- liftIO Now.now
-          MState.put (OtherState (TState now tz st))
+          tstates <- MState.get
+          case tstates of
+            InitState{} -> MState.put (NormalState (TState now tz st))
+            NormalState{} -> MState.put (NormalState (TState now tz st))
+            HelpState{} -> MState.put (HelpState (TState now tz st))
         _ -> return ()
   , B.appStartEvent = return ()
   , B.appAttrMap =

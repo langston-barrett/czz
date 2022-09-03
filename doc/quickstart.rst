@@ -80,7 +80,7 @@ Then you can run the TUI (Terminal User Interface) like so:
 
 Press ESC to exit the TUI.
 
-See :doc:`llvm/conf` for information on configuring czz-llvm.
+See :doc:`llvm/config` for information on configuring czz-llvm.
 
 .. _LLVM: https://llvm.org/
 .. _ghcup: https://www.haskell.org/ghcup/
