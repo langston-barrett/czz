@@ -1,7 +1,7 @@
 
 <!DOCTYPE html>
 
-<html lang="en">
+<html>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -28,7 +28,6 @@
     <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
     <script src="../_static/jquery.js"></script>
     <script src="../_static/underscore.js"></script>
-    <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../_static/doctools.js"></script>
     <script src="../_static/scripts/sphinx-book-theme.js?digest=9c920249402e914e316237a7dbc6769907cce411"></script>
     <link rel="index" title="Index" href="../genindex.html" />
@@ -36,7 +35,7 @@
     <link rel="next" title="System Model" href="model.html" />
     <link rel="prev" title="Configuration" href="config.html" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="docsearch:language" content="en">
+    <meta name="docsearch:language" content="None">
     
 
     <!-- Google Analytics -->
@@ -295,8 +294,43 @@ title="Print to PDF"
               <div>
                 
   <div class="section" id="terminal-user-interface">
-<h1>Terminal User Interface<a class="headerlink" href="#terminal-user-interface" title="Permalink to this heading">#</a></h1>
-<p>TODO(#67)</p>
+<h1>Terminal User Interface<a class="headerlink" href="#terminal-user-interface" title="Permalink to this headline">#</a></h1>
+<p>Here’s what you’ll see when opening up the TUI:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>┌────────────────────czz───────────────────┐
+│┌────────────────────────────────────────┐│
+││start:               2022-09-02 15:14:55││
+││now:                 2022-09-02 15:14:57││
+││duration:                             1s││
+││execs:                               100││
+││execs/sec:                           100││
+││last new:                             1s││
+││pool:                                  1││
+││missing:                                ││
+│├────────────────────────────────────────┤│
+││stuck:                                  ││
+││&lt;start&gt;:                               1││
+│└────────────────────────────────────────┘│
+└──────────────────────────────────────────┘
+</pre></div>
+</div>
+<p>Press the up arrow key to show the TUI help:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>┌─────────────────────czz─────────────────────┐
+│┌───────────────────────────────────────────┐│
+││start: time when czz was started           ││
+││now: current time                          ││
+││duration: difference between now and start ││
+││execs: total number of executions of target││
+││execs/sec: executions per second           ││
+││last new: time since last new coverage     ││
+││pool: number of seeds in seed pool         ││
+││missing: library functions with no model   ││
+│├───────────────────────────────────────────┤│
+││ESC: exit                                  ││
+││up: toggle help                            ││
+│└───────────────────────────────────────────┘│
+└─────────────────────────────────────────────┘
+</pre></div>
+</div>
 </div>
 
 

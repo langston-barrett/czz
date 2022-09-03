@@ -1,7 +1,7 @@
 
 <!DOCTYPE html>
 
-<html lang="en">
+<html>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -28,7 +28,6 @@
     <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
     <script src="_static/jquery.js"></script>
     <script src="_static/underscore.js"></script>
-    <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="_static/doctools.js"></script>
     <script src="_static/scripts/sphinx-book-theme.js?digest=9c920249402e914e316237a7dbc6769907cce411"></script>
     <link rel="index" title="Index" href="genindex.html" />
@@ -36,7 +35,7 @@
     <link rel="next" title="Architecture" href="architecture.html" />
     <link rel="prev" title="Overview" href="overview.html" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="docsearch:language" content="en">
+    <meta name="docsearch:language" content="None">
     
 
     <!-- Google Analytics -->
@@ -400,12 +399,12 @@ title="Print to PDF"
               <div>
                 
   <div class="section" id="quick-start">
-<h1>Quick Start<a class="headerlink" href="#quick-start" title="Permalink to this heading">#</a></h1>
+<h1>Quick Start<a class="headerlink" href="#quick-start" title="Permalink to this headline">#</a></h1>
 <p>This guide is intended to get you started fuzzing a C program with czz-llvm as
 soon as possible. For more detail on the various steps taken here, refer to the
 rest of the documentation.</p>
 <div class="section" id="dependencies">
-<h2>Dependencies<a class="headerlink" href="#dependencies" title="Permalink to this heading">#</a></h2>
+<h2>Dependencies<a class="headerlink" href="#dependencies" title="Permalink to this headline">#</a></h2>
 <p>The following tools must be present on your <code class="docutils literal notranslate"><span class="pre">$PATH</span></code> to run czz-llvm:</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">z3</span></code>, the <a class="reference external" href="https://github.com/Z3Prover/z3/releases">Z3 SMT solver</a></p></li>
@@ -417,10 +416,10 @@ rest of the documentation.</p>
 </div>
 </div>
 <div class="section" id="obtaining-binaries">
-<h2>Obtaining Binaries<a class="headerlink" href="#obtaining-binaries" title="Permalink to this heading">#</a></h2>
+<h2>Obtaining Binaries<a class="headerlink" href="#obtaining-binaries" title="Permalink to this headline">#</a></h2>
 <p>You can either download pre-built binaries, or build them yourself from source.</p>
 <div class="section" id="download-pre-built-binaries">
-<span id="download"></span><h3>Download Pre-Built Binaries<a class="headerlink" href="#download-pre-built-binaries" title="Permalink to this heading">#</a></h3>
+<span id="download"></span><h3>Download Pre-Built Binaries<a class="headerlink" href="#download-pre-built-binaries" title="Permalink to this headline">#</a></h3>
 <p>The CI system uploads artifacts to GitHub. To download a pre-built binary,
 navigate to <a class="reference external" href="https://github.com/langston-barrett/czz/actions?query=branch%3Amain+event%3Apush">the “Actions” tab</a>
 of <a class="reference external" href="https://github.com/langston-barrett/czz">the czz GitHub repo</a>, select the
@@ -428,7 +427,7 @@ latest completed build of <code class="docutils literal notranslate"><span class
 distribution) artifact for your OS.</p>
 </div>
 <div class="section" id="build-from-source">
-<h3>Build from Source<a class="headerlink" href="#build-from-source" title="Permalink to this heading">#</a></h3>
+<h3>Build from Source<a class="headerlink" href="#build-from-source" title="Permalink to this headline">#</a></h3>
 <p>To build czz you’ll need GHC and <code class="docutils literal notranslate"><span class="pre">cabal</span></code>, which can be installed with
 <a class="reference external" href="https://www.haskell.org/ghcup/">ghcup</a>.</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git clone https://github.com/langston-barrett/czz.git
@@ -443,9 +442,9 @@ install it under <code class="docutils literal notranslate"><span class="pre">~/
 </div>
 </div>
 <div class="section" id="run">
-<h2>Run<a class="headerlink" href="#run" title="Permalink to this heading">#</a></h2>
+<h2>Run<a class="headerlink" href="#run" title="Permalink to this headline">#</a></h2>
 <div class="section" id="build-the-target">
-<h3>Build the Target<a class="headerlink" href="#build-the-target" title="Permalink to this heading">#</a></h3>
+<h3>Build the Target<a class="headerlink" href="#build-the-target" title="Permalink to this headline">#</a></h3>
 <p>To run czz-llvm, you’ll need to compile your program to LLVM bitcode. You can do
 this with <a class="reference external" href="https://github.com/SRI-CSL/gllvm">gllvm</a> or <a class="reference external" href="https://github.com/travitch/build-bom">build-bom</a>, or for single-file C programs you can run</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>clang -g -emit-llvm -fno-discard-value-names -c prog.c -o prog.bc
@@ -454,13 +453,13 @@ this with <a class="reference external" href="https://github.com/SRI-CSL/gllvm">
 <p>(To view the resulting LLVM module, try using <code class="docutils literal notranslate"><span class="pre">llvm-dis</span></code>.)</p>
 </div>
 <div class="section" id="run-the-tui">
-<h3>Run the TUI<a class="headerlink" href="#run-the-tui" title="Permalink to this heading">#</a></h3>
+<h3>Run the TUI<a class="headerlink" href="#run-the-tui" title="Permalink to this headline">#</a></h3>
 <p>Then you can run the TUI (Terminal User Interface) like so:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>czz-llvm-tui prog.bc
 </pre></div>
 </div>
 <p>Press ESC to exit the TUI.</p>
-<p>See <span class="xref std std-doc">llvm/conf</span> for information on configuring czz-llvm.</p>
+<p>See <a class="reference internal" href="llvm/config.html"><span class="doc">Configuration</span></a> for information on configuring czz-llvm.</p>
 </div>
 </div>
 </div>

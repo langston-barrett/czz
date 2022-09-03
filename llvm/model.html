@@ -1,7 +1,7 @@
 
 <!DOCTYPE html>
 
-<html lang="en">
+<html>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -28,7 +28,6 @@
     <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
     <script src="../_static/jquery.js"></script>
     <script src="../_static/underscore.js"></script>
-    <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../_static/doctools.js"></script>
     <script src="../_static/scripts/sphinx-book-theme.js?digest=9c920249402e914e316237a7dbc6769907cce411"></script>
     <link rel="index" title="Index" href="../genindex.html" />
@@ -36,7 +35,7 @@
     <link rel="next" title="Status" href="status.html" />
     <link rel="prev" title="Terminal User Interface" href="tui.html" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="docsearch:language" content="en">
+    <meta name="docsearch:language" content="None">
     
 
     <!-- Google Analytics -->
@@ -700,7 +699,7 @@ title="Print to PDF"
               <div>
                 
   <div class="section" id="system-model">
-<h1>System Model<a class="headerlink" href="#system-model" title="Permalink to this heading">#</a></h1>
+<h1>System Model<a class="headerlink" href="#system-model" title="Permalink to this headline">#</a></h1>
 <p>This page describes how czz-llvm <a class="reference internal" href="../overview.html#model"><span class="std std-ref">models various aspects of libc and the
 host operating system</span></a>.</p>
 <p>To maintain soundness, czz must <em>under-approximate</em> the behavior of the standard
@@ -710,7 +709,7 @@ The test suite compares the behavior of programs that make library calls when
 interpreted by czz-llvm to when they’re compiled by Clang and executed on the
 host, to ensure fidelity of czz-llvm’s models.</p>
 <div class="section" id="overrides">
-<h2>Overrides<a class="headerlink" href="#overrides" title="Permalink to this heading">#</a></h2>
+<h2>Overrides<a class="headerlink" href="#overrides" title="Permalink to this headline">#</a></h2>
 <p>czz-llvm’s models of library functions are called <em>overrides</em>. The following
 table provides a high-level view of these overrides.</p>
 <p>The “Impl.” column is short for “implementation”, for which there are several
@@ -1168,17 +1167,17 @@ options:</p>
 </table>
 </div>
 <div class="section" id="environment-variables">
-<span id="model-env-vars"></span><h2>Environment Variables<a class="headerlink" href="#environment-variables" title="Permalink to this heading">#</a></h2>
+<span id="model-env-vars"></span><h2>Environment Variables<a class="headerlink" href="#environment-variables" title="Permalink to this headline">#</a></h2>
 <p>czz-llvm models environment variables as an array of null-terminated strings.
 Each seed stores an initial array of environment variables that is propagated to
 the <code class="docutils literal notranslate"><span class="pre">envp</span></code> parameter of <code class="docutils literal notranslate"><span class="pre">main</span></code> (if present). This array is part of the
 interpreter state, it may be modified by calls to <code class="docutils literal notranslate"><span class="pre">setenv</span></code> and <code class="docutils literal notranslate"><span class="pre">unsetenv</span></code>
 and these modifications will be reflected in subsequent calls to <code class="docutils literal notranslate"><span class="pre">getenv</span></code>.</p>
 <div class="section" id="id1">
-<h3>Overrides<a class="headerlink" href="#id1" title="Permalink to this heading">#</a></h3>
+<h3>Overrides<a class="headerlink" href="#id1" title="Permalink to this headline">#</a></h3>
 </div>
 <div class="section" id="getenv">
-<span id="id2"></span><h3><code class="docutils literal notranslate"><span class="pre">getenv</span></code><a class="headerlink" href="#getenv" title="Permalink to this heading">#</a></h3>
+<span id="id2"></span><h3><code class="docutils literal notranslate"><span class="pre">getenv</span></code><a class="headerlink" href="#getenv" title="Permalink to this headline">#</a></h3>
 <p><code class="docutils literal notranslate"><span class="pre">getenv(s)</span></code> scans through the array of environment variables, tries to find
 one of the form <code class="docutils literal notranslate"><span class="pre">${s}=${v}</span></code> (where <code class="docutils literal notranslate"><span class="pre">${s}</span></code> is the value of <code class="docutils literal notranslate"><span class="pre">s</span></code>). If such a
 value is not found, it returns <code class="docutils literal notranslate"><span class="pre">NULL</span></code>. Otherwise, it allocates fresh memory
@@ -1187,32 +1186,32 @@ allocation.</p>
 </div>
 </div>
 <div class="section" id="files">
-<span id="model-files"></span><h2>Files<a class="headerlink" href="#files" title="Permalink to this heading">#</a></h2>
+<span id="model-files"></span><h2>Files<a class="headerlink" href="#files" title="Permalink to this headline">#</a></h2>
 <div class="section" id="fprintf">
-<span id="id3"></span><h3><code class="docutils literal notranslate"><span class="pre">fprintf</span></code><a class="headerlink" href="#fprintf" title="Permalink to this heading">#</a></h3>
+<span id="id3"></span><h3><code class="docutils literal notranslate"><span class="pre">fprintf</span></code><a class="headerlink" href="#fprintf" title="Permalink to this headline">#</a></h3>
 <p>Only works for <code class="docutils literal notranslate"><span class="pre">stdout</span></code> and <code class="docutils literal notranslate"><span class="pre">stderr</span></code>. See also <a class="reference internal" href="#printf"><span class="std std-ref">printf</span></a>.</p>
 </div>
 </div>
 <div class="section" id="formatting">
-<span id="model-format"></span><h2>Formatting<a class="headerlink" href="#formatting" title="Permalink to this heading">#</a></h2>
+<span id="model-format"></span><h2>Formatting<a class="headerlink" href="#formatting" title="Permalink to this headline">#</a></h2>
 <p>The <code class="docutils literal notranslate"><span class="pre">_chk</span></code> overrides don’t do any extra checking, but this might be OK since
 Crucible-LLVM will detect any memory errors or undefined behavior.</p>
 <div class="section" id="printf">
-<span id="id4"></span><h3><code class="docutils literal notranslate"><span class="pre">printf</span></code><a class="headerlink" href="#printf" title="Permalink to this heading">#</a></h3>
+<span id="id4"></span><h3><code class="docutils literal notranslate"><span class="pre">printf</span></code><a class="headerlink" href="#printf" title="Permalink to this headline">#</a></h3>
 <p>See <a class="reference external" href="https://github.com/GaloisInc/crucible/blob/ce682842f8908a04036cf651df38b131736d7068/crucible-llvm/doc/limitations.md#printf-accuracy">the upstream docs</a>.</p>
 </div>
 </div>
 <div class="section" id="math">
-<span id="model-math"></span><h2>Math<a class="headerlink" href="#math" title="Permalink to this heading">#</a></h2>
+<span id="model-math"></span><h2>Math<a class="headerlink" href="#math" title="Permalink to this headline">#</a></h2>
 </div>
 <div class="section" id="memory">
-<span id="model-memory"></span><h2>Memory<a class="headerlink" href="#memory" title="Permalink to this heading">#</a></h2>
+<span id="model-memory"></span><h2>Memory<a class="headerlink" href="#memory" title="Permalink to this headline">#</a></h2>
 <p>See <a class="reference external" href="https://github.com/GaloisInc/crucible/blob/master/crucible-llvm/doc/memory-model.md">upstream documentation</a>.</p>
 </div>
 <div class="section" id="miscellaneous">
-<span id="model-misc"></span><h2>Miscellaneous<a class="headerlink" href="#miscellaneous" title="Permalink to this heading">#</a></h2>
+<span id="model-misc"></span><h2>Miscellaneous<a class="headerlink" href="#miscellaneous" title="Permalink to this headline">#</a></h2>
 <div class="section" id="signal">
-<span id="id5"></span><h3><code class="docutils literal notranslate"><span class="pre">signal</span></code><a class="headerlink" href="#signal" title="Permalink to this heading">#</a></h3>
+<span id="id5"></span><h3><code class="docutils literal notranslate"><span class="pre">signal</span></code><a class="headerlink" href="#signal" title="Permalink to this headline">#</a></h3>
 <p>czz-llvm never sends signals to the target. Thus, it’s sound to ignore the
 signal handler passed to <code class="docutils literal notranslate"><span class="pre">signal</span></code>, and this is what czz-llvm does. It returns
 a null pointer, which may not actually be sound (null pointers are not mentioned
@@ -1220,46 +1219,46 @@ in the docs).</p>
 </div>
 </div>
 <div class="section" id="network">
-<span id="model-network"></span><h2>Network<a class="headerlink" href="#network" title="Permalink to this heading">#</a></h2>
+<span id="model-network"></span><h2>Network<a class="headerlink" href="#network" title="Permalink to this headline">#</a></h2>
 <div class="section" id="accept">
-<span id="model-stdio"></span><span id="id6"></span><h3><code class="docutils literal notranslate"><span class="pre">accept</span></code><a class="headerlink" href="#accept" title="Permalink to this heading">#</a></h3>
+<span id="model-stdio"></span><span id="id6"></span><h3><code class="docutils literal notranslate"><span class="pre">accept</span></code><a class="headerlink" href="#accept" title="Permalink to this headline">#</a></h3>
 <p>TODO(lb)</p>
 </div>
 <div class="section" id="bind">
-<span id="id7"></span><h3><code class="docutils literal notranslate"><span class="pre">bind</span></code><a class="headerlink" href="#bind" title="Permalink to this heading">#</a></h3>
+<span id="id7"></span><h3><code class="docutils literal notranslate"><span class="pre">bind</span></code><a class="headerlink" href="#bind" title="Permalink to this headline">#</a></h3>
 <p>TODO(lb)</p>
 </div>
 <div class="section" id="listen">
-<span id="id8"></span><h3><code class="docutils literal notranslate"><span class="pre">listen</span></code><a class="headerlink" href="#listen" title="Permalink to this heading">#</a></h3>
+<span id="id8"></span><h3><code class="docutils literal notranslate"><span class="pre">listen</span></code><a class="headerlink" href="#listen" title="Permalink to this headline">#</a></h3>
 <p>TODO(lb)</p>
 </div>
 <div class="section" id="recv">
-<span id="id9"></span><h3><code class="docutils literal notranslate"><span class="pre">recv</span></code><a class="headerlink" href="#recv" title="Permalink to this heading">#</a></h3>
+<span id="id9"></span><h3><code class="docutils literal notranslate"><span class="pre">recv</span></code><a class="headerlink" href="#recv" title="Permalink to this headline">#</a></h3>
 <p>TODO(lb)</p>
 </div>
 <div class="section" id="send">
-<span id="id10"></span><h3><code class="docutils literal notranslate"><span class="pre">send</span></code><a class="headerlink" href="#send" title="Permalink to this heading">#</a></h3>
+<span id="id10"></span><h3><code class="docutils literal notranslate"><span class="pre">send</span></code><a class="headerlink" href="#send" title="Permalink to this headline">#</a></h3>
 <p>TODO(lb)</p>
 </div>
 <div class="section" id="setsockopt">
-<span id="id11"></span><h3><code class="docutils literal notranslate"><span class="pre">setsockopt</span></code><a class="headerlink" href="#setsockopt" title="Permalink to this heading">#</a></h3>
+<span id="id11"></span><h3><code class="docutils literal notranslate"><span class="pre">setsockopt</span></code><a class="headerlink" href="#setsockopt" title="Permalink to this headline">#</a></h3>
 <p>TODO(lb)</p>
 </div>
 <div class="section" id="socket">
-<span id="id12"></span><h3><code class="docutils literal notranslate"><span class="pre">socket</span></code><a class="headerlink" href="#socket" title="Permalink to this heading">#</a></h3>
+<span id="id12"></span><h3><code class="docutils literal notranslate"><span class="pre">socket</span></code><a class="headerlink" href="#socket" title="Permalink to this headline">#</a></h3>
 <p>TODO(lb)</p>
 </div>
 </div>
 <div class="section" id="standard-i-o">
-<h2>Standard I/O<a class="headerlink" href="#standard-i-o" title="Permalink to this heading">#</a></h2>
+<h2>Standard I/O<a class="headerlink" href="#standard-i-o" title="Permalink to this headline">#</a></h2>
 </div>
 <div class="section" id="strings">
-<span id="model-strings"></span><h2>Strings<a class="headerlink" href="#strings" title="Permalink to this heading">#</a></h2>
+<span id="model-strings"></span><h2>Strings<a class="headerlink" href="#strings" title="Permalink to this headline">#</a></h2>
 </div>
 <div class="section" id="time">
-<span id="model-time"></span><h2>Time<a class="headerlink" href="#time" title="Permalink to this heading">#</a></h2>
+<span id="model-time"></span><h2>Time<a class="headerlink" href="#time" title="Permalink to this headline">#</a></h2>
 <div class="section" id="gettimeofday">
-<span id="id13"></span><h3><code class="docutils literal notranslate"><span class="pre">gettimeofday</span></code><a class="headerlink" href="#gettimeofday" title="Permalink to this heading">#</a></h3>
+<span id="id13"></span><h3><code class="docutils literal notranslate"><span class="pre">gettimeofday</span></code><a class="headerlink" href="#gettimeofday" title="Permalink to this headline">#</a></h3>
 <p><code class="docutils literal notranslate"><span class="pre">gettimeofday</span></code> always returns 0. This is sound, see the manpage:</p>
 <blockquote>
 <div><p>The time returned by gettimeofday() is affected by discontinuous jumps in the
@@ -1268,7 +1267,7 @@ time).</p>
 </div></blockquote>
 </div>
 <div class="section" id="id14">
-<span id="id15"></span><h3><code class="docutils literal notranslate"><span class="pre">time</span></code><a class="headerlink" href="#id14" title="Permalink to this heading">#</a></h3>
+<span id="id15"></span><h3><code class="docutils literal notranslate"><span class="pre">time</span></code><a class="headerlink" href="#id14" title="Permalink to this headline">#</a></h3>
 <p><code class="docutils literal notranslate"><span class="pre">time</span></code> always returns 0.</p>
 </div>
 </div>

@@ -1,7 +1,7 @@
 
 <!DOCTYPE html>
 
-<html lang="en">
+<html>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -28,7 +28,6 @@
     <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
     <script src="_static/jquery.js"></script>
     <script src="_static/underscore.js"></script>
-    <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="_static/doctools.js"></script>
     <script src="_static/scripts/sphinx-book-theme.js?digest=9c920249402e914e316237a7dbc6769907cce411"></script>
     <link rel="index" title="Index" href="genindex.html" />
@@ -36,7 +35,7 @@
     <link rel="next" title="Fuzzing Approach" href="fuzzing.html" />
     <link rel="prev" title="Quick Start" href="quickstart.html" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="docsearch:language" content="en">
+    <meta name="docsearch:language" content="None">
     
 
     <!-- Google Analytics -->
@@ -295,12 +294,52 @@ title="Print to PDF"
               <div>
                 
   <div class="section" id="architecture">
-<h1>Architecture<a class="headerlink" href="#architecture" title="Permalink to this heading">#</a></h1>
+<h1>Architecture<a class="headerlink" href="#architecture" title="Permalink to this headline">#</a></h1>
 <div class="admonition important">
 <p class="admonition-title">Important</p>
 <p>This page is intended for the developers of czz and the very curious—it is
 not necessary for users.</p>
 </div>
+<p>czz is implemented as a collection of Haskell libraries. There are four
+first-party libraries, which correspond directly to some of the top-level
+directories in the czz source tree.</p>
+<ul class="simple">
+<li><p>czz, AKA czz core:</p>
+<ul>
+<li><p>Description: generic <a class="reference internal" href="fuzzing.html"><span class="doc">fuzzing algorithm</span></a>, language-agnostic
+mutations</p></li>
+</ul>
+</li>
+<li><p>czz-jvm:</p>
+<ul>
+<li><p>Description: JVM-specific wrapper for czz core</p></li>
+<li><p>Depends on: czz</p></li>
+</ul>
+</li>
+<li><p>czz-llvm:</p>
+<ul>
+<li><p>Description: <a class="reference internal" href="llvm/model.html"><span class="doc">LLVM-specific system model</span></a>, mutations,
+wrapper for czz core</p></li>
+<li><p>Depends on: czz</p></li>
+</ul>
+</li>
+<li><p>czz-llvm-tui:</p>
+<ul>
+<li><p>Description: terminal user interface (TUI) for czz-llvm</p></li>
+<li><p>Depends on: czz, czz-llvm</p></li>
+</ul>
+</li>
+</ul>
+<p>The dependencies of these libraries include the Haskell standard library
+<code class="docutils literal notranslate"><span class="pre">base</span></code>, a few utility libraries such as <code class="docutils literal notranslate"><span class="pre">containers</span></code> and <code class="docutils literal notranslate"><span class="pre">time</span></code>, and, most
+notably, Crucible.</p>
+<p><a class="reference external" href="https://github.com/GaloisInc/crucible">Crucible</a> is a library for the
+symbolic execution of imperative programs. It provides a core Crucible
+intermediate representation (IR) with language-specific extensions. czz-jvm
+translates programs into the Crucible-JVM IR, whereas czz-llvm translates them
+into the Crucible-LLVM IR. The functionality in czz core is polymorphic over
+(i.e., agnostic to) the Crucible IR extension. While Crucible is capable of
+symbolic execution, czz only uses for concrete execution.</p>
 </div>
 
 

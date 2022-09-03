@@ -1,7 +1,7 @@
 
 <!DOCTYPE html>
 
-<html lang="en">
+<html>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -28,7 +28,6 @@
     <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
     <script src="_static/jquery.js"></script>
     <script src="_static/underscore.js"></script>
-    <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="_static/doctools.js"></script>
     <script src="_static/scripts/sphinx-book-theme.js?digest=9c920249402e914e316237a7dbc6769907cce411"></script>
     <link rel="index" title="Index" href="genindex.html" />
@@ -36,7 +35,7 @@
     <link rel="next" title="Quick Start" href="quickstart.html" />
     <link rel="prev" title="czz: Whole-Program Fuzzing" href="index.html" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="docsearch:language" content="en">
+    <meta name="docsearch:language" content="None">
     
 
     <!-- Google Analytics -->
@@ -376,7 +375,7 @@ title="Print to PDF"
               <div>
                 
   <div class="section" id="overview">
-<h1>Overview<a class="headerlink" href="#overview" title="Permalink to this heading">#</a></h1>
+<h1>Overview<a class="headerlink" href="#overview" title="Permalink to this headline">#</a></h1>
 <p>czz is a <em>whole-program</em> coverage-guided mutational fuzzer. Instead of feeding
 input to the target program via a file or stdin, czz executes target from
 <code class="docutils literal notranslate"><span class="pre">main</span></code> and provides it with manufactured data by intercepting calls to library
@@ -394,7 +393,7 @@ but is built on the language-agnostic
 <a class="reference external" href="https://github.com/GaloisInc/crucible">Crucible</a> library, and also includes
 a proof-of-concept fuzzer for JVM code.</p>
 <div class="section" id="introduction">
-<h2>Introduction<a class="headerlink" href="#introduction" title="Permalink to this heading">#</a></h2>
+<h2>Introduction<a class="headerlink" href="#introduction" title="Permalink to this headline">#</a></h2>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>This section compares czz to AFL-style mutational, coverage-guided fuzzers. If
@@ -444,7 +443,7 @@ while changing the output of <code class="docutils literal notranslate"><span cl
 mutation on coverage is clear.</p>
 </div>
 <div class="section" id="how-it-works">
-<h2>How it Works<a class="headerlink" href="#how-it-works" title="Permalink to this heading">#</a></h2>
+<h2>How it Works<a class="headerlink" href="#how-it-works" title="Permalink to this headline">#</a></h2>
 <p>Here’s what happens when running czz-llvm on a new target. For the sake of
 simplicity, assume no corpus is available.</p>
 <p>First, czz-llvm translates the target LLVM code into its internal representation
@@ -483,7 +482,7 @@ Otherwise, it will discard it. This process of generating and evaluating seeds
 continues indefinitely.</p>
 </div>
 <div class="section" id="modeling-the-environment">
-<span id="model"></span><h2>Modeling the Environment<a class="headerlink" href="#modeling-the-environment" title="Permalink to this heading">#</a></h2>
+<span id="model"></span><h2>Modeling the Environment<a class="headerlink" href="#modeling-the-environment" title="Permalink to this headline">#</a></h2>
 <p>It’s easy for czz to respond appropriately to library calls like <code class="docutils literal notranslate"><span class="pre">rand</span></code>: it
 has the freedom to choose an arbitrary <code class="docutils literal notranslate"><span class="pre">int</span></code> and return it to the program.
 Other library calls require more care. Consider <code class="docutils literal notranslate"><span class="pre">getenv</span></code>:</p>
@@ -517,7 +516,7 @@ host, to ensure fidelity of czz-llvm’s models.</p>
 <p>See <a class="reference internal" href="llvm/model.html"><span class="doc">System Model</span></a> for more information about czz-llvm’s modeling.</p>
 </div>
 <div class="section" id="limitations">
-<span id="id1"></span><h2>Limitations<a class="headerlink" href="#limitations" title="Permalink to this heading">#</a></h2>
+<span id="id1"></span><h2>Limitations<a class="headerlink" href="#limitations" title="Permalink to this headline">#</a></h2>
 <p>While whole-program fuzzing has some benefits, it also has its drawbacks:</p>
 <ul class="simple">
 <li><p>Modeling the standard library and host OS is challenging.</p>
@@ -535,7 +534,7 @@ for your CPU time. czz will never compete with traditional fuzzers on code
 which is suitable for traditional fuzzing.</p></li>
 </ul>
 <div class="section" id="czz-llvm">
-<h3>czz-llvm<a class="headerlink" href="#czz-llvm" title="Permalink to this heading">#</a></h3>
+<h3>czz-llvm<a class="headerlink" href="#czz-llvm" title="Permalink to this headline">#</a></h3>
 <ul class="simple">
 <li><p>czz-llvm only works on programs that can be statically compiled to a single
 LLVM module with Clang.</p></li>

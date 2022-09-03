@@ -1,7 +1,7 @@
 
 <!DOCTYPE html>
 
-<html lang="en">
+<html>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -28,7 +28,6 @@
     <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
     <script src="_static/jquery.js"></script>
     <script src="_static/underscore.js"></script>
-    <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="_static/doctools.js"></script>
     <script src="_static/scripts/sphinx-book-theme.js?digest=9c920249402e914e316237a7dbc6769907cce411"></script>
     <link rel="index" title="Index" href="genindex.html" />
@@ -36,7 +35,7 @@
     <link rel="next" title="Configuration" href="llvm/config.html" />
     <link rel="prev" title="Architecture" href="architecture.html" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="docsearch:language" content="en">
+    <meta name="docsearch:language" content="None">
     
 
     <!-- Google Analytics -->
@@ -352,12 +351,12 @@ title="Print to PDF"
               <div>
                 
   <div class="section" id="fuzzing-approach">
-<h1>Fuzzing Approach<a class="headerlink" href="#fuzzing-approach" title="Permalink to this heading">#</a></h1>
+<h1>Fuzzing Approach<a class="headerlink" href="#fuzzing-approach" title="Permalink to this headline">#</a></h1>
 <p>This page describes aspects of czz’s fuzzing algorithm.</p>
 <p>Generally, czz is inspired by AFL, <a class="reference external" href="https://lcamtuf.coredump.cx/afl/technical_details.txt">the AFL whitepaper</a> contains helpful
 background for understanding czz.</p>
 <div class="section" id="coverage">
-<span id="id1"></span><h2>Coverage<a class="headerlink" href="#coverage" title="Permalink to this heading">#</a></h2>
+<span id="id1"></span><h2>Coverage<a class="headerlink" href="#coverage" title="Permalink to this headline">#</a></h2>
 <p>To determine whether or to keep a seed in the seed pool, czz tracks the
 <em>coverage</em> that the seed achieves. This tracking is configurable. Fine-grained
 coverage tracking results in a larger seed pool, which is beneficial if the
@@ -385,11 +384,11 @@ bucketing strategies:</p>
 <p>TODO(lb)</p>
 </div>
 <div class="section" id="mutations">
-<h2>Mutations<a class="headerlink" href="#mutations" title="Permalink to this heading">#</a></h2>
+<h2>Mutations<a class="headerlink" href="#mutations" title="Permalink to this headline">#</a></h2>
 <p>TODO(lb)</p>
 </div>
 <div class="section" id="power-schedule">
-<h2>Power Schedule<a class="headerlink" href="#power-schedule" title="Permalink to this heading">#</a></h2>
+<h2>Power Schedule<a class="headerlink" href="#power-schedule" title="Permalink to this headline">#</a></h2>
 <p>czz does not yet support interesting power schedules, it picks seeds to mutate
 uniformly at random from the seed pool.</p>
 </div>
