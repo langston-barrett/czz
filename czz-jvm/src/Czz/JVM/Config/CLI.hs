@@ -6,6 +6,7 @@ where
 import qualified Options.Applicative as Opt
 import qualified Options.Applicative.Help as Opt hiding (fullDesc)
 
+import qualified Czz.Doc as CDoc
 import qualified Czz.Config.CLI as Czz.Conf.CLI
 
 import           Czz.JVM.Config.Type (Config)
@@ -18,13 +19,13 @@ cliConfig =
     (Opt.info
       (parser Opt.<**> Opt.helper)
       ( Opt.fullDesc
-        <> Opt.progDesc "Fuzz TODO(lb)"
-        <> Opt.header "czz - Tool for blah blah blah"
+        <> Opt.progDesc "Whole-program fuzzing for JVM."
+        <> Opt.header "czz-jvm - Whole program fuzzing for JVM"
       )
     )
     { Opt.infoFooter =
         Opt.vsepChunks
-          [ Opt.paragraph "More detailed info goes here."
+          [ Opt.paragraph ("Read more at " ++ CDoc.docLink)
           ]
     }
   where
