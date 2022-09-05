@@ -47,6 +47,13 @@ Category                           Name               Tests Impl. Sound Docs or 
 :ref:`Env. vars. <model_env_vars>` ``getenv``         2     czz   Yes?  :ref:`Docs <getenv>`
 :ref:`Env. vars. <model_env_vars>` ``setenv``         0     None  n/a   `#29`_
 :ref:`Env. vars. <model_env_vars>` ``unsetenv``       0     None  n/a   `#30`_
+:ref:`Files <model_files>`         ``open``           0     None  n/a   TODO(lb)
+:ref:`Files <model_files>`         ``creat``          0     None  n/a   TODO(lb)
+:ref:`Files <model_files>`         ``unlink``         0     None  n/a   TODO(lb)
+:ref:`Files <model_files>`         ``remove``         0     None  n/a   TODO(lb)
+:ref:`Files <model_files>`         ``close``          0     None  n/a   TODO(lb)
+:ref:`Files <model_files>`         ``read``           0     None  n/a   TODO(lb)
+:ref:`Files <model_files>`         ``write``          0     None  n/a   TODO(lb)
 :ref:`Files <model_files>`         ``fclose``         0     None  n/a   `#43`_
 :ref:`Files <model_files>`         ``fopen``          0     None  n/a   `#42`_
 :ref:`Files <model_files>`         ``fprintf``              czz   n/a   :ref:`Docs <fprintf>`
@@ -204,49 +211,86 @@ Network
 ``accept``
 ----------
 
-TODO(lb)
+This override is unsound:
+
+- It always returns zero, instead of a new file descriptor.
+- It doesn't check for usage errors, such as ``EINVAL`` or ``EOPNOTSUPP``.
+
+It is also incomplete; it doesn't model exceptional system states like
+``EAGAIN``, ``ENOMEM``, or ``EPERM``.
 
 .. _bind:
 
 ``bind``
 --------
 
-TODO(lb)
+This override is unsound; it doesn't check for usage errors, such as ``EINVAL``
+or ``EADDRINUSE``.
+
+It is also incomplete; it doesn't model exceptional system states like
+``EACCES`` or ``ELOOP``.
 
 .. _listen:
 
 ``listen``
 ----------
 
-TODO(lb)
+This override is unsound; it doesn't check for usage errors, such as
+``EOPNOTSUPP`` or ``EADDRINUSE``.
+
+It is also incomplete; it doesn't model failure and always returns zero.
 
 .. _recv:
 
 ``recv``
 --------
 
-TODO(lb)
+This override writes a completely random string of bytes to the input buffer.
+
+This override is unsound; it doesn't check for usage errors, such as ``EINVAL``
+or ``ENOTCONN``.
+
+It is also incomplete:
+
+- It doesn't model exceptional system states like ``ECONNREFUSED`` or
+  ``EAGAIN``.
+- It asserts that ``flags`` is zero.
+- It always returns the number of bytes written, never -1.
 
 .. _send:
 
 ``send``
 --------
 
-TODO(lb)
+This override returns a random number of bytes sent.
+
+This override is unsound; it doesn't check for usage errors, such as ``EINVAL``
+or ``ENOTCONN``.
+
+It is also incomplete; it doesn't model exceptional system states like
+``ECONNRESET`` or ``ENOBUFS``. It always returns the number of bytes written,
+never -1.
 
 .. _setsockopt:
 
 ``setsockopt``
 --------------
 
-TODO(lb)
+This override is unsound; it doesn't check for usage errors, such as ``EINVAL``
+or ``ENOTSOCK``. It always returns zero.
 
 .. _socket:
 
 ``socket``
 ----------
 
-TODO(lb)
+This override is unsound; it doesn't check for usage errors, such as ``EINVAL``.
+
+It is also incomplete:
+
+- It doesn't model exceptional system states like ``EPROTONOSUPPORT`` or
+  ``ENOBUFS``.
+- It only supports ``AF_INET``, ``SOCK_STREAM``, and a protocol of zero.
 
 Standard I/O
 ============

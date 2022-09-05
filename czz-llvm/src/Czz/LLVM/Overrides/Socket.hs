@@ -253,7 +253,7 @@ acceptImpl _proxy bak e _memVar sockFd _addr _addrLen = do
   let sym = C.backendGetSym bak
   -- TODO(lb): Set errno to ENOTSOCK or EBADF in this case, return -1
   assertIsSocketFd bak "accept" sockFd
-  -- TODO(lb): Needs to write to the length pointer...?
+  -- TODO(lb): Needs to return new fd
   liftIO (What4.bvLit sym n32 (BV.mkBV n32 0))
 
 ------------------------------------------------------------------------
@@ -417,7 +417,7 @@ recvOverride proxy bak memVar =
         let lenInt = fromIntegral lenInteger
         recvd <-
           liftIO (Random.randomRIO (0, (lenInt `div` 8) - 1) :: IO Int)
-        str <- Rand.genByteString (0, recvd)  -- inclusivee
+        str <- Rand.genByteString (0, recvd)  -- inclusive
         return (RecvSuccess str)
   , COv.doEffect =
       \_proxy e  sockFd buf len flags ->
