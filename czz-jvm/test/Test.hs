@@ -35,6 +35,7 @@ tests = do
               , CConf.pathLen = 1
               , CConf.seed = Nothing  -- Just 0
               , CConf.tries = Just 10
+              , CConf.stateDir = Nothing
               , CConf.verbosity = Log.Error
               }
           , Conf.classPath = ["test/java"]

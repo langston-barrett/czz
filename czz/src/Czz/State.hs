@@ -15,9 +15,13 @@ module Czz.State
   , pool
   , hasBug
   , summarize
+  , serialize
   )
 where
 
+import           Control.Monad (forM_)
+import qualified Data.Aeson as Aeson
+import qualified Data.Hashable as Hash
 import qualified Data.Maybe as Maybe
 import           Data.Sequence (Seq)
 import qualified Data.Sequence as Seq
@@ -25,6 +29,8 @@ import qualified Data.Set as Set
 import           Data.Text (Text)
 import qualified Data.Text as Text
 import           Numeric.Natural (Natural)
+import qualified System.Directory as Dir
+import           System.FilePath ((</>))
 
 import qualified What4.ProgramLoc as What4
 
@@ -116,3 +122,19 @@ summarize st =
       results = Set.unions (fmap Rec.result (pool st))
       bugs = Maybe.mapMaybe getBugLoc (Set.toList results)
   in Text.unlines ("Found these bugs:":map (("- " <>) . Text.pack . show) bugs)
+
+serialize ::
+  Aeson.ToJSON env =>
+  Aeson.ToJSON eff =>
+  Aeson.ToJSON fb =>
+  -- | Directory
+  FilePath ->
+  State env eff k fb ->
+  IO ()
+serialize dir st = do
+  let seedDir = dir </> "pool"
+  Dir.createDirectoryIfMissing True seedDir
+  Aeson.encodeFile (dir </> "stats.json") (stats st)
+  forM_ (sPool st) $ \r -> do
+    let path = seedDir </> (show (abs (Hash.hash (Rec.coverage r))) ++ ".json")
+    Aeson.encodeFile path r

@@ -3,6 +3,7 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE ImplicitParams #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
@@ -30,6 +31,9 @@ where
 
 import           Prelude hiding (null, length)
 
+
+import qualified Data.Aeson as Aeson
+import qualified Data.Aeson.TH as AesonTH
 import qualified Control.Lens as Lens
 import           Control.Monad.IO.Class (liftIO)
 import           Control.Monad (foldM)
@@ -226,3 +230,5 @@ genArgs bak trans mvar template = do
         ((),) <$> liftIO (CLLVM.storeRaw bak mem strPtr ty CLLVM.noAlignment val)
 
       return strPtr
+
+$(AesonTH.deriveJSON Aeson.defaultOptions ''Template)

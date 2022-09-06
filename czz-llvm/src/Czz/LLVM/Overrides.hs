@@ -8,6 +8,8 @@ module Czz.LLVM.Overrides
   )
 where
 
+import qualified Data.Aeson as Aeson
+import qualified Data.Aeson.TH as AesonTH
 import qualified Control.Lens as Lens
 import           Data.ByteString (ByteString)
 import           Data.IORef (IORef)
@@ -43,6 +45,7 @@ data Effect
   deriving (Eq, Ord, Show)
 
 $(Lens.makePrisms ''Effect)
+$(AesonTH.deriveJSON Aeson.defaultOptions ''Effect)
 
 overrides ::
   -- TODO(lb): structured logging

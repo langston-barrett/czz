@@ -3,6 +3,7 @@
 -- TODO(lb): start empty
 
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 module Czz.LLVM.Env.FileSystem
   ( Template
@@ -16,9 +17,14 @@ module Czz.LLVM.Env.FileSystem
   )
 where
 
+import qualified Data.Aeson as Aeson
+import qualified Data.Aeson.TH as AesonTH
+
 import           Data.ByteString (ByteString)
 import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
+
+import qualified Czz.Orphans ()
 
 data Template
   = Template
@@ -51,3 +57,5 @@ paths = Map.keys . fs
 
 fsMap :: Template -> Map ByteString ByteString
 fsMap = fs
+
+$(AesonTH.deriveJSON Aeson.defaultOptions ''Template)

@@ -13,7 +13,6 @@ import           Czz.Log (Severity)
 -- - Timeout
 -- - Hash-consing
 -- - Path strategy
--- - Verbosity
 -- - etc.
 
 data Config = Config
@@ -22,6 +21,7 @@ data Config = Config
   , jobs :: !Int
   , pathLen :: !Int
   , seed :: !(Maybe Int)
+  , stateDir :: !(Maybe FilePath)
   , tries :: !(Maybe Int)
   , verbosity :: !Severity
   }

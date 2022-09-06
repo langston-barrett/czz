@@ -5,6 +5,7 @@
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RoleAnnotations #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 module Czz.KLimited
   ( KLimited
@@ -18,6 +19,8 @@ module Czz.KLimited
 where
 
 import           Prelude hiding (drop, length)
+import qualified Data.Aeson as Aeson
+import qualified Data.Aeson.TH as AesonTH
 import           Data.Hashable (Hashable)
 import           GHC.TypeLits (Nat)
 import           Data.Sequence (Seq)
@@ -56,3 +59,8 @@ maxedOut kl =
 snoc :: IsKLimited k => KLimited k a -> a -> KLimited k a
 snoc kl x =
   KLimited $ (Seq.|> x) $ getKLimited $ drop (if maxedOut kl then 1 else 0) kl
+
+-- TODO(lb): This instance assumes that the sequence has a proper length
+$(AesonTH.deriveJSON
+  Aeson.defaultOptions { Aeson.unwrapUnaryRecords = True }
+  ''KLimited)

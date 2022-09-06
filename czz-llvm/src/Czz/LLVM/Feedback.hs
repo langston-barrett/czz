@@ -1,3 +1,5 @@
+{-# LANGUAGE TemplateHaskell #-}
+
 module Czz.LLVM.Feedback
   ( Feedback(..)
   , empty
@@ -5,9 +7,13 @@ module Czz.LLVM.Feedback
 where
 
 import           Prelude hiding (id)
+import qualified Data.Aeson as Aeson
+import qualified Data.Aeson.TH as AesonTH
 import           Data.ByteString (ByteString)
 import           Data.Set (Set)
 import qualified Data.Set as Set
+
+import qualified Czz.Orphans ()
 
 data Feedback
   = Feedback
@@ -21,3 +27,5 @@ empty =
   { envVarsRead = Set.empty
   , filesOpened = Set.empty
   }
+
+$(AesonTH.deriveJSON Aeson.defaultOptions ''Feedback)

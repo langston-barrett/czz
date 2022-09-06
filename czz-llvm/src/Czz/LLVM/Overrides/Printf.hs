@@ -6,6 +6,7 @@
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
@@ -21,6 +22,8 @@ where
 import qualified Control.Lens as Lens
 import           Control.Monad.IO.Class (liftIO)
 import qualified Control.Monad.State as State
+import qualified Data.Aeson as Aeson
+import qualified Data.Aeson.TH as AesonTH
 import qualified Data.BitVector.Sized as BV
 import qualified Data.ByteString.Char8 as BSC8
 import           Data.IORef (IORef)
@@ -56,26 +59,17 @@ import qualified Czz.Overrides as COv
 import           Czz.LLVM.Overrides.Util (OverrideConstraints)
 import           Czz.LLVM.QQ (llvmOvr, llvmOvrType)
 
-data Effect
-  = Sprintf !SprintfEffect
-  -- | Snprintf !SnprintfEffect
+data SprintfEffect
+  = SprintfSuccess
   deriving (Eq, Ord, Show)
 
-_Sprintf :: Lens.Prism' Effect SprintfEffect
-_Sprintf =
-  Lens.prism'
-    Sprintf
-    (\case
-      Sprintf eff -> Just eff)
-      -- _ -> Nothing)
+data Effect
+  = Sprintf !SprintfEffect
+  deriving (Eq, Ord, Show)
 
--- _Snprintf :: Lens.Prism' Effect SnprintfEffect
--- _Snprintf =
---   Lens.prism'
---     Snprintf
---     (\case
---       Snprintf eff -> Just eff
---       _ -> Nothing)
+$(Lens.makePrisms ''Effect)
+$(AesonTH.deriveJSON Aeson.defaultOptions ''SprintfEffect)
+$(AesonTH.deriveJSON Aeson.defaultOptions ''Effect)
 
 overrides ::
   Log.Has Text =>
@@ -135,10 +129,6 @@ overrideRunFmtString proxy bak memVar fmtPtr vaList = do
 
 ------------------------------------------------------------------------
 -- ** sprintf
-
-data SprintfEffect
-  = SprintfSuccess
-  deriving (Eq, Ord, Show)
 
 -- TODO(lb): Probably unsound? What the heck are the params?
 sprintfChkDecl ::

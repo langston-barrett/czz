@@ -1,3 +1,4 @@
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Czz.LLVM.CString
@@ -9,11 +10,15 @@ module Czz.LLVM.CString
   )
 where
 
+
+import qualified Data.Aeson as Aeson
 import           Data.ByteString (ByteString)
 import qualified Data.ByteString as BS
 
+import qualified Czz.Orphans ()
+
 newtype CString = CString { getCString :: ByteString }
-  deriving (Eq, Ord, Show)
+  deriving (Eq, Aeson.FromJSON, Ord, Show, Aeson.ToJSON)
 
 toByteString :: CString -> ByteString
 toByteString = getCString

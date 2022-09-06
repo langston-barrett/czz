@@ -6,6 +6,7 @@
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE ViewPatterns #-}
@@ -23,6 +24,8 @@ where
 
 import qualified Control.Lens as Lens
 import           Control.Monad.IO.Class (liftIO)
+import qualified Data.Aeson as Aeson
+import qualified Data.Aeson.TH as AesonTH
 import qualified Data.BitVector.Sized as BV
 import           Data.ByteString (ByteString)
 import qualified Data.ByteString as BS
@@ -51,6 +54,7 @@ import qualified Lang.Crucible.LLVM.MemModel as CLLVM
 import           Lang.Crucible.LLVM.MemModel.Pointer (LLVMPointerType)
 
 import qualified Czz.Log as Log
+import qualified Czz.Orphans ()
 import           Czz.Overrides (EffectTrace, Override)
 import qualified Czz.Overrides as COv
 import qualified Czz.Random as Rand
@@ -58,6 +62,34 @@ import qualified Czz.Random as Rand
 import           Czz.LLVM.Overrides.Util (OverrideConstraints)
 import           Czz.LLVM.QQ (llvmArgs, llvmOvr, llvmOvrType)
 import qualified Czz.LLVM.Unimplemented as Unimpl
+
+data AcceptEffect
+  = AcceptSuccess
+  deriving (Eq, Ord, Show)
+
+data BindEffect
+  = BindSuccess
+  deriving (Eq, Ord, Show)
+
+data ListenEffect
+  = ListenSuccess
+  deriving (Eq, Ord, Show)
+
+data RecvEffect
+  = RecvSuccess !ByteString
+  deriving (Eq, Ord, Show)
+
+data SendEffect
+  = SendSuccess !Integer !Integer
+  deriving (Eq, Ord, Show)
+
+data SetSockOptEffect
+  = SetSockOptSuccess
+  deriving (Eq, Ord, Show)
+
+data SocketEffect
+  = SocketSuccess !Integer
+  deriving (Eq, Ord, Show)
 
 data Effect
   = Accept !AcceptEffect
@@ -69,61 +101,15 @@ data Effect
   | Socket !SocketEffect
   deriving (Eq, Ord, Show)
 
-_Accept :: Lens.Prism' Effect AcceptEffect
-_Accept =
-  Lens.prism'
-    Accept
-    (\case
-      Accept eff -> Just eff
-      _ -> Nothing)
-
-_Bind :: Lens.Prism' Effect BindEffect
-_Bind =
-  Lens.prism'
-    Bind
-    (\case
-      Bind eff -> Just eff
-      _ -> Nothing)
-
-_Listen :: Lens.Prism' Effect ListenEffect
-_Listen =
-  Lens.prism'
-    Listen
-    (\case
-      Listen eff -> Just eff
-      _ -> Nothing)
-
-_Recv :: Lens.Prism' Effect RecvEffect
-_Recv =
-  Lens.prism'
-    Recv
-    (\case
-      Recv eff -> Just eff
-      _ -> Nothing)
-
-_Send :: Lens.Prism' Effect SendEffect
-_Send =
-  Lens.prism'
-    Send
-    (\case
-      Send eff -> Just eff
-      _ -> Nothing)
-
-_SetSockOpt :: Lens.Prism' Effect SetSockOptEffect
-_SetSockOpt =
-  Lens.prism'
-    SetSockOpt
-    (\case
-      SetSockOpt eff -> Just eff
-      _ -> Nothing)
-
-_Socket :: Lens.Prism' Effect SocketEffect
-_Socket =
-  Lens.prism'
-    Socket
-    (\case
-      Socket eff -> Just eff
-      _ -> Nothing)
+$(Lens.makePrisms ''Effect)
+$(AesonTH.deriveJSON Aeson.defaultOptions ''AcceptEffect)
+$(AesonTH.deriveJSON Aeson.defaultOptions ''BindEffect)
+$(AesonTH.deriveJSON Aeson.defaultOptions ''ListenEffect)
+$(AesonTH.deriveJSON Aeson.defaultOptions ''RecvEffect)
+$(AesonTH.deriveJSON Aeson.defaultOptions ''SendEffect)
+$(AesonTH.deriveJSON Aeson.defaultOptions ''SetSockOptEffect)
+$(AesonTH.deriveJSON Aeson.defaultOptions ''SocketEffect)
+$(AesonTH.deriveJSON Aeson.defaultOptions ''Effect)
 
 overrides ::
   Log.Has String =>
@@ -185,10 +171,6 @@ assertIsSocketFd bak fnName sockFd = do
 
 ------------------------------------------------------------------------
 -- ** accept
-
-data AcceptEffect
-  = AcceptSuccess
-  deriving (Eq, Ord, Show)
 
 acceptDecl ::
   Log.Has String =>
@@ -259,10 +241,6 @@ acceptImpl _proxy bak e _memVar sockFd _addr _addrLen = do
 ------------------------------------------------------------------------
 -- ** bind
 
-data BindEffect
-  = BindSuccess
-  deriving (Eq, Ord, Show)
-
 bindDecl ::
   forall proxy p sym arch wptr eff.
   Log.Has String =>
@@ -320,10 +298,6 @@ bindImpl _proxy bak e _memVar sockFd _addr _addrLen = do
 ------------------------------------------------------------------------
 -- ** listen
 
-data ListenEffect
-  = ListenSuccess
-  deriving (Eq, Ord, Show)
-
 listenDecl ::
   forall proxy p sym arch wptr eff.
   Log.Has String =>
@@ -377,10 +351,6 @@ listenImpl _proxy bak e _memVar sockFd _backlog = do
 
 ------------------------------------------------------------------------
 -- ** recv
-
-data RecvEffect
-  = RecvSuccess !ByteString
-  deriving (Eq, Ord, Show)
 
 recvDecl ::
   forall proxy p sym arch wptr eff.
@@ -481,10 +451,6 @@ recvImpl _proxy bak e memVar sockFd buf len flags = do
 ------------------------------------------------------------------------
 -- ** send
 
-data SendEffect
-  = SendSuccess !Integer !Integer
-  deriving (Eq, Ord, Show)
-
 sendDecl ::
   forall proxy p sym arch wptr eff.
   Log.Has String =>
@@ -570,10 +536,6 @@ sendImpl _proxy bak e memVar sockFd buf len flags = do
 ------------------------------------------------------------------------
 -- ** setsockopt
 
-data SetSockOptEffect
-  = SetSockOptSuccess
-  deriving (Eq, Ord, Show)
-
 setSockOptDecl ::
   forall proxy p sym arch wptr eff.
   Log.Has String =>
@@ -625,10 +587,6 @@ setSockOptImpl _proxy bak e _memVar sockFd _level _optName _optVal _optLen = do
 
 ------------------------------------------------------------------------
 -- ** socket
-
-data SocketEffect
-  = SocketSuccess !Integer
-  deriving (Eq, Ord, Show)
 
 socketDecl ::
   forall proxy p sym arch wptr eff.

@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 module Czz.Freq
@@ -14,11 +15,13 @@ module Czz.Freq
 where
 
 import           Prelude hiding (map)
+import qualified Data.Aeson as Aeson
 import           Data.Hashable (Hashable)
 import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
 import           Data.Sequence (Seq)
 import qualified Data.Sequence as Seq
+import           GHC.Generics (Generic)
 
 import           Czz.Count (Count)
 import qualified Czz.Count as Count
@@ -28,7 +31,7 @@ import qualified Czz.Count as Count
 -- Internal note: A key not being present is semantically the same as it having
 -- a value of 'Count.zero'.
 newtype Freq k = Freq { getFreq :: Map k Count }
-  deriving (Eq, Hashable, Ord, Show)
+  deriving (Eq, Generic, Hashable, Ord, Show)
 
 empty :: Ord k => Freq k
 empty = Freq Map.empty
@@ -80,3 +83,13 @@ instance Ord k => Semigroup (Freq k) where
 -- | @'mempty' == 'empty'@
 instance Ord k => Monoid (Freq k) where
   mempty = empty
+
+--------------------------------------------------------------------------------
+-- JSON
+
+instance Aeson.ToJSONKey k => Aeson.ToJSON (Freq k) where
+  toJSON = Aeson.toJSON . getFreq
+  toEncoding = Aeson.toEncoding . getFreq
+
+instance (Aeson.FromJSONKey k, Ord k) => Aeson.FromJSON (Freq k) where
+  parseJSON v = Freq <$> Aeson.parseJSON v

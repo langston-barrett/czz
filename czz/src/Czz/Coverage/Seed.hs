@@ -1,5 +1,6 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 module Czz.Coverage.Seed
   ( SeedCoverage
@@ -11,6 +12,8 @@ module Czz.Coverage.Seed
   )
 where
 
+import qualified Data.Aeson as Aeson
+import qualified Data.Aeson.TH as AesonTH
 import           Data.Hashable (Hashable)
 import           Data.Text (Text)
 import           GHC.Generics (Generic)
@@ -47,3 +50,5 @@ setLastLoc l s = s { covLastLoc = l }
 
 freq :: SeedCoverage k -> Freq (Path k)
 freq = covFreq
+
+$(AesonTH.deriveJSON Aeson.defaultOptions ''SeedCoverage)
