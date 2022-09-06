@@ -39,6 +39,7 @@ import qualified Lang.Crucible.Simulator.RegMap as C
 import           Lang.Crucible.Simulator.OverrideSim (OverrideSim)
 import qualified Lang.Crucible.Simulator as C
 import           Lang.Crucible.Simulator.RegMap (RegEntry, RegValue)
+import           Lang.Crucible.Types (BVType)
 
 -- crucible-llvm
 import qualified Lang.Crucible.LLVM.DataLayout as CLLVM
@@ -51,7 +52,7 @@ import qualified Czz.Log as Log
 import           Czz.Overrides (EffectTrace)
 import qualified Czz.Overrides as COv
 
-import           Czz.LLVM.Overrides.State.Env as State.Env
+import           Czz.LLVM.Overrides.State.Env as EnvState
 import           Czz.LLVM.Overrides.Util (OverrideConstraints)
 import           Czz.LLVM.QQ (llvmOvr, llvmOvrType)
 
@@ -59,12 +60,18 @@ data GetEnvEffect
   = GetEnvEffect
   deriving (Eq, Ord, Show)
 
+data UnsetEnvEffect
+  = UnsetEnvEffect
+  deriving (Eq, Ord, Show)
+
 data Effect
   = GetEnv !GetEnvEffect
+  | UnsetEnv !UnsetEnvEffect
   deriving (Eq, Ord, Show)
 
 $(Lens.makePrisms ''Effect)
 $(AesonTH.deriveJSON Aeson.defaultOptions ''GetEnvEffect)
+$(AesonTH.deriveJSON Aeson.defaultOptions ''UnsetEnvEffect)
 $(AesonTH.deriveJSON Aeson.defaultOptions ''Effect)
 
 overrides ::
@@ -74,10 +81,11 @@ overrides ::
   IORef (EffectTrace eff) ->
   Lens.Prism' eff Effect ->
   IORef [ByteString] ->
-  C.GlobalVar State.Env.EnvState ->
+  C.GlobalVar EnvState ->
   [OverrideTemplate p sym arch rtp l a]
 overrides proxy effects inj envVarRef envStateVar =
   [ ov (getEnvDecl proxy effects (inj . _GetEnv) envVarRef envStateVar)
+  , ov (unsetEnvDecl proxy effects (inj . _UnsetEnv) envVarRef envStateVar)
   ]
   where ov = CLLVM.basic_llvm_override
 
@@ -93,7 +101,7 @@ getEnvDecl ::
   IORef (EffectTrace eff) ->
   Lens.Prism' eff GetEnvEffect ->
   IORef [ByteString] ->
-  C.GlobalVar State.Env.EnvState ->
+  C.GlobalVar EnvState ->
   [llvmOvrType| i8* @( i8* ) |]
 getEnvDecl proxy effects inj envVarRef envStateVar =
   [llvmOvr| i8* @getenv( i8* ) |]
@@ -119,7 +127,7 @@ getEnvImpl ::
   GetEnvEffect ->
   IORef [ByteString] ->
   C.GlobalVar CLLVM.Mem ->
-  C.GlobalVar State.Env.EnvState ->
+  C.GlobalVar EnvState ->
   RegEntry sym (LLVMPointerType wptr) ->
   OverrideSim p sym ext rtp args ret (RegValue sym (LLVMPointerType wptr))
 getEnvImpl _proxy bak e envVarRef memVar envStateVar varNamePtr = do
@@ -131,7 +139,7 @@ getEnvImpl _proxy bak e envVarRef memVar envStateVar varNamePtr = do
     let showVarName = Text.pack (show varNameStr)
     liftIO (Log.debug ("Program called `getenv`: " <> showVarName))
     liftIO (IORef.modifyIORef envVarRef (varNameStr:))
-    State.Env.getEnv bak envStateVar varNameStr >>=
+    EnvState.getEnv bak envStateVar varNameStr >>=
       \case
         Nothing -> do
           liftIO (Log.debug ("getenv(" <> showVarName <> ") = null"))
@@ -153,3 +161,58 @@ getEnvImpl _proxy bak e envVarRef memVar envStateVar varNamePtr = do
           (strPtr, mem') <- liftIO (CLLVM.doAlloca bak mem strLen CLLVM.noAlignment nm)
           mem'' <- liftIO (CLLVM.storeRaw bak mem' strPtr ty CLLVM.noAlignment val)
           return (strPtr, mem'')
+
+------------------------------------------------------------------------
+-- ** unsetEnv
+
+-- | NB: Allocates fresh results every time.
+unsetEnvDecl ::
+  forall proxy p sym arch wptr eff.
+  Log.Has Text =>
+  OverrideConstraints sym arch wptr =>
+  proxy arch ->
+  IORef (EffectTrace eff) ->
+  Lens.Prism' eff UnsetEnvEffect ->
+  IORef [ByteString] ->
+  C.GlobalVar EnvState ->
+  [llvmOvrType| i32 @( i8* ) |]
+unsetEnvDecl proxy effects inj envVarRef envStateVar =
+  [llvmOvr| i32 @unsetenv( i8* ) |]
+  (\memVar bak args ->
+    COv.toOverride
+      @(BVType 32)
+      effects
+      inj
+      args
+      (COv.Override
+       { COv.genEffect = \_proxy _oldEff _name ->
+           COv.AnyOverrideSim (return UnsetEnvEffect)
+       , COv.doEffect = \_proxy e name ->
+           COv.AnyOverrideSim (unsetEnvImpl proxy bak e envVarRef memVar envStateVar name)
+       }))
+
+-- TODO(lb): EINVAL if name is NULL
+-- TODO(lb): model failure
+unsetEnvImpl ::
+  Log.Has Text =>
+  OverrideConstraints sym arch wptr =>
+  IsSymBackend sym bak =>
+  proxy arch ->
+  bak ->
+  UnsetEnvEffect ->
+  IORef [ByteString] ->
+  C.GlobalVar CLLVM.Mem ->
+  C.GlobalVar EnvState ->
+  RegEntry sym (LLVMPointerType wptr) ->
+  OverrideSim p sym ext rtp args ret (RegValue sym (BVType 32))
+unsetEnvImpl _proxy bak e _envVarRef memVar envStateVar varNamePtr = do
+  UnsetEnvEffect <- return e  -- check for missing pattern matches
+  let sym = C.backendGetSym bak
+  mem <- C.readGlobal memVar
+  let ptr = C.regValue varNamePtr
+  varNameStr <- liftIO (BS.pack <$> CLLVM.loadString bak mem ptr Nothing)
+  let showVarName = Text.pack (show varNameStr)
+  liftIO (Log.debug ("Program called `unsetenv`: " <> showVarName))
+  ret <- EnvState.unsetEnv bak envStateVar varNameStr
+  let n32 = What4.knownNat @32
+  liftIO (What4.bvLit sym n32 (BV.mkBV n32 (toInteger ret)))

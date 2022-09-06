@@ -5,6 +5,7 @@ module Czz.LLVM.Overrides.State.Env
   ( EnvState
   , mkEnvVar
   , getEnv
+  , unsetEnv
   )
 where
 
@@ -46,7 +47,20 @@ mkEnvVar sym halloc initVal = do
   C.writeGlobal var initSymVal
   return var
 
--- TODO(lb): initialize from envp
+--------------------------------------------------------------------------------
+-- ** getenv
+
+getEnvIO ::
+  Log.Has Text =>
+  IsSymBackend sym bak =>
+  bak ->
+  C.RegValue sym EnvState ->
+  ByteString ->
+  IO (Maybe ByteString)
+getEnvIO bak state varName = do
+  let sym = C.backendGetSym bak
+  logState (Just sym) state
+  return (Maybe.listToMaybe (Maybe.mapMaybe (lookupIn (Just sym) varName) (Vec.toList state)))
 
 getEnv ::
   Log.Has Text =>
@@ -57,31 +71,70 @@ getEnv ::
   C.OverrideSim p sym ext rtp args ret (Maybe ByteString)
 getEnv bak envVar varName = do
   state <- C.readGlobal envVar
-  let sym = C.backendGetSym bak
-  liftIO (Log.debug ("Env state: " <> Text.pack (show (Maybe.mapMaybe (toString (Just sym)) (Vec.toList state)))))
-  return (Maybe.listToMaybe (Maybe.mapMaybe (isVar (Just sym) varName) (Vec.toList state)))
-  where
-    toString ::
-      IsSymInterface sym =>
-      proxy sym ->
-      What4.SymExpr sym (C.BaseStringType What4.Char8) ->
-      Maybe ByteString
-    toString _proxy strExpr =
-      case What4.asString strExpr of
-        Nothing -> Nothing
-        Just (What4.Char8Literal str) -> Just (str :: ByteString)
+  liftIO (getEnvIO bak state varName)
 
-    isVar ::
-      IsSymInterface sym =>
-      proxy sym ->
-      ByteString ->
-      What4.SymExpr sym (C.BaseStringType What4.Char8) ->
-      Maybe ByteString
-    isVar proxy name strExpr =
-      case toString proxy strExpr of
-        Nothing -> Nothing
-        Just str ->
-          let pfx = name <> "="
-          in if pfx `BS.isPrefixOf` str
-             then Just (BS.drop (BS.length pfx) str)
-             else Nothing
+--------------------------------------------------------------------------------
+-- ** unsetenv
+
+unsetEnvIO ::
+  Log.Has Text =>
+  IsSymBackend sym bak =>
+  bak ->
+  C.RegValue sym EnvState ->
+  ByteString ->
+  IO (Int, C.RegValue sym EnvState)
+unsetEnvIO bak state varName = do
+  let sym = C.backendGetSym bak
+  liftIO (logState (Just sym) state)
+  let final = Vec.filter (Maybe.isNothing . lookupIn (Just sym) varName) state
+  return (0, final)
+
+unsetEnv ::
+  Log.Has Text =>
+  IsSymBackend sym bak =>
+  bak ->
+  C.GlobalVar EnvState ->
+  ByteString ->
+  C.OverrideSim p sym ext rtp args ret Int
+unsetEnv bak envVar varName =
+  C.modifyGlobal envVar $ \state -> do
+    liftIO (unsetEnvIO bak state varName)
+
+--------------------------------------------------------------------------------
+-- ** Helpers (Not Exported)
+
+-- TODO(lb): pretty-print
+logState ::
+  Log.Has Text =>
+  IsSymInterface sym =>
+  proxy sym ->
+  Vec.Vector (What4.SymExpr sym (C.BaseStringType What4.Char8)) ->
+  IO ()
+logState proxy state =
+  Log.debug
+    ("Env state: " <> Text.pack (show (Maybe.mapMaybe (toString proxy) (Vec.toList state))))
+
+toString ::
+  IsSymInterface sym =>
+  proxy sym ->
+  What4.SymExpr sym (C.BaseStringType What4.Char8) ->
+  Maybe ByteString
+toString _proxy strExpr =
+  case What4.asString strExpr of
+    Nothing -> Nothing
+    Just (What4.Char8Literal str) -> Just (str :: ByteString)
+
+lookupIn ::
+  IsSymInterface sym =>
+  proxy sym ->
+  ByteString ->
+  What4.SymExpr sym (C.BaseStringType What4.Char8) ->
+  Maybe ByteString
+lookupIn proxy name strExpr =
+  case toString proxy strExpr of
+    Nothing -> Nothing
+    Just str ->
+      let pfx = name <> "="
+      in if pfx `BS.isPrefixOf` str
+          then Just (BS.drop (BS.length pfx) str)
+          else Nothing
