@@ -9,7 +9,6 @@ module Czz.JVM
 where
 
 import qualified Control.Lens as Lens
-import qualified Data.Hashable as Hash
 import qualified Data.Set as Set
 import qualified Data.Text as Text
 import           Data.Text (Text)
@@ -24,9 +23,6 @@ import           Lang.Crucible.JVM (JVM)
 import qualified Lang.Crucible.JVM.Context as CJVM
 
 import qualified Czz.Config.Type as CConf
-import           Czz.Coverage (Coverage)
-import qualified Czz.Coverage as Cover
-import qualified Czz.Coverage.Bucket as Bucket
 import           Czz.Log (Logger, Msg)
 import           Czz.Fuzz (Fuzzer, FuzzError)
 import qualified Czz.Fuzz as Fuzz
@@ -52,46 +48,45 @@ jvmFuzzer ::
   Config ->
   CJVM.JVMContext ->
   EntryPoint ->
-  Fuzzer JVM () () (Coverage k)
+  Fuzzer JVM () () k ()
 jvmFuzzer _conf jvmCtx entryPoint =
-  Cover.withCoverage Bucket.log2 $
-    Fuzz.Fuzzer
-    { Fuzz.nextSeed = \records -> do
-        record <- Rand.pickSeq records
-        case record of
-          Nothing -> return (Seed.begin (), False)
-          -- TODO(lb): mutate, power schedule, mutation schedule
-          Just r -> return (Seed.rewind (Rec.seed r), False)
+  Fuzz.Fuzzer
+  { Fuzz.nextSeed = \records -> do
+      record <- Rand.pickSeq records
+      case record of
+        Nothing -> return (Seed.begin (), False)
+        -- TODO(lb): mutate, power schedule, mutation schedule
+        Just r -> return (Seed.rewind (Rec.seed r), False)
 
-    , Fuzz.onUpdate = \_state -> return ()
+  , Fuzz.onUpdate = \_state -> return ()
 
-    , Fuzz.symbolicBits = \bak -> do
-        (_sym :: sym) <- return (C.backendGetSym bak)
-        return $
-          Fuzz.SymbolicBits
-          { Fuzz.initState = \halloc effectRef seed -> do
-              Init.initState
-                bak
-                jvmCtx
-                entryPoint
-                halloc
-                effectRef
-                seed
-          , Fuzz.explainResults = \failedGoals _simResult -> do
-              let explErr fGoal = do
-                    let lPred = C.proofGoal (Fuzz.getFailedGoal fGoal)
-                    let simError = lPred Lens.^. C.labeledPredMsg
-                    let loc = C.simErrorLoc simError
-                    return (Res.Bug loc (Text.pack (show (C.ppSimError simError))))
-              goalExpls <- mapM explErr failedGoals
-              if null failedGoals
-                -- TODO(lb): is this correct? test e.g. with abort
-                then return (Set.singleton Res.Ok)
-                else return (Set.fromList goalExpls)
-          , Fuzz.instrumentation = []
-          , Fuzz.getFeedback = return ((), Rec.FeedbackId (Hash.hash ()))
-          }
-    }
+  , Fuzz.symbolicBits = \bak -> do
+      (_sym :: sym) <- return (C.backendGetSym bak)
+      return $
+        Fuzz.SymbolicBits
+        { Fuzz.initState = \halloc effectRef seed -> do
+            Init.initState
+              bak
+              jvmCtx
+              entryPoint
+              halloc
+              effectRef
+              seed
+        , Fuzz.explainResults = \failedGoals _simResult -> do
+            let explErr fGoal = do
+                  let lPred = C.proofGoal (Fuzz.getFailedGoal fGoal)
+                  let simError = lPred Lens.^. C.labeledPredMsg
+                  let loc = C.simErrorLoc simError
+                  return (Res.Bug loc (Text.pack (show (C.ppSimError simError))))
+            goalExpls <- mapM explErr failedGoals
+            if null failedGoals
+              -- TODO(lb): is this correct? test e.g. with abort
+              then return (Set.singleton Res.Ok)
+              else return (Set.fromList goalExpls)
+        , Fuzz.instrumentation = []
+        , Fuzz.getFeedback = return ()
+        }
+  }
 
 -- | Library entry point
 fuzz ::
@@ -100,7 +95,7 @@ fuzz ::
   Stop ->
   Logger (Msg Text) ->
   Logger (Msg Text) ->
-  IO (Either FuzzError (State () () (Coverage k)))
+  IO (Either FuzzError (State () () k ()))
 fuzz conf stop stdoutLogger stderrLogger = do
   (jvmCtx, entryPoint) <- Trans.translate conf  -- Allowed to fail/call exit
   let fuzzer = jvmFuzzer conf jvmCtx entryPoint

@@ -18,9 +18,6 @@ module Czz.State
   )
 where
 
-import qualified Data.Hashable as Hash
-import           Data.IntSet (IntSet)
-import qualified Data.IntSet as IntSet
 import qualified Data.Maybe as Maybe
 import           Data.Sequence (Seq)
 import qualified Data.Sequence as Seq
@@ -31,6 +28,10 @@ import           Numeric.Natural (Natural)
 
 import qualified What4.ProgramLoc as What4
 
+import           Czz.Coverage.Bucket.Bucketed (BucketedCoverage)
+import qualified Czz.Coverage.Bucket.Bucketed as Bucketed
+import           Czz.Coverage.Bucket.Bucketing (Bucketing)
+import           Czz.KLimited (IsKLimited)
 import           Czz.Now (Now)
 import qualified Czz.Now as Now
 import           Czz.Record (Record)
@@ -43,52 +44,53 @@ import qualified Czz.State.Stats as Stats
 -- State
 
 -- | Invariant: sCover is the coverage of all sPool
-data State env eff fb
+data State env eff k fb
   = State
-    { sStats :: !Stats
-      -- | Hashes of all the feedback attached to records
-    , sFeedback :: IntSet
-    , sPool :: Seq (Record env eff fb)
+    { sCoverage :: BucketedCoverage k
+    , sStats :: !Stats
+    , sPool :: Seq (Record env eff k fb)
     , sTries :: !Natural
     }
   deriving (Eq, Functor, Ord)
 
-new :: Now -> State env eff fb
+new :: IsKLimited k => Now -> State env eff k fb
 new now =
   State
-  { sFeedback = IntSet.empty
+  { sCoverage = Bucketed.empty
   , sPool = Seq.empty
   , sTries = 0
   , sStats = Stats.new now
   }
 
-newIO :: IO (State env eff fb)
+newIO :: IsKLimited k => IO (State env eff k fb)
 newIO = new <$> Now.now
 
-pool :: State env eff fb -> Seq (Record env eff fb)
+pool :: State env eff k fb -> Seq (Record env eff k fb)
 pool = sPool
 
-hasBug :: State env eff fb -> Bool
+hasBug :: State env eff k fb -> Bool
 hasBug = any Rec.hasBug . sPool
 
-stats :: State env eff fb -> Stats
+stats :: State env eff k fb -> Stats
 stats = sStats
 
-tries :: State env eff fb -> Natural
+tries :: State env eff k fb -> Natural
 tries = Stats.tries . stats
 
+-- | Read docs on coverage tracking for a high-level description.
 record ::
-  Record env eff fb ->
-  State env eff fb ->
-  IO (Bool, State env eff fb)
-record r state = do
+  Bucketing ->
+  Record env eff k fb ->
+  State env eff k fb ->
+  IO (Bool, State env eff k fb)
+record bk r state = do
   now <- Now.now
   let bug = Rec.hasBug r
-      fId = Hash.hash (Rec.feedbackId r, bug)
-      isOld = fId `IntSet.member` sFeedback state
-      stats' = Stats.record now (not isOld) bug (Rec.missing r) (sStats state)
+      bucketed = Bucketed.bucket bk (Rec.coverage r)
+      (totalCover, isNew) = Bucketed.merge bucketed (sCoverage state)
+      stats' = Stats.record now isNew bug (Rec.missing r) (sStats state)
   return $
-    if isOld
+    if not isNew
     then
       ( False
       , state { sStats = stats' }
@@ -96,14 +98,14 @@ record r state = do
     else
       ( True
       , state
-        { sStats = stats'
-        , sFeedback = IntSet.insert fId (sFeedback state)
+        { sCoverage = totalCover
+        , sStats = stats'
         , sPool = sPool state Seq.|> r
         }
       )
 
 summarize ::
-  State env eff fb ->
+  State env eff k fb ->
   Text
 summarize st =
   let

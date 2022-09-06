@@ -39,7 +39,7 @@ import           Czz.LLVM.Overrides (Effect)
 mutate ::
   Log.Has Text =>
   IsKLimited k =>
-  Record Env Effect (Feedback k) ->
+  Record Env Effect k Feedback ->
   IO (Seed 'Begin Env Effect)
 mutate r = do
   let seed = Seed.rewind (Rec.seed r)

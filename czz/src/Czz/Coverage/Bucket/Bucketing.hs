@@ -1,10 +1,14 @@
-module Czz.Coverage.Bucket
+{-# LANGUAGE LambdaCase #-}
+
+module Czz.Coverage.Bucket.Bucketing
   ( Bucketing
   , bucketing
   , bucket
   , log
   , log2
   , zeroOneMany
+  , BucketingName(..)
+  , fromName
   )
 where
 
@@ -34,3 +38,17 @@ zeroOneMany = Bucketing $ \c ->
     0 -> Count.zero
     1 -> Count.one
     _ -> Count.inc Count.one
+
+--------------------------------------------------------------------------------
+-- BucketingName
+
+data BucketingName
+  = Log2
+  | ZeroOneMany
+  deriving (Eq, Ord, Read, Show)
+
+fromName :: BucketingName -> Bucketing
+fromName =
+  \case
+    Log2 -> log2
+    ZeroOneMany -> zeroOneMany

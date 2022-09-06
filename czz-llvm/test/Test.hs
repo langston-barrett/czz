@@ -17,6 +17,7 @@ import qualified Test.Tasty.Golden as TastyG
 import qualified Czz.Concurrent.Lock as Lock
 import qualified Czz.Concurrent.Handle as Hand
 import qualified Czz.Config.Type as CConf
+import           Czz.Coverage.Bucket.Bucketing (BucketingName(ZeroOneMany))
 import qualified Czz.Log as Log
 import qualified Czz.Log.Concurrent as CLog
 import qualified Czz.KLimited as KLimit
@@ -52,7 +53,8 @@ tests = do
         Conf.Config
           { Conf.common =
               CConf.Config
-              { CConf.gas = Nothing
+              { CConf.bucketing = ZeroOneMany
+              , CConf.gas = Nothing
               , CConf.jobs = 1
               , CConf.pathLen = 1
               , CConf.seed = Nothing  -- Just 0

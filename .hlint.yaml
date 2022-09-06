@@ -126,6 +126,10 @@
 
 # exceptions
 - ignore:
+    name: "Redundant if"
+    within:
+      - "Czz.Coverage.Bucket.Bucketed"
+- ignore:
     name: "Use Log.log"
     within:
       - "Czz.Fuzz"

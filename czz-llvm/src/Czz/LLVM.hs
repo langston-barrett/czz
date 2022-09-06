@@ -43,8 +43,6 @@ import qualified Lang.Crucible.LLVM.MemModel.CallStack as CLLVM
 import qualified Lang.Crucible.LLVM.MemModel.Partial as CLLVM
 
 import qualified Czz.Config.Type as CConf
-import qualified Czz.Coverage as Cover
-import qualified Czz.Coverage.Bucket as Bucket
 import           Czz.Log (Logger, Msg)
 import qualified Czz.Log as Log
 import           Czz.KLimited (IsKLimited)
@@ -84,7 +82,7 @@ llvmFuzzer ::
   Translation ->
   -- | Where to put simulator logs
   IO Handle ->
-  Fuzzer LLVM Env Effect (Feedback k)
+  Fuzzer LLVM Env Effect k Feedback
 llvmFuzzer conf translation simLogs =
   Fuzz.Fuzzer
   { Fuzz.nextSeed = \records -> do
@@ -102,9 +100,6 @@ llvmFuzzer conf translation simLogs =
 
   , Fuzz.symbolicBits = \bak -> do
       (sym :: sym) <- return (C.backendGetSym bak)
-
-      coverageRef <- IORef.newIORef Cover.empty
-      execFeat <- Cover.coverage (Just sym) coverageRef
 
       envVarRef <- IORef.newIORef ([] :: [ByteString])
       openedRef <- IORef.newIORef ([] :: [ByteString])
@@ -134,21 +129,19 @@ llvmFuzzer conf translation simLogs =
               -- TODO(lb): is this correct? test e.g. with abort
               then return (Set.singleton Res.Ok)
               else return (Set.fromList goalExpls)
-        , Fuzz.instrumentation = [execFeat]
+        , Fuzz.instrumentation = []
         , Fuzz.getFeedback = do
             -- TODO(lb): It would be amazing to have a generic monitoring/interception
             -- framework to capture these, so that it would be trivial to add new
             -- ones.
             readVars <- IORef.readIORef envVarRef
             opened <- IORef.readIORef openedRef
-            cover <- Cover.bucket Bucket.log2 <$> IORef.readIORef coverageRef
             let fb =
                   FB.Feedback
                   { FB.envVarsRead = Set.fromList readVars
                   , FB.filesOpened = Set.fromList opened
-                  , FB.coverage = cover
                   }
-            return (fb, FB.id fb)
+            return fb
         }
   }
   where
@@ -191,7 +184,7 @@ fuzz ::
   IO Handle ->
   Logger (Msg Text) ->
   Logger (Msg Text) ->
-  IO (Either FuzzError (State Env Effect (Feedback k)))
+  IO (Either FuzzError (State Env Effect k Feedback))
 fuzz conf stop simLogs stdoutLogger stderrLogger = do
   Log.with stdoutLogger $
     Log.info ("Fuzzing program " <> Text.pack (Conf.prog conf))
