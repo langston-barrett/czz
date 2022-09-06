@@ -120,12 +120,12 @@ llvmStats tstate =
       (\(loc, ct) -> (loc <> ":", Text.pack (show (Count.toWord ct)))) <$>
         Seq.take 3 (Seq.reverse (Freq.sorted (Freq.count lastLocs)))
 
-helpNumbers :: B.Widget()
+helpNumbers :: B.Widget ()
 helpNumbers = B.vBox (map BW.txt expls)
   where
     expls =
       [ "start: time when czz was started"
-      , "now: current time"
+      , "now: current time (end: when fuzzing stopped)"
       , "duration: difference between now and start"
       , "execs: total number of executions of target"
       , "execs/sec: executions per second"
