@@ -64,6 +64,7 @@ import qualified Czz.LLVM.Env.Args as Args
 import qualified Czz.LLVM.Env.FileSystem as FS
 import qualified Czz.LLVM.Overrides as Ov
 import           Czz.LLVM.Overrides (Effect)
+import qualified Czz.LLVM.Overrides.Errno as Errno
 import qualified Czz.LLVM.Overrides.Skip as Skip
 import           Czz.LLVM.Overrides.State.Env as State.Env
 import qualified Czz.LLVM.Overrides.SymIO as CzzSymIO
@@ -102,12 +103,20 @@ initState ::
   IO (Handle, C.ExecState CzzPersonality sym CLLVM.LLVM (C.RegEntry sym UnitType))
 initState _proxy bak halloc translation logHandle envVarRef openedRef effectRef seed skip = do
   Trans.Translation trans memVar entryPoint <- return translation
-  let llvmAst = trans Lens.^. CLLVM.modTransModule
+  let llvmAst0 = trans Lens.^. CLLVM.modTransModule
+  let llvmAst = llvmAst0 { L.modGlobals = Errno.global : L.modGlobals llvmAst0 }
   let llvmCtx = trans Lens.^. CLLVM.transContext
   CLLVM.llvmPtrWidth llvmCtx $ \ptrW -> CLLVM.withPtrWidth ptrW $ do
+
+    -- TODO(lb): factor out an "add global" function
+    let globals =
+          Map.insert
+            Errno.symbol
+            (Errno.global, Right (Errno.memType, Just Errno.llvmConst))
+            (trans Lens.^. CLLVM.globalInitMap)
     mem <-
       let ?lc = llvmCtx Lens.^. CLLVM.llvmTypeCtx
-      in CLLVM.populateAllGlobals bak (trans Lens.^. CLLVM.globalInitMap)
+      in CLLVM.populateAllGlobals bak globals
            =<< CLLVM.initializeAllMemory bak llvmCtx llvmAst
 
     let globSt = CLLVM.llvmGlobalsToCtx llvmCtx mem
