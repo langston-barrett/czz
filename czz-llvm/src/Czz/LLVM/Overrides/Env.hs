@@ -6,6 +6,7 @@
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
@@ -20,6 +21,8 @@ where
 
 import qualified Control.Lens as Lens
 import           Control.Monad.IO.Class (liftIO)
+import qualified Data.Aeson as Aeson
+import qualified Data.Aeson.TH as AesonTH
 import qualified Data.BitVector.Sized as BV
 import           Data.ByteString as BS
 import           Data.IORef (IORef)
@@ -52,17 +55,17 @@ import           Czz.LLVM.Overrides.State.Env as State.Env
 import           Czz.LLVM.Overrides.Util (OverrideConstraints)
 import           Czz.LLVM.QQ (llvmOvr, llvmOvrType)
 
+data GetEnvEffect
+  = GetEnvEffect
+  deriving (Eq, Ord, Show)
+
 data Effect
   = GetEnv !GetEnvEffect
   deriving (Eq, Ord, Show)
 
-_GetEnv :: Lens.Prism' Effect GetEnvEffect
-_GetEnv =
-  Lens.prism'
-    GetEnv
-    (\case
-      GetEnv eff -> Just eff)
-      -- _ -> Nothing)
+$(Lens.makePrisms ''Effect)
+$(AesonTH.deriveJSON Aeson.defaultOptions ''GetEnvEffect)
+$(AesonTH.deriveJSON Aeson.defaultOptions ''Effect)
 
 overrides ::
   Log.Has Text =>
@@ -79,14 +82,7 @@ overrides proxy effects inj envVarRef envStateVar =
   where ov = CLLVM.basic_llvm_override
 
 ------------------------------------------------------------------------
--- ** utilities
-
-------------------------------------------------------------------------
 -- ** getenv
-
-data GetEnvEffect
-  = GetEnvEffect
-  deriving (Eq, Ord, Show)
 
 -- | NB: Allocates fresh results every time.
 getEnvDecl ::

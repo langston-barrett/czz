@@ -16,7 +16,7 @@ parser =
   <$> Opt.option Opt.auto
       ( Opt.long "bucketing"
         <> Opt.short 'b'
-        <> Opt.metavar "STRATEGY"
+        <> Opt.metavar "STRAT"
         <> Opt.value ZeroOneMany
         <> Opt.help "Bucketing strategy, Log2 or ZeroOneMany (default)"
       )
@@ -49,6 +49,12 @@ parser =
           <> Opt.metavar "SEED"
           <> Opt.help "Seed, default is randomly generated"
         )
+      )
+  <*> Opt.option Opt.auto
+      ( Opt.long "state"
+        <> Opt.metavar "DIR"
+        <> Opt.value (Just "czz")
+        <> Opt.help "Directory containing fuzzer state"
       )
   <*> Opt.optional
       ( Opt.option Opt.auto

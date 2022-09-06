@@ -1,5 +1,7 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE ExplicitNamespaces #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module Czz.Seed
   ( Seed
@@ -14,6 +16,9 @@ module Czz.Seed
   , mutLast
   )
 where
+
+import qualified Data.Aeson as Aeson
+import qualified Data.Aeson.KeyMap as AesonKM
 
 import           Czz.SysTrace (SysTrace, Time(Begin, End))
 import qualified Czz.SysTrace as SysTrace
@@ -69,3 +74,32 @@ mutLast f s =
   case unsnoc s of
     Nothing -> pure (rewind s)
     Just (s', e) -> snoc s' <$> f e
+
+--------------------------------------------------------------------------------
+-- JSON
+
+instance
+  (Aeson.ToJSON env, Aeson.ToJSON eff) =>
+  Aeson.ToJSON (Seed 'End env eff) where
+
+  toJSON seed =
+    Aeson.Object $
+      AesonKM.insert
+        "env"
+        (Aeson.toJSON (env seed))
+        (AesonKM.singleton "trace" (Aeson.toJSON (effects seed)))
+
+  toEncoding seed =
+    Aeson.pairs
+      ( "env" Aeson..= env seed
+        <> "trace" Aeson..= effects seed
+      )
+
+instance
+  (Aeson.FromJSON env, Aeson.FromJSON eff) =>
+  Aeson.FromJSON (Seed 'End env eff) where
+  parseJSON =
+    Aeson.withObject "Seed" $ \v ->
+      Seed
+      <$> v Aeson..: "env"
+      <*> v Aeson..: "trace"

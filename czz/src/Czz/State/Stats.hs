@@ -1,3 +1,5 @@
+{-# LANGUAGE TemplateHaskell #-}
+
 module Czz.State.Stats
   ( Stats
   , new
@@ -14,6 +16,8 @@ module Czz.State.Stats
   )
 where
 
+import qualified Data.Aeson as Aeson
+import qualified Data.Aeson.TH as AesonTH
 import qualified Data.Fixed as Fixed
 import           Data.Set (Set)
 import qualified Data.Set as Set
@@ -101,3 +105,6 @@ record now isNew isBug miss s =
        , sTries = 0
        , sMissing = Set.union (sMissing s) miss
        }
+
+-- TODO(#79): Prettier JSON instance
+$(AesonTH.deriveJSON Aeson.defaultOptions ''Stats)

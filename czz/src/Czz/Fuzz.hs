@@ -20,15 +20,16 @@ import           Prelude hiding (log)
 
 import qualified Control.Concurrent as Con
 import qualified Control.Concurrent.MVar as MVar
-import qualified Data.Either as Either
 import           Control.Exception.Base (SomeException)
+import qualified Data.Aeson as Aeson
+import qualified Data.Either as Either
 import           Data.Functor ((<&>))
 import qualified Data.IORef as IORef
 import qualified Data.Set as Set
 import           Data.Text (Text)
 import qualified Data.Text as Text
 import qualified Control.Lens as Lens
-import           Control.Monad ((<=<), forM_, forM, unless)
+import           Control.Monad ((<=<), forM_, forM, when, unless)
 import qualified System.Random as Random
 import qualified System.IO as IO
 
@@ -193,6 +194,9 @@ newtype FuzzError
 --
 -- TODO(lb): notion of crashes, deduplication of crashes
 fuzz ::
+  Aeson.ToJSON env =>
+  Aeson.ToJSON eff =>
+  Aeson.ToJSON fb =>
   IsKLimited k =>
   IsSyntaxExtension ext =>
   Conf.Config ->
@@ -237,11 +241,22 @@ fuzz conf stop fuzzer stdoutLogger stderrLogger = do
       return ()
 
     go runResultVar running state = do
-      shouldStop <- Stop.should stop
-      if shouldStop || tooManyTries state || tooLittleGas state
-      then do
+      shouldStop <- maybeStop runResultVar running state
+      if shouldStop
+      then return (Right state)
+      else do
+        if Set.size running >= Conf.jobs conf
+          then blockOnResult runResultVar state running
+          else do
+            threadId <- newThread runResultVar state
+            go runResultVar (Set.insert threadId running) state
+
+    maybeStop runResultVar running state = do
+      interrupted <- Stop.should stop
+      let shouldStop = interrupted || tooManyTries state || tooLittleGas state
+      when shouldStop $
         Log.with stdoutLogger $ do
-          if shouldStop
+          if interrupted
             then Log.warn "Interrupted! Waiting for threads to finish..."
             else
               if tooManyTries state
@@ -263,13 +278,10 @@ fuzz conf stop fuzzer stdoutLogger stderrLogger = do
           Log.info ("execs/sec: " <> Text.pack (show (Stats.execsPerSec stats now)))
           Log.info ("pool: " <> Text.pack (show (Stats.poolSize stats)))
           Log.info ("missing:\n" <> Text.unlines (Set.toList (Stats.missing stats)))
-        return (Right state)
-      else do
-        if Set.size running >= Conf.jobs conf
-          then blockOnResult runResultVar state running
-          else do
-            threadId <- newThread runResultVar state
-            go runResultVar (Set.insert threadId running) state
+      return shouldStop
+
+    whenJust :: Monad m => Maybe a -> (a -> m ()) -> m ()
+    whenJust = forM_
 
     blockOnResult runResultVar state running =
       MVar.takeMVar runResultVar >>=
@@ -280,6 +292,7 @@ fuzz conf stop fuzzer stdoutLogger stderrLogger = do
             return (Left (ThreadError err))
           Right (tid, record) -> do
             (_newFeedback, state') <- State.record bucketing record state
+            whenJust (Conf.stateDir conf) $ \dir -> State.serialize dir state'
             onUpdate fuzzer state'
             -- Log.with stdoutLogger $
             --   if new
@@ -303,6 +316,9 @@ fuzz conf stop fuzzer stdoutLogger stderrLogger = do
           (tid,) <$> run conf bak halloc doMut seed fuzzer
 
 main ::
+  Aeson.ToJSON env =>
+  Aeson.ToJSON eff =>
+  Aeson.ToJSON fb =>
   IsKLimited k =>
   IsSyntaxExtension ext =>
   Conf.Config ->

@@ -1,10 +1,14 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 module Czz.LLVM.Env
   ( Env(..)
   , empty
   )
 where
+
+import qualified Data.Aeson as Aeson
+import qualified Data.Aeson.TH as AesonTH
 
 import qualified Czz.LLVM.Env.Args as Args
 import qualified Czz.LLVM.Env.FileSystem as FS
@@ -23,3 +27,5 @@ empty =
   { args = Args.empty
   , fs = FS.empty
   }
+
+$(AesonTH.deriveJSON Aeson.defaultOptions ''Env)

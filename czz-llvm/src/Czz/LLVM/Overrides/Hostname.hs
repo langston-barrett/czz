@@ -6,6 +6,7 @@
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE ViewPatterns #-}
@@ -19,6 +20,8 @@ where
 
 import qualified Control.Lens as Lens
 import           Control.Monad.IO.Class (liftIO)
+import qualified Data.Aeson as Aeson
+import qualified Data.Aeson.TH as AesonTH
 import qualified Data.BitVector.Sized as BV
 import qualified Data.ByteString as BS
 import           Data.IORef (IORef)
@@ -52,17 +55,17 @@ import           Czz.LLVM.Overrides.Util (OverrideConstraints)
 import           Czz.LLVM.QQ (llvmOvr, llvmOvrType)
 import qualified Czz.LLVM.Unimplemented as Unimpl
 
+data GetHostNameEffect
+  = GetHostNameSuccess
+  deriving (Eq, Ord, Show)
+
 data Effect
   = GetHostName !GetHostNameEffect
   deriving (Eq, Ord, Show)
 
-_GetHostName :: Lens.Prism' Effect GetHostNameEffect
-_GetHostName =
-  Lens.prism'
-    GetHostName
-    (\case
-      GetHostName eff -> Just eff)
-      -- _ -> Nothing)
+$(Lens.makePrisms ''Effect)
+$(AesonTH.deriveJSON Aeson.defaultOptions ''GetHostNameEffect)
+$(AesonTH.deriveJSON Aeson.defaultOptions ''Effect)
 
 overrides ::
   Log.Has Text =>
@@ -78,10 +81,6 @@ overrides proxy effects inj =
 
 ------------------------------------------------------------------------
 -- ** gethostname
-
-data GetHostNameEffect
-  = GetHostNameSuccess
-  deriving (Eq, Ord, Show)
 
 getHostNameDecl ::
   forall proxy p sym arch wptr eff.

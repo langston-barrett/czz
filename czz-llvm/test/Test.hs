@@ -58,6 +58,7 @@ tests = do
               , CConf.jobs = 1
               , CConf.pathLen = 1
               , CConf.seed = Nothing  -- Just 0
+              , CConf.stateDir = Nothing
               , CConf.tries = Just 10
               , CConf.verbosity = Log.Error
               }

@@ -1,6 +1,7 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 module Czz.Count
   ( Count
@@ -19,6 +20,8 @@ where
 
 import           Prelude hiding (div, log)
 import qualified Prelude as Pre
+import qualified Data.Aeson as Aeson
+import qualified Data.Aeson.TH as AesonTH
 import           Data.Data (Data)
 import           Data.Hashable (Hashable)
 import           GHC.Generics (Generic)
@@ -73,3 +76,7 @@ log base c = Count (logn base (getCount c))
       if x == 1 || x == 0
       then 0
       else 1 + logn b (x `Pre.div` b)
+
+$(AesonTH.deriveJSON
+  Aeson.defaultOptions { Aeson.unwrapUnaryRecords = True }
+  ''Count)

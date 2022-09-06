@@ -6,6 +6,7 @@
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
@@ -20,6 +21,8 @@ where
 
 import qualified Control.Lens as Lens
 import           Control.Monad.IO.Class (liftIO)
+import qualified Data.Aeson as Aeson
+import qualified Data.Aeson.TH as AesonTH
 import qualified Data.BitVector.Sized as BV
 import           Data.IORef (IORef)
 import           Data.Text (Text)
@@ -51,26 +54,23 @@ import           Czz.LLVM.Overrides.Util (OverrideConstraints)
 import           Czz.LLVM.QQ (llvmOvr, llvmOvrType)
 import qualified Czz.LLVM.Unimplemented as Unimpl
 
+data GetTimeOfDayEffect
+  = GetTimeOfDayEffect
+  deriving (Eq, Ord, Show)
+
+data TimeEffect
+  = TimeEffect
+  deriving (Eq, Ord, Show)
+
 data Effect
   = GetTimeOfDay !GetTimeOfDayEffect
   | Time !TimeEffect
   deriving (Eq, Ord, Show)
 
-_GetTimeOfDay :: Lens.Prism' Effect GetTimeOfDayEffect
-_GetTimeOfDay =
-  Lens.prism'
-    GetTimeOfDay
-    (\case
-      GetTimeOfDay eff -> Just eff
-      _ -> Nothing)
-
-_Time :: Lens.Prism' Effect TimeEffect
-_Time =
-  Lens.prism'
-    Time
-    (\case
-      Time eff -> Just eff
-      _ -> Nothing)
+$(Lens.makePrisms ''Effect)
+$(AesonTH.deriveJSON Aeson.defaultOptions ''GetTimeOfDayEffect)
+$(AesonTH.deriveJSON Aeson.defaultOptions ''TimeEffect)
+$(AesonTH.deriveJSON Aeson.defaultOptions ''Effect)
 
 overrides ::
   Log.Has Text =>
@@ -87,10 +87,6 @@ overrides proxy effects inj =
 
 ------------------------------------------------------------------------
 -- ** gettimeofday
-
-data GetTimeOfDayEffect
-  = GetTimeOfDayEffect
-  deriving (Eq, Ord, Show)
 
 getTimeOfDayDecl ::
   forall proxy p sym arch wptr eff.
@@ -158,10 +154,6 @@ getTimeOfDayImpl _proxy bak e memVar tv tz = do
 
 ------------------------------------------------------------------------
 -- ** time
-
-data TimeEffect
-  = TimeEffect
-  deriving (Eq, Ord, Show)
 
 timeDecl ::
   forall proxy p sym arch wptr eff.

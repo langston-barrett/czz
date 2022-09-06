@@ -95,8 +95,10 @@ library
     Paths_czz_llvm
 
   build-depends:
+    aeson >= 2.0 && < 3.0,
     attoparsec,
     base >= 4.15 && < 4.17,
+    base64-bytestring,
     bv-sized,
     bytestring,
     containers,

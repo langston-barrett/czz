@@ -6,6 +6,7 @@
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
@@ -20,6 +21,8 @@ where
 
 import qualified Control.Lens as Lens
 import           Control.Monad.IO.Class (liftIO)
+import qualified Data.Aeson as Aeson
+import qualified Data.Aeson.TH as AesonTH
 import           Data.IORef (IORef)
 import           Data.Text (Text)
 
@@ -44,17 +47,17 @@ import qualified Czz.Overrides as COv
 import           Czz.LLVM.Overrides.Util (OverrideConstraints)
 import           Czz.LLVM.QQ (llvmOvr, llvmOvrType)
 
+data SignalEffect
+  = SignalEffect
+  deriving (Eq, Ord, Show)
+
 data Effect
   = Signal !SignalEffect
   deriving (Eq, Ord, Show)
 
-_Signal :: Lens.Prism' Effect SignalEffect
-_Signal =
-  Lens.prism'
-    Signal
-    (\case
-      Signal eff -> Just eff)
-      -- _ -> Nothing)
+$(Lens.makePrisms ''Effect)
+$(AesonTH.deriveJSON Aeson.defaultOptions ''SignalEffect)
+$(AesonTH.deriveJSON Aeson.defaultOptions ''Effect)
 
 overrides ::
   Log.Has Text =>
@@ -71,10 +74,6 @@ overrides proxy effects inj =
 
 ------------------------------------------------------------------------
 -- ** signal
-
-data SignalEffect
-  = SignalEffect
-  deriving (Eq, Ord, Show)
 
 signalDecl ::
   forall proxy p sym arch wptr eff.

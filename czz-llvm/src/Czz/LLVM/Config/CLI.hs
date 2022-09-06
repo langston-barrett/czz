@@ -42,7 +42,7 @@ cliConfig =
             <> Opt.short 'e'
             <> Opt.metavar "FUNC"
             <> Opt.value "main"
-            <> Opt.help "Entry point; must take no arguments, or arguments like main (i32, i8**). Default is main."
+            <> Opt.help "Entry point; must take no arguments, or arguments like main (i32, i8**) or (i32, i8**, i8**). Default is main."
           )
       <*> Opt.many
           ( Opt.strOption

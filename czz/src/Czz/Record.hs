@@ -3,6 +3,7 @@
 {-# LANGUAGE ExplicitNamespaces #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE PolyKinds #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 module Czz.Record
   ( Record(..)
@@ -13,6 +14,8 @@ module Czz.Record
 where
 
 import           Prelude hiding (read)
+import qualified Data.Aeson as Aeson
+import qualified Data.Aeson.TH as AesonTH
 
 import           Data.Set (Set)
 import qualified Data.Set as Set
@@ -57,3 +60,5 @@ missing = Set.fromList . concatMap getMissing . Set.toList . result
       \case
         Res.MissingOverride t -> [t]
         _ -> []
+
+$(AesonTH.deriveJSON Aeson.defaultOptions ''Record)

@@ -6,6 +6,7 @@
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE ViewPatterns #-}
@@ -20,6 +21,8 @@ where
 
 import qualified Control.Lens as Lens
 import           Control.Monad.IO.Class (liftIO)
+import qualified Data.Aeson as Aeson
+import qualified Data.Aeson.TH as AesonTH
 import qualified Data.BitVector.Sized as BV
 import           Data.ByteString (ByteString)
 import qualified Data.ByteString as BS
@@ -57,26 +60,22 @@ import qualified Czz.Overrides as COv
 import           Czz.LLVM.Overrides.Util (OverrideConstraints)
 import qualified Czz.LLVM.Unimplemented as Unimpl
 
+data FprintfEffect
+  = FprintfSuccess
+  deriving (Eq, Ord, Show)
+
+data StrcpyEffect = StrcpyEffect
+  deriving (Eq, Ord, Show)
+
 data Effect
   = Fprintf !FprintfEffect
   | Strcpy !StrcpyEffect
   deriving (Eq, Ord, Show)
 
-_Fprintf :: Lens.Prism' Effect FprintfEffect
-_Fprintf =
-  Lens.prism'
-    Fprintf
-    (\case
-      Fprintf eff -> Just eff
-      _ -> Nothing)
-
-_Strcpy :: Lens.Prism' Effect StrcpyEffect
-_Strcpy =
-  Lens.prism'
-    Strcpy
-    (\case
-      Strcpy eff -> Just eff
-      _ -> Nothing)
+$(Lens.makePrisms ''Effect)
+$(AesonTH.deriveJSON Aeson.defaultOptions ''FprintfEffect)
+$(AesonTH.deriveJSON Aeson.defaultOptions ''StrcpyEffect)
+$(AesonTH.deriveJSON Aeson.defaultOptions ''Effect)
 
 overrides ::
   Log.Has String =>
@@ -94,10 +93,6 @@ overrides proxy effects inj _envTrace =
 
 ------------------------------------------------------------------------
 -- ** fprintf
-
-data FprintfEffect
-  = FprintfSuccess
-  deriving (Eq, Ord, Show)
 
 -- | Unsound!
 --
@@ -189,9 +184,6 @@ fprintfImpl _proxy bak e memVar stream format _varArgs = do
 
 ------------------------------------------------------------------------
 -- ** strcpy
-
-data StrcpyEffect = StrcpyEffect
-  deriving (Eq, Ord, Show)
 
 strcpyDecl ::
   IsSymInterface sym =>
