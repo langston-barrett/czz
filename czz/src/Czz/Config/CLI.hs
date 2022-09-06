@@ -8,11 +8,19 @@ import qualified Options.Applicative as Opt
 import qualified Czz.Log as Log
 import           Czz.Config.Type (Config)
 import qualified Czz.Config.Type as Conf
+import           Czz.Coverage.Bucket.Bucketing (BucketingName(ZeroOneMany))
 
 parser :: Opt.Parser Config
 parser =
   Conf.Config
-  <$> Opt.optional
+  <$> Opt.option Opt.auto
+      ( Opt.long "bucketing"
+        <> Opt.short 'b'
+        <> Opt.metavar "STRATEGY"
+        <> Opt.value ZeroOneMany
+        <> Opt.help "Bucketing strategy, Log2 or ZeroOneMany (default)"
+      )
+  <*> Opt.optional
       ( Opt.option Opt.auto
         ( Opt.long "gas"
           <> Opt.short 'g'

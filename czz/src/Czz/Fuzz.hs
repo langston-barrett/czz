@@ -54,13 +54,17 @@ import qualified Lang.Crucible.Backend.Online as C
 import qualified Lang.Crucible.FunctionHandle as C
 import qualified Lang.Crucible.Simulator as C
 
+import qualified Czz.Coverage.Bucket.Bucketing as Bucketing
 import qualified Czz.Concurrent.Lock as Lock
 import qualified Czz.Concurrent.Handle as Hand
 import qualified Czz.Config.Type as Conf
+import qualified Czz.Coverage.Feature as CFeat
+import qualified Czz.Coverage.Seed as CSeed
 import           Czz.Fuzz.Type
 import           Czz.Log (Logger, Msg)
 import qualified Czz.Log as Log
 import qualified Czz.Log.Concurrent as CLog
+import           Czz.KLimited (IsKLimited)
 import qualified Czz.Now as Now
 import           Czz.Overrides (EffectTrace)
 import qualified Czz.Overrides as Ov
@@ -96,7 +100,8 @@ withZ3 k = do
 --
 -- Helper for 'loop', not exported
 run ::
-  forall ext env eff fb sym bak s st fs solver.
+  forall ext env eff k fb sym bak s st fs solver.
+  IsKLimited k =>
   Log.Has Text =>
   IsSyntaxExtension ext =>
   C.IsSymBackend sym bak =>
@@ -110,21 +115,22 @@ run ::
   -- | Mutate last library call response?
   Bool ->
   Seed 'Begin env eff ->
-  Fuzzer ext env eff fb ->
-  IO (Record env eff fb)
+  Fuzzer ext env eff k fb ->
+  IO (Record env eff k fb)
 run _conf bak halloc doMut seed fuzzer = do
   (sym :: sym) <- return (C.backendGetSym bak)
   -- Stuff that gets recorded during execution
+  coverageRef <- IORef.newIORef CSeed.empty
   effectRef <-
     IORef.newIORef (Ov.makeEffectTrace (Seed.effects seed) doMut)
       :: IO (IORef.IORef (EffectTrace eff))
   frame <- C.pushAssumptionFrame bak
   -- TODO(lb): something with result, probably
-  -- TODO(lb): allow other execution features
   symbBits <- symbolicBits fuzzer bak
   (simLogHandle, initSt) <- initState symbBits halloc effectRef seed
+  coverFeat <- CFeat.coverage (Just sym) coverageRef
   let execFeats =
-        map C.genericToExecutionFeature (instrumentation symbBits)
+        map C.genericToExecutionFeature (coverFeat:instrumentation symbBits)
   simResult <- C.executeCrucible execFeats initSt
   IO.hClose simLogHandle
   () <-
@@ -166,16 +172,17 @@ run _conf bak halloc doMut seed fuzzer = do
               What4.Unknown -> Left goal
   let (failedGoals, _provedGoals) = Either.partitionEithers goalResults
 
+  coverage <- IORef.readIORef coverageRef
   results <- explainResults symbBits (map FailedGoal failedGoals) simResult
   effects <- Ov.extract <$> IORef.readIORef effectRef
-  (fb, fbId) <- getFeedback symbBits
+  fb <- getFeedback symbBits
 
   return $
     Rec.Record
-      { Rec.seed = Seed.record seed effects
+      { Rec.coverage = coverage
+      , Rec.seed = Seed.record seed effects
       , Rec.result = results
       , Rec.feedback = fb
-      , Rec.feedbackId = fbId
       }
 
 newtype FuzzError
@@ -186,13 +193,14 @@ newtype FuzzError
 --
 -- TODO(lb): notion of crashes, deduplication of crashes
 fuzz ::
+  IsKLimited k =>
   IsSyntaxExtension ext =>
   Conf.Config ->
   Stop ->
-  Fuzzer ext env eff fb ->
+  Fuzzer ext env eff k fb ->
   Logger (Msg Text) ->
   Logger (Msg Text) ->
-  IO (Either FuzzError (State env eff fb))
+  IO (Either FuzzError (State env eff k fb))
 fuzz conf stop fuzzer stdoutLogger stderrLogger = do
   initRandom (Conf.seed conf)
   runResultVar <- MVar.newEmptyMVar
@@ -201,6 +209,8 @@ fuzz conf stop fuzzer stdoutLogger stderrLogger = do
   Log.with stdoutLogger $ do
     go runResultVar Set.empty initialState
   where
+    bucketing = Bucketing.fromName (Conf.bucketing conf)
+    
     initRandom =
       Random.setStdGen <=<
         \case
@@ -269,7 +279,7 @@ fuzz conf stop fuzzer stdoutLogger stderrLogger = do
               Log.error ("Thread exited with error! " <> Text.pack (show err))
             return (Left (ThreadError err))
           Right (tid, record) -> do
-            (_newFeedback, state') <- State.record record state
+            (_newFeedback, state') <- State.record bucketing record state
             onUpdate fuzzer state'
             -- Log.with stdoutLogger $
             --   if new
@@ -293,11 +303,12 @@ fuzz conf stop fuzzer stdoutLogger stderrLogger = do
           (tid,) <$> run conf bak halloc doMut seed fuzzer
 
 main ::
+  IsKLimited k =>
   IsSyntaxExtension ext =>
   Conf.Config ->
   Stop ->
-  Fuzzer ext env eff fb ->
-  IO (Either FuzzError (State env eff fb))
+  Fuzzer ext env eff k fb ->
+  IO (Either FuzzError (State env eff k fb))
 main conf stop fuzzer = do
   let s = Conf.verbosity conf
   let cap = 4096 -- TODO(lb): Good default? Configurable?

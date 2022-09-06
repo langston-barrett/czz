@@ -30,7 +30,7 @@ import           Lang.Crucible.Types (UnitType)
 
 import qualified Czz.Log as Log
 import           Czz.Overrides (EffectTrace)
-import           Czz.Record (FeedbackId, Record)
+import           Czz.Record (Record)
 import qualified Czz.Result as Res
 import           Czz.Seed (Seed)
 import           Czz.State (State)
@@ -58,22 +58,22 @@ data SymbolicBits sym bak ext env eff fb
         [FailedGoal sym] ->
         C.ExecResult CzzPersonality sym ext ret ->
         IO (Set.Set Res.Result)
-    , getFeedback :: IO (fb, FeedbackId)
+    , getFeedback :: IO fb
     , instrumentation :: [C.GenericExecutionFeature sym]
     }
 
 -- All operations should be thread-safe, should e.g. share no data by
 -- non-atomically modifying an IORef.
-data Fuzzer ext env eff fb =
+data Fuzzer ext env eff k fb =
   Fuzzer
   { -- | 'Bool' is whether or not to mutate the last library call in the trace
     nextSeed ::
       Log.Has Text =>
-      Seq (Record env eff fb) ->
+      Seq (Record env eff k fb) ->
       IO (Seed 'Begin env eff, Bool)
 
   , onUpdate ::
-      State env eff fb ->
+      State env eff k fb ->
       IO ()
 
   -- Parts that may internally share state via IORefs, and use the symbolic

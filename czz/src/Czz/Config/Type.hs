@@ -3,6 +3,7 @@ module Czz.Config.Type
   )
 where
 
+import           Czz.Coverage.Bucket.Bucketing (BucketingName)
 import           Czz.Log (Severity)
 
 -- TODO(lb): Configurable:
@@ -16,7 +17,8 @@ import           Czz.Log (Severity)
 -- - etc.
 
 data Config = Config
-  { gas :: !(Maybe Int)
+  { bucketing :: !BucketingName
+  , gas :: !(Maybe Int)
   , jobs :: !Int
   , pathLen :: !Int
   , seed :: !(Maybe Int)

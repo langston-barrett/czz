@@ -60,10 +60,12 @@ library
   hs-source-dirs: src
 
   exposed-modules:
-    Czz.Coverage
     Czz.Coverage.BlockId
-    Czz.Coverage.Bucket
+    Czz.Coverage.Bucket.Bucketed
+    Czz.Coverage.Bucket.Bucketing
+    Czz.Coverage.Feature
     Czz.Coverage.Path
+    Czz.Coverage.Seed
     Czz.Config.CLI
     Czz.Config.Type
     Czz.Concurrent.Lock

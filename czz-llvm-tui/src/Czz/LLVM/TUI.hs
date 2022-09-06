@@ -34,7 +34,7 @@ import qualified Graphics.Vty.Input.Events as VtyE
 
 import qualified Czz.Config.Type as CConf
 import qualified Czz.Count as Count
-import qualified Czz.Coverage as Cover
+import qualified Czz.Coverage.Seed as CSeed
 import qualified Czz.Freq as Freq
 import qualified Czz.Fuzz as Fuzz
 import qualified Czz.Log as Log
@@ -51,25 +51,24 @@ import qualified Czz.LLVM as CL
 import qualified Czz.LLVM.Config.CLI as CLI
 import qualified Czz.LLVM.Config.Type as Conf
 import           Czz.LLVM.Feedback (Feedback)
-import qualified Czz.LLVM.Feedback as FB
 import qualified Czz.LLVM.Init as Init
 import qualified Czz.LLVM.Translate as Trans
 
-data Event env eff fb
-  = FinalState (State env eff fb)
-  | NewState (State env eff fb)
+data Event env eff k fb
+  = FinalState (State env eff k fb)
+  | NewState (State env eff k fb)
 
-data TState env eff fb
+data TState env eff k fb
   = TState
     { stateNow :: Now
     , timeZone :: TimeZone
-    , state :: State env eff fb
+    , state :: State env eff k fb
     }
 
-data TStates env eff fb
-  = InitState (TState env eff fb)
-  | HelpState (TState env eff fb)
-  | NormalState (TState env eff fb)
+data TStates env eff k fb
+  = InitState (TState env eff k fb)
+  | HelpState (TState env eff k fb)
+  | NormalState (TState env eff k fb)
 
 padded :: Int -> Int -> [(Text, Text)] -> B.Widget ()
 padded rpad lpad = B.vBox . map (uncurry row)
@@ -78,7 +77,7 @@ padded rpad lpad = B.vBox . map (uncurry row)
       B.padRight (BW.Pad (rpad - BW.textWidth l)) (BW.txt l) B.<+>
       B.padLeft (BW.Pad (lpad - BW.textWidth r)) (BW.txt r)
 
-topStats :: TState env eff fb -> B.Widget ()
+topStats :: TState env eff k fb -> B.Widget ()
 topStats tstate =
   let stats = State.stats (state tstate)
       now = stateNow tstate
@@ -103,7 +102,7 @@ topStats tstate =
         TimeF.formatTime TimeF.defaultTimeLocale "%F %T" $
           TimeL.utcToLocalTime (timeZone ts) t
 
-llvmStats :: TState env eff (Feedback k) -> B.Widget ()
+llvmStats :: TState env eff k Feedback -> B.Widget ()
 llvmStats tstate =
   BW.txt "stuck:"
   BW.<=>
@@ -111,7 +110,7 @@ llvmStats tstate =
   where
     lastLocs :: [Text]
     lastLocs =
-      Fold.toList $ Cover.lastLoc . FB.coverage . Rec.feedback <$>
+      Fold.toList $ CSeed.lastLoc . Rec.coverage <$>
         State.pool (state tstate)
     topLastLocs :: Seq.Seq (Text, Text)
     topLastLocs =
@@ -144,7 +143,7 @@ helpKbd = B.vBox (map BW.txt kbds)
 drawHelp :: B.Widget ()
 drawHelp = BWT.renderTable (BWT.table [[helpNumbers], [helpKbd]])
 
-draw :: TStates env eff (Feedback k) -> B.Widget ()
+draw :: TStates env eff k Feedback -> B.Widget ()
 draw tstates =
   BWC.center $
     BWB.borderWithLabel (BW.txt "czz") $
@@ -162,7 +161,7 @@ draw tstates =
 
 app ::
   TimeZone ->
-  App (TStates env eff (Feedback k)) (Event env eff (Feedback k)) ()
+  App (TStates env eff k Feedback) (Event env eff k Feedback) ()
 app tz =
   B.App
   { B.appDraw = \tstates -> [draw tstates]
