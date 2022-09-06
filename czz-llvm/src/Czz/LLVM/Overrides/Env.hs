@@ -52,6 +52,7 @@ import qualified Czz.Log as Log
 import           Czz.Overrides (EffectTrace)
 import qualified Czz.Overrides as COv
 
+import qualified Czz.LLVM.Overrides.Errno as Errno
 import           Czz.LLVM.Overrides.State.Env as EnvState
 import           Czz.LLVM.Overrides.Util (OverrideConstraints)
 import           Czz.LLVM.QQ (llvmOvr, llvmOvrType)
@@ -210,9 +211,22 @@ unsetEnvImpl _proxy bak e _envVarRef memVar envStateVar varNamePtr = do
   let sym = C.backendGetSym bak
   mem <- C.readGlobal memVar
   let ptr = C.regValue varNamePtr
-  varNameStr <- liftIO (BS.pack <$> CLLVM.loadString bak mem ptr Nothing)
-  let showVarName = Text.pack (show varNameStr)
-  liftIO (Log.debug ("Program called `unsetenv`: " <> showVarName))
-  ret <- EnvState.unsetEnv bak envStateVar varNameStr
+  varNamePtrIsNull <-
+    liftIO (CLLVM.ptrIsNull sym ?ptrWidth (C.regValue varNamePtr))
   let n32 = What4.knownNat @32
-  liftIO (What4.bvLit sym n32 (BV.mkBV n32 (toInteger ret)))
+  C.symbolicBranches
+    C.emptyRegMap
+    [ ( varNamePtrIsNull
+      , do Errno.setErrno (Just sym) bak memVar Errno.einval
+           liftIO (What4.bvLit sym n32 (BV.mkBV n32 (-1)))
+      , Nothing
+      )
+    , ( What4.truePred sym
+      , do varNameStr <- liftIO (BS.pack <$> CLLVM.loadString bak mem ptr Nothing)
+           let showVarName = Text.pack (show varNameStr)
+           liftIO (Log.debug ("unsetenv(" <> showVarName <> ") = 0"))
+           ret <- EnvState.unsetEnv bak envStateVar varNameStr
+           liftIO (What4.bvLit sym n32 (BV.mkBV n32 (toInteger ret)))
+      , Nothing
+      )
+    ]

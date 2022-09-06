@@ -25,6 +25,7 @@ import           Czz.Overrides (EffectTrace)
 import qualified Czz.Log as Log
 
 import qualified Czz.LLVM.Overrides.Env as Env
+import qualified Czz.LLVM.Overrides.Errno as Errno
 import qualified Czz.LLVM.Overrides.Libc as Libc
 import qualified Czz.LLVM.Overrides.Hostname as Hostname
 import qualified Czz.LLVM.Overrides.Printf as Printf
@@ -57,14 +58,15 @@ overrides ::
   C.GlobalVar State.Env.EnvState ->
   [OverrideTemplate p sym arch rtp l a]
 overrides proxy effects envVarRef envStateVar =
-    concat
-      [ Env.overrides proxy effects _Env envVarRef envStateVar
-      , Hostname.overrides proxy effects _Hostname
-      , Log.adjust Text.pack $  -- TODO(lb): Text
-          Libc.overrides proxy effects _Libc envVarRef
-      , Printf.overrides proxy effects _Printf
-      , Signal.overrides proxy effects _Signal
-      , Log.adjust Text.pack $  -- TODO(lb): Text
-          Socket.overrides proxy effects _Socket
-      , Time.overrides proxy effects _Time
-      ]
+  concat
+    [ Env.overrides proxy effects _Env envVarRef envStateVar
+    , Errno.overrides proxy
+    , Hostname.overrides proxy effects _Hostname
+    , Log.adjust Text.pack $  -- TODO(lb): Text
+        Libc.overrides proxy effects _Libc envVarRef
+    , Printf.overrides proxy effects _Printf
+    , Signal.overrides proxy effects _Signal
+    , Log.adjust Text.pack $  -- TODO(lb): Text
+        Socket.overrides proxy effects _Socket
+    , Time.overrides proxy effects _Time
+    ]

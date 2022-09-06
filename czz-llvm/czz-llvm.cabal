@@ -76,6 +76,8 @@ library
     Czz.LLVM.Mutate
     Czz.LLVM.Overrides
     Czz.LLVM.Overrides.Env
+    Czz.LLVM.Overrides.Errno
+    Czz.LLVM.Overrides.Errno.Values
     Czz.LLVM.Overrides.Libc
     Czz.LLVM.Overrides.Hostname
     Czz.LLVM.Overrides.Printf
