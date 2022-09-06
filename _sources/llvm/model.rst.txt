@@ -44,9 +44,9 @@ options:
 ================================== ================== ===== ===== ===== ============================
 Category                           Name               Tests Impl. Sound Docs or Issue
 ================================== ================== ===== ===== ===== ============================
-:ref:`Env. vars. <model_env_vars>` ``getenv``         2     czz   Yes?  :ref:`Docs <getenv>`
-:ref:`Env. vars. <model_env_vars>` ``setenv``         0     None  n/a   `#29`_
-:ref:`Env. vars. <model_env_vars>` ``unsetenv``       0     None  n/a   `#30`_
+:ref:`Env. vars. <model_env_vars>` ``getenv``         5     czz   Yes?  :ref:`Docs <getenv>`
+:ref:`Env. vars. <model_env_vars>` ``setenv``         1     None  n/a   `#29`_
+:ref:`Env. vars. <model_env_vars>` ``unsetenv``       1     None  No    :ref:`Docs <unsetenv>`
 :ref:`Files <model_files>`         ``open``           0     None  n/a   TODO(lb)
 :ref:`Files <model_files>`         ``creat``          0     None  n/a   TODO(lb)
 :ref:`Files <model_files>`         ``unlink``         0     None  n/a   TODO(lb)
@@ -144,6 +144,14 @@ allocation.
 ..
   TODO(lb): Behavior when ${v} is empty? Writability and region of memory
   allocated?
+
+``unsetenv``
+----------
+
+``unsetenv(s)`` removes all variables of the form ``s=v``. It always succeeds
+and returns 0.
+
+This override is unsound, it should set ``EINVAL`` on a null pointer argument.
 
 .. _model_files:
 

@@ -315,6 +315,15 @@ title="Print to PDF"
      </code>
     </a>
    </li>
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#unsetenv">
+     <code class="docutils literal notranslate">
+      <span class="pre">
+       unsetenv
+      </span>
+     </code>
+    </a>
+   </li>
   </ul>
  </li>
  <li class="toc-h2 nav-item toc-entry">
@@ -519,6 +528,15 @@ title="Print to PDF"
      <code class="docutils literal notranslate">
       <span class="pre">
        getenv
+      </span>
+     </code>
+    </a>
+   </li>
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#unsetenv">
+     <code class="docutils literal notranslate">
+      <span class="pre">
+       unsetenv
       </span>
      </code>
     </a>
@@ -752,24 +770,24 @@ options:</p>
 <tbody>
 <tr class="row-even"><td><p><a class="reference internal" href="#model-env-vars"><span class="std std-ref">Env. vars.</span></a></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">getenv</span></code></p></td>
-<td><p>2</p></td>
+<td><p>5</p></td>
 <td><p>czz</p></td>
 <td><p>Yes?</p></td>
 <td><p><a class="reference internal" href="#getenv"><span class="std std-ref">Docs</span></a></p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#model-env-vars"><span class="std std-ref">Env. vars.</span></a></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">setenv</span></code></p></td>
-<td><p>0</p></td>
+<td><p>1</p></td>
 <td><p>None</p></td>
 <td><p>n/a</p></td>
 <td><p><a class="reference external" href="https://github.com/langston-barrett/czz/issues/29">#29</a></p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#model-env-vars"><span class="std std-ref">Env. vars.</span></a></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">unsetenv</span></code></p></td>
-<td><p>0</p></td>
+<td><p>1</p></td>
 <td><p>None</p></td>
-<td><p>n/a</p></td>
-<td><p><a class="reference external" href="https://github.com/langston-barrett/czz/issues/30">#30</a></p></td>
+<td><p>No</p></td>
+<td><p><span class="xref std std-ref">Docs</span></p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#model-files"><span class="std std-ref">Files</span></a></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">open</span></code></p></td>
@@ -1232,6 +1250,12 @@ one of the form <code class="docutils literal notranslate"><span class="pre">${s
 value is not found, it returns <code class="docutils literal notranslate"><span class="pre">NULL</span></code>. Otherwise, it allocates fresh memory
 big enough to contain <code class="docutils literal notranslate"><span class="pre">v</span></code>, writes <code class="docutils literal notranslate"><span class="pre">v</span></code> to it, and returns a pointer to that
 allocation.</p>
+</div>
+<div class="section" id="unsetenv">
+<h3><code class="docutils literal notranslate"><span class="pre">unsetenv</span></code><a class="headerlink" href="#unsetenv" title="Permalink to this headline">#</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">unsetenv(s)</span></code> removes all variables of the form <code class="docutils literal notranslate"><span class="pre">s=v</span></code>. It always succeeds
+and returns 0.</p>
+<p>This override is unsound, it should set <code class="docutils literal notranslate"><span class="pre">EINVAL</span></code> on a null pointer argument.</p>
 </div>
 </div>
 <div class="section" id="files">
