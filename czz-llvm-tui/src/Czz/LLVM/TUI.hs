@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 
@@ -67,8 +68,8 @@ data TState env eff k fb
 
 data TStates env eff k fb
   = InitState (TState env eff k fb)
-  | HelpState (TState env eff k fb)
-  | NormalState (TState env eff k fb)
+  | HelpState Bool (TState env eff k fb)
+  | NormalState Bool (TState env eff k fb)
 
 padded :: Int -> Int -> [(Text, Text)] -> B.Widget ()
 padded rpad lpad = B.vBox . map (uncurry row)
@@ -77,15 +78,17 @@ padded rpad lpad = B.vBox . map (uncurry row)
       B.padRight (BW.Pad (rpad - BW.textWidth l)) (BW.txt l) B.<+>
       B.padLeft (BW.Pad (lpad - BW.textWidth r)) (BW.txt r)
 
-topStats :: TState env eff k fb -> B.Widget ()
-topStats tstate =
+topStats :: Bool -> TState env eff k fb -> B.Widget ()
+topStats final tstate =
   let stats = State.stats (state tstate)
       now = stateNow tstate
   in padded
         10
         30
         [ ("start:", localTime tstate (Stats.start (State.stats (state tstate))))
-        , ("now:", localTime tstate (Now.getNow (stateNow tstate)))
+        , if final
+          then ("end:", localTime tstate (Now.getNow (stateNow tstate)))
+          else ("now:", localTime tstate (Now.getNow (stateNow tstate)))
         , ("duration:", showTime (Stats.sinceStart stats now))
         , ("execs:", Text.pack (show (Stats.execs stats)))
         , ("execs/sec:", Text.pack (show (Stats.execsPerSec stats now)))
@@ -149,11 +152,11 @@ draw tstates =
     BWB.borderWithLabel (BW.txt "czz") $
       case tstates of
         InitState _tstate -> BW.txt "Starting..."
-        HelpState _tstate -> drawHelp
-        NormalState tstate ->
+        HelpState _final _tstate -> drawHelp
+        NormalState final tstate ->
           BWT.renderTable $
             BWT.table
-              [ [topStats tstate]
+              [ [topStats final tstate]
               , [llvmStats tstate]
               -- TODO(lb): center, SPC/h/?
               , [BW.txt "Press UP for help"]
@@ -174,22 +177,28 @@ app tz =
           tstates <- MState.get
           case tstates of
             InitState{} -> return ()
-            HelpState tstate ->
-              MState.put (NormalState (tstate { stateNow = now }))
-            NormalState tstate ->
-              MState.put (HelpState (tstate { stateNow = now }))
-        B.AppEvent (NewState st) -> do
-          now <- liftIO Now.now
-          tstates <- MState.get
-          case tstates of
-            InitState{} -> MState.put (NormalState (TState now tz st))
-            NormalState{} -> MState.put (NormalState (TState now tz st))
-            HelpState{} -> MState.put (HelpState (TState now tz st))
+            HelpState final tstate ->
+              MState.put (NormalState final (tstate { stateNow = now }))
+            NormalState final tstate ->
+              MState.put (HelpState final (tstate { stateNow = now }))
+        B.AppEvent (NewState st) -> newState False st
+        B.AppEvent (FinalState st) -> newState True st
         _ -> return ()
   , B.appStartEvent = return ()
   , B.appAttrMap =
       const $ BAM.attrMap Vty.defAttr []
   }
+  where
+    newState isFinal st = do
+      now <- liftIO Now.now
+      tstates <- MState.get
+      case tstates of
+        InitState{} ->
+          MState.put (NormalState False (TState now tz st))
+        NormalState final _ ->
+          MState.put (NormalState (final || isFinal) (TState now tz st))
+        HelpState final _ ->
+          MState.put (HelpState (final || isFinal) (TState now tz st))
 
 main :: IO ExitCode
 main = do
