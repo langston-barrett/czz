@@ -45,8 +45,8 @@ options:
 Category                           Name               Tests Impl. Sound Docs or Issue
 ================================== ================== ===== ===== ===== ============================
 :ref:`Env. vars. <model_env_vars>` ``getenv``         5     czz   Yes?  :ref:`Docs <getenv>`
-:ref:`Env. vars. <model_env_vars>` ``setenv``         1     None  n/a   `#29`_
-:ref:`Env. vars. <model_env_vars>` ``unsetenv``       1     None  No    :ref:`Docs <unsetenv>`
+:ref:`Env. vars. <model_env_vars>` ``setenv``         2     None  n/a   `#29`_
+:ref:`Env. vars. <model_env_vars>` ``unsetenv``       2     None  No    :ref:`Docs <unsetenv>`
 :ref:`Files <model_files>`         ``open``           0     None  n/a   TODO(lb)
 :ref:`Files <model_files>`         ``creat``          0     None  n/a   TODO(lb)
 :ref:`Files <model_files>`         ``unlink``         0     None  n/a   TODO(lb)

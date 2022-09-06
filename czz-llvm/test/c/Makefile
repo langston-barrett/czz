@@ -2,6 +2,9 @@ CLANG := clang
 CLANG_FORMAT := clang-format
 PROGS := $(wildcard *.c)
 
+# These are intentionally raised in some programs
+NO_WARN := -Wno-nonnull
+
 .PHONY: all
 all: fmt $(PROGS:.c=.out) $(PROGS:.c=.bc)
 
@@ -10,10 +13,10 @@ fmt:
 	$(CLANG_FORMAT) -i *.c
 
 %.bc: %.c
-	$(CLANG) -fno-discard-value-names -emit-llvm -g -c $< -o $@
+	$(CLANG) $(NO_WARN) -fno-discard-value-names -emit-llvm -g -c $< -o $@
 
 %.elf: %.c
-	$(CLANG) -g $< -o $@
+	$(CLANG) $(NO_WARN) -g $< -o $@
 
 %.out: %.elf
 	./$< > $@ || true

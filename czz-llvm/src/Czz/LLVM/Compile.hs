@@ -37,7 +37,7 @@ runProc bin params = do
       Exit.ExitFailure code' ->
         Left $
           CommandFailure
-            { command = bin ++ unwords params
+            { command = unwords (bin:params)
             , code = code'
             , sout = sout'
             , serr = serr'
@@ -74,7 +74,7 @@ compileCFile cFile = do
         concat
           [ [cFile]
           , ["-fno-discard-value-names", "-O1", "-emit-llvm", "-c"]
-          , ["-Wall", "-Werror"]
+          , ["-Wall"]
           , ["-o", outPath]
           ]
   fmap (const outPath) <$> runProc "clang" params
@@ -96,13 +96,13 @@ getCFiles :: FilePath -> IO [FilePath]
 getCFiles dir =
   map (dir </>) . filter (".c" `List.isSuffixOf`) <$>
     Dir.listDirectory dir
- 
+
 compileCFiles :: FilePath -> IO [Either CommandFailure FilePath]
 compileCFiles dir = traverse compileCFile =<< getCFiles dir
- 
+
 compileAndLinkCFiles ::
   [String] ->
   FilePath ->
   IO [Either CommandFailure FilePath]
-compileAndLinkCFiles linkOpts dir = 
+compileAndLinkCFiles linkOpts dir =
   traverse (compileAndLinkCFile linkOpts) =<< getCFiles dir
