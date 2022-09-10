@@ -85,7 +85,9 @@ library
     Czz.Overrides
     Czz.Random
     Czz.Record
+    Czz.Replay
     Czz.Result
+    Czz.Run
     Czz.Seed
     Czz.State
     Czz.State.Stats
@@ -100,7 +102,7 @@ library
 
   build-depends:
     aeson >= 2.0 && < 3.0,
-    base >= 4.15 && < 4.17,
+    base >= 4.13 && < 4.17,
     base64-bytestring,
     bytestring,
     co-log-core > 0.3 && < 0.4,

@@ -42,6 +42,7 @@ import qualified Lang.Crucible.LLVM.MemModel as CLLVM
 import qualified Lang.Crucible.LLVM.MemModel.CallStack as CLLVM
 import qualified Lang.Crucible.LLVM.MemModel.Partial as CLLVM
 
+import           Czz.Config.Type (FuzzConfig)
 import qualified Czz.Config.Type as CConf
 import           Czz.Log (Logger, Msg)
 import qualified Czz.Log as Log
@@ -49,6 +50,7 @@ import           Czz.KLimited (IsKLimited)
 import qualified Czz.KLimited as KLimit
 import           Czz.Fuzz (Fuzzer, FuzzError)
 import qualified Czz.Fuzz as Fuzz
+import qualified Czz.Replay as Replay
 import qualified Czz.Random as Rand
 import qualified Czz.Record as Rec
 import qualified Czz.Result as Res
@@ -58,7 +60,7 @@ import           Czz.Stop (Stop)
 import qualified Czz.Stop as Stop
 
 import qualified Czz.LLVM.Config.CLI as CLI
-import           Czz.LLVM.Config.Type (Config)
+import           Czz.LLVM.Config.Type (LLVMConfig)
 import qualified Czz.LLVM.Config.Type as Conf
 import           Czz.LLVM.Env (Env)
 import qualified Czz.LLVM.Env as Env
@@ -78,12 +80,12 @@ import qualified Czz.LLVM.Translate as Trans
 
 llvmFuzzer ::
   IsKLimited k =>
-  Config ->
+  LLVMConfig ->
   Translation ->
   -- | Where to put simulator logs
   IO Handle ->
   Fuzzer LLVM Env Effect k Feedback
-llvmFuzzer conf translation simLogs =
+llvmFuzzer llvmConf translation simLogs =
   Fuzz.Fuzzer
   { Fuzz.nextSeed = \records -> do
       -- TODO(lb): power schedule, mutation schedule
@@ -121,7 +123,7 @@ llvmFuzzer conf translation simLogs =
               openedRef
               effectRef
               seed
-              (Conf.skip conf)
+              (Conf.skip llvmConf)
         , Fuzz.explainResults = \failedGoals _simResult -> do
             bbMap <- IORef.readIORef bbMapRef
             goalExpls <- mapM (explainFailedGoal sym bbMap) failedGoals
@@ -179,32 +181,58 @@ llvmFuzzer conf translation simLogs =
 -- | Library entry point
 fuzz ::
   IsKLimited k =>
-  Conf.Config ->
+  LLVMConfig ->
+  FuzzConfig ->
   Stop ->
   IO Handle ->
   Logger (Msg Text) ->
   Logger (Msg Text) ->
   IO (Either FuzzError (State Env Effect k Feedback))
-fuzz conf stop simLogs stdoutLogger stderrLogger = do
+fuzz llvmConf fuzzConf stop simLogs stdoutLogger stderrLogger = do
   Log.with stdoutLogger $
-    Log.info ("Fuzzing program " <> Text.pack (Conf.prog conf))
-  translation <- Trans.translate conf  -- Allowed to fail/call exit
-  let fuzzer = llvmFuzzer conf translation simLogs
-  Fuzz.fuzz (Conf.common conf) stop fuzzer stdoutLogger stderrLogger
+    Log.info ("Fuzzing program " <> Text.pack (Conf.prog llvmConf))
+  translation <- Trans.translate llvmConf  -- Allowed to fail/call exit
+  let fuzzer = llvmFuzzer llvmConf translation simLogs
+  Fuzz.fuzz fuzzConf stop fuzzer stdoutLogger stderrLogger
 
 -- | CLI entry point
 main :: IO Exit.ExitCode
 main = do
-  stop <- Stop.new
   conf <- CLI.cliConfig
-  translation <- Trans.translate conf  -- Allowed to fail/call exit
-  KLimit.withKLimit (CConf.pathLen (Conf.common conf)) $ do
-    -- TODO(lb): non-void logger
-    let simLog = Log.with Log.void Init.logToTempFile
-    let fuzzer = llvmFuzzer conf translation simLog
-    _finalState <- Fuzz.main (Conf.common conf) stop fuzzer
-    return ()
+  let commonConf = Conf.common conf
+  let baseConf = CConf.base commonConf
+  let llvmConf = Conf.llvm conf
+  case CConf.command commonConf of
+    CConf.CmdFuzz fuzzConf -> do
+      withFuzzer llvmConf (CConf.pathLen fuzzConf) $ \fuzzer -> do
+        doFuzz baseConf fuzzConf fuzzer
+    CConf.CmdReplay replayConf -> do
+      KLimit.withKnownKLimit $ do
+        translation <- Trans.translate llvmConf  -- Allowed to fail/call exit
+        -- TODO(lb): non-void logger
+        let simLog = Log.with Log.void Init.logToTempFile
+        let fuzzer = llvmFuzzer llvmConf translation simLog
+        _record <- Replay.replay (CConf.base commonConf) replayConf fuzzer
+        return ()
   return Exit.ExitSuccess
+
+  where
+    withFuzzer ::
+      LLVMConfig ->
+      Int ->
+      (forall k. IsKLimited k => Fuzzer LLVM Env Effect k Feedback -> IO a) ->
+      IO a
+    withFuzzer llvmConf kLimit k =
+      KLimit.withKLimit kLimit $ do
+        translation <- Trans.translate llvmConf  -- Allowed to fail/call exit
+        -- TODO(lb): non-void logger
+        let simLog = Log.with Log.void Init.logToTempFile
+        k (llvmFuzzer llvmConf translation simLog)
+
+    doFuzz baseConf fuzzConf fuzzer = do
+      stop <- Stop.new
+      _finalState <- Fuzz.main baseConf fuzzConf stop fuzzer
+      return ()
 
 -- TODO(lb):
 -- printStats :: L.Module -> State -> IO ()

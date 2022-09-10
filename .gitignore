@@ -1,3 +1,5 @@
+state/
+
 *.out
 *.txt
 *.sh

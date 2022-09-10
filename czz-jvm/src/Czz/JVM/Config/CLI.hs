@@ -9,7 +9,7 @@ import qualified Options.Applicative.Help as Opt hiding (fullDesc)
 import qualified Czz.Doc as CDoc
 import qualified Czz.Config.CLI as Czz.Conf.CLI
 
-import           Czz.JVM.Config.Type (Config)
+import           Czz.JVM.Config.Type (Config, JVMConfig)
 import qualified Czz.JVM.Config.Type as Conf
 
 cliConfig :: IO Config
@@ -33,8 +33,13 @@ cliConfig =
     parser :: Opt.Parser Config
     parser =
       Conf.Config
-      <$> Czz.Conf.CLI.parser
-      <*> Opt.many
+      <$> Czz.Conf.CLI.config
+      <*> jvmConfig
+
+    jvmConfig :: Opt.Parser JVMConfig
+    jvmConfig =
+      Conf.JVMConfig
+      <$> Opt.many
           ( Opt.strOption
             ( Opt.long "class-path"
               <> Opt.metavar "DIR"

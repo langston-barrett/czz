@@ -11,6 +11,7 @@ module Czz.KLimited
   ( KLimited
   , IsKLimited
   , withKLimit
+  , withKnownKLimit
   , empty
   , length
   , drop
@@ -22,7 +23,7 @@ import           Prelude hiding (drop, length)
 import qualified Data.Aeson as Aeson
 import qualified Data.Aeson.TH as AesonTH
 import           Data.Hashable (Hashable)
-import           GHC.TypeLits (Nat)
+import           GHC.TypeLits (KnownNat, Nat)
 import           Data.Sequence (Seq)
 import qualified Data.Sequence as Seq
 
@@ -41,6 +42,9 @@ withKLimit :: Int -> (forall k. IsKLimited k => a) -> a
 withKLimit k comp =
   case NatRepr.mkNatRepr (fromIntegral (max 0 k)) of
     Some kNat -> let ?kLimit = kNat in comp
+
+withKnownKLimit :: KnownNat k => (IsKLimited k => a) -> a
+withKnownKLimit comp = let ?kLimit = NatRepr.knownNat in comp
 
 empty :: IsKLimited k => KLimited k a
 empty = KLimited Seq.empty

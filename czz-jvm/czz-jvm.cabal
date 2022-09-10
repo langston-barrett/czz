@@ -66,7 +66,7 @@ library
     Czz.JVM.Translate
 
   build-depends:
-    base >= 4.15 && < 4.17,
+    base >= 4.13 && < 4.17,
     containers,
     crucible,
     crucible-jvm,
@@ -86,7 +86,7 @@ executable czz-jvm
   hs-source-dirs: exe
 
   build-depends:
-    base >= 4.8 && < 4.17,
+    base >= 4.13 && < 4.17,
     czz-jvm
 
   ghc-options:

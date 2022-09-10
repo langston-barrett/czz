@@ -61,9 +61,11 @@ library
 
   exposed-modules:
     Czz.LLVM.TUI
+    Czz.LLVM.TUI.Config.CLI
+    Czz.LLVM.TUI.Config.Type
 
   build-depends:
-    base >= 4.15 && < 4.17,
+    base >= 4.13 && < 4.17,
     brick,
     bytestring,
     containers,
@@ -73,6 +75,7 @@ library
     -- TODO(lb): Avoid this import
     MissingH >= 1.5 && < 2.0,
     mtl,
+    optparse-applicative,
     text < 2.0,
     time,
     vty
@@ -83,7 +86,7 @@ executable czz-llvm-tui
   main-is: Main.hs
 
   build-depends:
-    base >= 4.8 && < 4.17,
+    base >= 4.13 && < 4.17,
     czz-llvm-tui
 
   ghc-options:

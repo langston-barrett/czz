@@ -49,11 +49,12 @@ import qualified Czz.State.Stats as Stats
 import qualified Czz.Stop as Stop
 
 import qualified Czz.LLVM as CL
-import qualified Czz.LLVM.Config.CLI as CLI
-import qualified Czz.LLVM.Config.Type as Conf
 import           Czz.LLVM.Feedback (Feedback)
 import qualified Czz.LLVM.Init as Init
 import qualified Czz.LLVM.Translate as Trans
+
+import qualified Czz.LLVM.TUI.Config.Type as Conf
+import qualified Czz.LLVM.TUI.Config.CLI as CLI
 
 data Event env eff k fb
   = FinalState (State env eff k fb)
@@ -203,9 +204,11 @@ app tz =
 main :: IO ExitCode
 main = do
   stop <- Stop.new
-  conf <- CLI.cliConfig
-  translation <- Trans.translate conf  -- Allowed to fail/call exit
-  KLimit.withKLimit (CConf.pathLen (Conf.common conf)) $ do
+  conf <- CLI.config
+  let llvmConf = Conf.llvm conf
+  let fuzzConf = Conf.fuzz conf
+  translation <- Trans.translate llvmConf  -- Allowed to fail/call exit
+  KLimit.withKLimit (CConf.pathLen fuzzConf) $ do
 
     eventChan <- BChan.newBChan 1
 
@@ -222,13 +225,13 @@ main = do
     let simLog = Log.with Log.void Init.logToTempFile
     _threadId <- flip Con.forkFinally fuzzerDone $ do
         let fuzzer =
-              (CL.llvmFuzzer conf translation simLog)
+              (CL.llvmFuzzer llvmConf translation simLog)
               { Fuzz.onUpdate = \tstates -> do
                   _didUpdate <-
                     BChan.writeBChanNonBlocking eventChan (NewState tstates)
                   return ()
               }
-        Fuzz.fuzz (Conf.common conf) stop fuzzer Log.void Log.void
+        Fuzz.fuzz fuzzConf stop fuzzer Log.void Log.void
 
     let buildVty = Vty.mkVty Vty.defaultConfig
     initialVty <- buildVty
