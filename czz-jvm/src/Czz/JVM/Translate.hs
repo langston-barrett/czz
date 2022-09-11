@@ -33,16 +33,16 @@ data EntryPoint where
 
 -- | Allowed to fail/call exit
 translate ::
-  Conf.Config ->
+  Conf.JVMConfig ->
   IO ( CJVM.JVMContext
      , EntryPoint
      )
-translate conf =
+translate jvmConf =
   doTranslate
-    (Conf.classPath conf)
-    (Conf.jars conf)
-    (Conf.entryClass conf)
-    (Conf.entryMethod conf)
+    (Conf.classPath jvmConf)
+    (Conf.jars jvmConf)
+    (Conf.entryClass jvmConf)
+    (Conf.entryMethod jvmConf)
 
 -- | Not exported.
 doTranslate ::

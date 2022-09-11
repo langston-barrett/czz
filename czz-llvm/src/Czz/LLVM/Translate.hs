@@ -85,7 +85,7 @@ data EntryPoint arch where
     EntryPoint arch
 
 -- | Allowed to fail/call exit
-translate :: Conf.Config -> IO Translation
+translate :: Conf.LLVMConfig -> IO Translation
 translate conf = do
   linkedProg <-
     Compile.linkMusl conf >>=
