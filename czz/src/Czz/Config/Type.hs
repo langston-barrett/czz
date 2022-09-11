@@ -2,6 +2,7 @@
 
 module Czz.Config.Type
   ( FuzzConfig(..)
+  , ScriptConfig(..)
   , Cmd(..)
   , BaseConfig(..)
   , Config(..)
@@ -31,8 +32,14 @@ data FuzzConfig
     , tries :: Maybe Int
     }
 
+data ScriptConfig
+  = ScriptConfig
+    { script :: FilePath
+    }
+
 data Cmd
   = CmdFuzz FuzzConfig
+  | CmdScript ScriptConfig
 
 -- | Shared between all subcommands
 data BaseConfig = BaseConfig

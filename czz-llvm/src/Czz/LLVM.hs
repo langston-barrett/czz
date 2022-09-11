@@ -53,6 +53,7 @@ import qualified Czz.Fuzz as Fuzz
 import qualified Czz.Random as Rand
 import qualified Czz.Record as Rec
 import qualified Czz.Result as Res
+import qualified Czz.Script as Script
 import qualified Czz.Seed as Seed
 import           Czz.State (State)
 import           Czz.Stop (Stop)
@@ -205,6 +206,7 @@ main = do
     CConf.CmdFuzz fuzzConf -> do
       withFuzzer llvmConf (CConf.pathLen fuzzConf) $ \fuzzer -> do
         doFuzz baseConf fuzzConf fuzzer
+    CConf.CmdScript scriptConf -> Script.run scriptConf
   return Exit.ExitSuccess
 
   where

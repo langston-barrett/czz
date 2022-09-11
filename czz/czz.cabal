@@ -87,6 +87,7 @@ library
     Czz.Record
     Czz.Result
     Czz.Run
+    Czz.Script
     Czz.Seed
     Czz.State
     Czz.State.Stats
@@ -110,7 +111,9 @@ library
     directory,
     filepath >= 1.0 && < 2.0,
     lens >= 5 && < 6,
+    mtl,
     hashable,
+    husk-scheme,
     optparse-applicative,
     parameterized-utils >= 2 && < 3,
     random,

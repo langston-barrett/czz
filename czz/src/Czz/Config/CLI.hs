@@ -8,7 +8,7 @@ import qualified Data.Foldable as Fold
 import qualified Options.Applicative as Opt
 
 import qualified Czz.Log as Log
-import           Czz.Config.Type (Config, FuzzConfig)
+import           Czz.Config.Type (Config, FuzzConfig, ScriptConfig)
 import qualified Czz.Config.Type as Conf
 import           Czz.Coverage.Bucket.Bucketing (BucketingName(ZeroOneMany))
 
@@ -67,6 +67,14 @@ fuzzConfig =
         )
       )
 
+scriptConfig :: Opt.Parser ScriptConfig
+scriptConfig =
+  Conf.ScriptConfig
+  <$> Opt.strArgument
+      ( Opt.metavar "SCRIPT"
+        <> Opt.help "Path to scheme script (.scm)"
+      )
+
 config :: Opt.Parser Config
 config =
   Conf.Config
@@ -82,6 +90,15 @@ config =
                   ( Opt.info
                       (fuzzConfig Opt.<**> Opt.helper)
                       (Opt.fullDesc <> Opt.progDesc "Fuzz a program")
+                  )
+              )
+        , Conf.CmdScript <$>
+            Opt.hsubparser
+              ( Opt.command
+                  "script"
+                  ( Opt.info
+                      (scriptConfig Opt.<**> Opt.helper)
+                      (Opt.fullDesc <> Opt.progDesc "Run a script")
                   )
               )
         ]
