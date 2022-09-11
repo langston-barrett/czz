@@ -1,5 +1,10 @@
+{-# LANGUAGE StrictData #-}
+
 module Czz.Config.Type
-  ( Config(..)
+  ( FuzzConfig(..)
+  , Cmd(..)
+  , BaseConfig(..)
+  , Config(..)
   )
 where
 
@@ -15,13 +20,26 @@ import           Czz.Log (Severity)
 -- - Path strategy
 -- - etc.
 
+data FuzzConfig
+  = FuzzConfig
+    { bucketing :: BucketingName
+    , gas :: Maybe Int
+    , jobs :: Int
+    , pathLen :: Int
+    , seed :: Maybe Int
+    , stateDir :: Maybe FilePath
+    , tries :: Maybe Int
+    }
+
+data Cmd
+  = CmdFuzz FuzzConfig
+
+-- | Shared between all subcommands
+data BaseConfig = BaseConfig
+  { verbosity :: Severity
+  }
+
 data Config = Config
-  { bucketing :: !BucketingName
-  , gas :: !(Maybe Int)
-  , jobs :: !Int
-  , pathLen :: !Int
-  , seed :: !(Maybe Int)
-  , stateDir :: !(Maybe FilePath)
-  , tries :: !(Maybe Int)
-  , verbosity :: !Severity
+  { base :: BaseConfig
+  , command :: Cmd
   }

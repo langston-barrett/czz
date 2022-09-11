@@ -61,7 +61,7 @@ doLinkMusl opts prog = do
           ]
   fmap (const outPath) <$> runProc "llvm-link" params
 
-linkMusl :: Conf.Config -> IO (Either CommandFailure FilePath)
+linkMusl :: Conf.LLVMConfig -> IO (Either CommandFailure FilePath)
 linkMusl conf =
   doLinkMusl
     ["--only-needed" | Conf.onlyNeeded conf]

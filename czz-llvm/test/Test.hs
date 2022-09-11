@@ -49,27 +49,26 @@ tests = do
             error "Failed to compile test program"
           Right path -> return path)
 
-  let conf =
-        Conf.Config
-          { Conf.common =
-              CConf.Config
-              { CConf.bucketing = ZeroOneMany
-              , CConf.gas = Nothing
-              , CConf.jobs = 1
-              , CConf.pathLen = 1
-              , CConf.seed = Nothing  -- Just 0
-              , CConf.stateDir = Nothing
-              , CConf.tries = Just 10
-              , CConf.verbosity = Log.Error
-              }
-          , Conf.prog = "test.bc"
-          , Conf.entryPoint = "main"
-          , Conf.skip = []
-          , Conf.onlyNeeded = True
-          }
+  let llvmConf =
+        Conf.LLVMConfig
+        { Conf.prog = "test.bc"
+        , Conf.entryPoint = "main"
+        , Conf.skip = []
+        , Conf.onlyNeeded = True
+        }
+  let fuzzConf =
+        CConf.FuzzConfig
+        { CConf.bucketing = ZeroOneMany
+        , CConf.gas = Nothing
+        , CConf.jobs = 1
+        , CConf.pathLen = 1
+        , CConf.seed = Nothing  -- Just 0
+        , CConf.stateDir = Nothing
+        , CConf.tries = Just 10
+        }
 
   -- TODO(lb): non-void logger
-  let oneExec cf = cf { Conf.common = (Conf.common cf) { CConf.gas = Just 1 } }
+  let oneExec cf = cf { CConf.gas = Just 1 }
   let checkOutput cf logger =
         let gold = replaceSuf (".bc" :: String) ".out" (Conf.prog cf)
             out = replaceSuf (".bc" :: String) ".czz.out" (Conf.prog cf)
@@ -80,29 +79,29 @@ tests = do
            maybeFail $
              TastyG.goldenVsFile (Conf.prog cf <> " output") gold out $ do
                KLimit.withKLimit 1 $
-                 Main.fuzz (oneExec cf) stop simLog logger logger >>=
+                 Main.fuzz cf (oneExec fuzzConf) stop simLog logger logger >>=
                    \case
                      Left err -> error (show err)
                      Right _finalState -> return ()
 
   let simLog = Log.with Log.void Init.logToTempFile
-  let assertFinalState cf logger f =
+  let assertFinalState cf fcf logger f =
         TastyH.testCase (Conf.prog cf) $ do
-          Main.fuzz cf stop simLog logger logger >>=
+          Main.fuzz cf fcf stop simLog logger logger >>=
             \case
               Left err -> error (show err)
               Right finalState -> f finalState
 
-  let expectNoBug cf logger prog =
+  let expectNoBug cf fcf logger prog =
         KLimit.withKLimit 1 $
-          assertFinalState (cf { Conf.prog = cToBc prog }) logger $ \fs ->
+          assertFinalState (cf { Conf.prog = cToBc prog }) fcf logger $ \fs ->
               TastyH.assertBool
                 ("Expected no bug in " ++ prog)
                 (not (State.hasBug fs))
 
-  let expectBug cf logger prog =
+  let expectBug cf fcf logger prog =
         KLimit.withKLimit 1 $
-          assertFinalState (cf { Conf.prog = cToBc prog }) logger $ \fs ->
+          assertFinalState (cf { Conf.prog = cToBc prog }) fcf logger $ \fs ->
               TastyH.assertBool
                 ("Expected bug in " ++ prog)
                 (State.hasBug fs)
@@ -117,10 +116,18 @@ tests = do
                 CLog.logStdout Log.Debug stdStreams
             else Log.void
           bug justOne prog =
-            expectBug (if justOne then oneExec conf else conf) (logger prog) prog
+            expectBug
+              llvmConf
+              (if justOne then oneExec fuzzConf else fuzzConf)
+              (logger prog)
+              prog
           noBug justOne prog =
-            expectNoBug (if justOne then oneExec conf else conf) (logger prog) prog
-          checkOut prog = checkOutput (conf { Conf.prog = prog }) (logger prog)
+            expectNoBug
+              llvmConf
+              (if justOne then oneExec fuzzConf else fuzzConf)
+              (logger prog)
+              prog
+          checkOut prog = checkOutput (llvmConf { Conf.prog = prog }) (logger prog)
       in Tasty.testGroup "Tests"
            [ Tasty.testGroup "Bug tests"
                [ bug True "assert-argc-eq-0.c"

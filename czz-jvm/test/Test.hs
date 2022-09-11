@@ -25,28 +25,27 @@ import qualified Czz.JVM.Config.Type as Conf
 tests :: IO Tasty.TestTree
 tests = do
   stop <- Stop.new
-  let conf =
-        Conf.Config
-          { Conf.common =
-              CConf.Config
-              { CConf.bucketing = ZeroOneMany
-              , CConf.gas = Nothing
-              , CConf.jobs = 1
-              , CConf.pathLen = 1
-              , CConf.seed = Nothing  -- Just 0
-              , CConf.tries = Just 10
-              , CConf.stateDir = Nothing
-              , CConf.verbosity = Log.Error
-              }
-          , Conf.classPath = ["test/java"]
-          , Conf.jars = []
-          , Conf.entryClass = "Main"
-          , Conf.entryMethod = "main"
-          }
+  let jvmConf =
+        Conf.JVMConfig
+        { Conf.classPath = ["test/java"]
+        , Conf.jars = []
+        , Conf.entryClass = "Main"
+        , Conf.entryMethod = "main"
+        }
+  let fuzzConf =
+        CConf.FuzzConfig
+        { CConf.bucketing = ZeroOneMany
+        , CConf.gas = Nothing
+        , CConf.jobs = 1
+        , CConf.pathLen = 1
+        , CConf.seed = Nothing  -- Just 0
+        , CConf.tries = Just 10
+        , CConf.stateDir = Nothing
+        }
 
   let assertFinalState cf logger f =
         TastyH.testCase (Conf.entryClass cf) $ do
-          Main.fuzz cf stop logger logger >>=
+          Main.fuzz cf fuzzConf stop logger logger >>=
             \case
               Left err -> error (show err)
               Right finalState -> f finalState
@@ -73,7 +72,7 @@ tests = do
             fmap ((Text.pack prog <> ": ") <>) >$<
               CLog.logStdout Log.Debug stdStreams
           else Log.void
-        bug prog = expectBug conf (logger prog) prog
+        bug prog = expectBug jvmConf (logger prog) prog
         -- noBug prog = expectNoBug conf (logger prog) prog
     in Tasty.testGroup "Tests"
           [ bug "PrintArg0"
