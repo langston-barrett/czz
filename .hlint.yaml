@@ -7,6 +7,8 @@
 - modules:
   # If you import Data.List qualified, it must be as 'List'
   - {name: [Control.Lens], as: Lens}
+  - {name: [Data.Array], as: Arr}
+  - {name: [Data.Dynamic], as: Dyn}
   - {name: [Data.IORef], as: IORef}
   - {name: [Data.List], as: List}
   - {name: [Data.Map, Data.Map.Strict], as: Map}
@@ -14,6 +16,7 @@
   - {name: [Data.Sequence], as: Seq}
   - {name: [Data.Set, Data.HashSet], as: Set}
   - {name: [Data.Text], as: Text}
+  - {name: [Data.Typeable], as: Typ}
   - {name: [Data.Vector], as: Vec}
   - {name: [System.Exit], as: Exit}
   - {name: [System.IO], as: IO}
@@ -139,6 +142,8 @@
       - "Czz.LLVM"
       - "Czz.LLVM.Translate"
       - "Czz.LLVM.TUI"
+      # For now:
+      - "Czz.Script"
       - "Test"
 - ignore:
     within: ["Czz.LLVM.QQ"]
