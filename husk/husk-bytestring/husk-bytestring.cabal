@@ -1,5 +1,5 @@
 cabal-version: 2.2
-name: czz
+name: husk-bytestring
 version: 0.1
 author: Langston Barrett
 maintainer: Langston Barrett
@@ -8,8 +8,8 @@ license: MIT
 license-file: LICENSE
 build-type: Simple
 category: Language
-description: Fuzzing
-synopsis: Fuzzing
+description: Expose ByteString API to Husk Scheme with opaque values
+synopsis: Expose ByteString API to Husk Scheme with opaque values
 -- extra-source-files: README.md
 
 common common
@@ -60,69 +60,10 @@ library
   hs-source-dirs: src
 
   exposed-modules:
-    Czz.Coverage.BlockId
-    Czz.Coverage.Bucket.Bucketed
-    Czz.Coverage.Bucket.Bucketing
-    Czz.Coverage.Feature
-    Czz.Coverage.Path
-    Czz.Coverage.Seed
-    Czz.Config.CLI
-    Czz.Config.Type
-    Czz.Concurrent.Lock
-    Czz.Concurrent.Handle
-    Czz.Count
-    Czz.Doc
-    Czz.Freq
-    Czz.Fuzz
-    Czz.Fuzz.Type
-    Czz.KLimited
-    Czz.Log
-    Czz.Log.Concurrent
-    Czz.Mutate.ByteString
-    Czz.Mutate.Seq
-    Czz.Now
-    Czz.Orphans
-    Czz.Overrides
-    Czz.Random
-    Czz.Record
-    Czz.Result
-    Czz.Run
-    Czz.Script
-    Czz.Seed
-    Czz.State
-    Czz.State.Stats
-    Czz.Stop
-    Czz.SysTrace
-
-  -- other-modules:
-  --   Paths_czz
-
-  -- autogen-modules:
-  --   Paths_czz
+    Language.Scheme.ByteString
 
   build-depends:
-    aeson >= 2.0 && < 3.0,
     base >= 4.13 && < 4.17,
-    base64-bytestring,
     bytestring,
-    co-log-core > 0.3 && < 0.4,
-    containers,
-    crucible,
-    directory,
-    filepath >= 1.0 && < 2.0,
-    lens >= 5 && < 6,
-    mtl,
-    hashable,
-    husk-base,
-    husk-bytestring,
     husk-cust-func,
     husk-scheme,
-    optparse-applicative,
-    parameterized-utils >= 2 && < 3,
-    random,
-    stm,
-    text,
-    time,
-    what4 >= 1 && < 2,
-    unix >= 2.7,
-    vector
