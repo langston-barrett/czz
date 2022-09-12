@@ -208,7 +208,7 @@ main = do
   let llvmConf = Conf.llvm conf
   let fuzzConf = Conf.fuzz conf
   translation <- Trans.translate llvmConf  -- Allowed to fail/call exit
-  KLimit.withKLimit (CConf.pathLen fuzzConf) $ do
+  KLimit.withSomeKLimit (CConf.pathLen fuzzConf) $ do
 
     eventChan <- BChan.newBChan 1
 

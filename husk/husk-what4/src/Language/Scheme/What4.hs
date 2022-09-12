@@ -59,7 +59,7 @@ bvLit ::
   CustFunc
 bvLit sym symNonce =
   Cust.CustFunc
-  { Cust.custFuncName = "bvLit"
+  { Cust.custFuncName = "bv-lit"
   , Cust.custFuncImpl =
       Cust.evalHuskable (Cust.auto (\w i -> lift (impl w i)))
   }

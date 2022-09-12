@@ -206,7 +206,7 @@ main = do
     CConf.CmdFuzz fuzzConf -> do
       withFuzzer llvmConf (CConf.pathLen fuzzConf) $ \fuzzer -> do
         doFuzz baseConf fuzzConf fuzzer
-    CConf.CmdScript scriptConf -> Script.run scriptConf
+    CConf.CmdScript scriptConf -> Script.run baseConf scriptConf
   return Exit.ExitSuccess
 
   where
@@ -216,7 +216,7 @@ main = do
       (forall k. IsKLimited k => Fuzzer LLVM Env Effect k Feedback -> IO a) ->
       IO a
     withFuzzer llvmConf kLimit k =
-      KLimit.withKLimit kLimit $ do
+      KLimit.withSomeKLimit kLimit $ do
         translation <- Trans.translate llvmConf  -- Allowed to fail/call exit
         -- TODO(lb): non-void logger
         let simLog = Log.with Log.void Init.logToTempFile
