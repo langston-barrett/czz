@@ -27,6 +27,9 @@ module Language.Scheme.CustFunc
   -- * Auto
   , Auto
   , auto
+  -- * CustFunc
+  , CustFunc(..)
+  , extendEnv
   ) where
 
 import qualified Control.Monad.Except as Exc
@@ -36,6 +39,7 @@ import           Data.Map (Map)
 import           Data.Typeable (Typeable)
 
 import qualified Language.Scheme.Types as LST
+import qualified Language.Scheme.Variables as LSV
 
 import           Language.Scheme.From (From, Opaque)
 import qualified Language.Scheme.From as From
@@ -278,3 +282,18 @@ instance Coercible a (Auto a) => Autoable a where
 auto :: Coercible a (Auto a) => a -> Auto a
 auto = auto_
 {-# INLINE auto #-}
+
+--------------------------------------------------------------------------------
+-- CustFunc
+
+data CustFunc
+  = CustFunc
+    { custFuncName :: String
+    , custFuncImpl :: [LST.LispVal] -> LST.IOThrowsError LST.LispVal
+    }
+
+extendEnv :: [CustFunc] -> String -> LST.Env -> IO LST.Env
+extendEnv funcs pfx e = LSV.extendEnv e funcs'
+  where
+    funcs' =
+      map (\(CustFunc nm f) -> ((LSV.varNamespace, pfx ++ "-" ++ nm), LST.CustFunc f)) funcs

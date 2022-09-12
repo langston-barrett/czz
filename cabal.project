@@ -6,6 +6,7 @@ packages:
   husk/husk-base
   husk/husk-bytestring
   husk/husk-cust-func
+  husk/husk-what4
 
 source-repository-package
   type: git
