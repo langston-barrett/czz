@@ -116,7 +116,7 @@ main = do
     CConf.CmdFuzz fuzzConf -> do
       withFuzzer jvmConf (CConf.pathLen fuzzConf) $ \fuzzer -> do
         doFuzz baseConf fuzzConf fuzzer
-    CConf.CmdScript scriptConf -> Script.run scriptConf
+    CConf.CmdScript scriptConf -> Script.run baseConf scriptConf
   return Exit.ExitSuccess
 
   where
@@ -126,7 +126,7 @@ main = do
       (forall k. IsKLimited k => Fuzzer JVM () () k () -> IO a) ->
       IO a
     withFuzzer jvmConf kLimit k =
-      KLimit.withKLimit kLimit $ do
+      KLimit.withSomeKLimit kLimit $ do
         (jvmCtx, entryPoint) <- Trans.translate jvmConf  -- Allowed to fail/call exit
         k (jvmFuzzer jvmConf jvmCtx entryPoint)
 

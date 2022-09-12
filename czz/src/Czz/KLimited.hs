@@ -10,6 +10,7 @@
 module Czz.KLimited
   ( KLimited
   , IsKLimited
+  , withSomeKLimit
   , withKLimit
   , withKnownKLimit
   , empty
@@ -38,10 +39,13 @@ type role KLimited nominal representational
 
 type IsKLimited k = ?kLimit :: NatRepr k
 
-withKLimit :: Int -> (forall k. IsKLimited k => a) -> a
-withKLimit k comp =
+withSomeKLimit :: Int -> (forall k. IsKLimited k => a) -> a
+withSomeKLimit k comp =
   case NatRepr.mkNatRepr (fromIntegral (max 0 k)) of
     Some kNat -> let ?kLimit = kNat in comp
+
+withKLimit :: NatRepr k -> (IsKLimited k => a) -> a
+withKLimit k comp = let ?kLimit = k in comp
 
 withKnownKLimit :: KnownNat k => (IsKLimited k => a) -> a
 withKnownKLimit comp = let ?kLimit = NatRepr.knownNat in comp

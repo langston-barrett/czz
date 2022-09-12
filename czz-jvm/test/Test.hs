@@ -51,14 +51,14 @@ tests = do
               Right finalState -> f finalState
 
   let expectNoBug cf logger prog =
-        KLimit.withKLimit 1 $
+        KLimit.withSomeKLimit 1 $
           assertFinalState (cf { Conf.entryClass = prog }) logger $ \fs ->
               TastyH.assertBool
                 ("Expected no bug in " ++ prog)
                 (not (State.hasBug fs))
 
   let expectBug cf logger prog =
-        KLimit.withKLimit 1 $
+        KLimit.withSomeKLimit 1 $
           assertFinalState (cf { Conf.entryClass = prog }) logger $ \fs ->
               TastyH.assertBool
                 ("Expected bug in " ++ prog)

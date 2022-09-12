@@ -78,7 +78,7 @@ tests = do
         in -- TODO(lb): expectFailBecause...?
            maybeFail $
              TastyG.goldenVsFile (Conf.prog cf <> " output") gold out $ do
-               KLimit.withKLimit 1 $
+               KLimit.withSomeKLimit 1 $
                  Main.fuzz cf (oneExec fuzzConf) stop simLog logger logger >>=
                    \case
                      Left err -> error (show err)
@@ -93,14 +93,14 @@ tests = do
               Right finalState -> f finalState
 
   let expectNoBug cf fcf logger prog =
-        KLimit.withKLimit 1 $
+        KLimit.withSomeKLimit 1 $
           assertFinalState (cf { Conf.prog = cToBc prog }) fcf logger $ \fs ->
               TastyH.assertBool
                 ("Expected no bug in " ++ prog)
                 (not (State.hasBug fs))
 
   let expectBug cf fcf logger prog =
-        KLimit.withKLimit 1 $
+        KLimit.withSomeKLimit 1 $
           assertFinalState (cf { Conf.prog = cToBc prog }) fcf logger $ \fs ->
               TastyH.assertBool
                 ("Expected bug in " ++ prog)

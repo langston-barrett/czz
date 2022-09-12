@@ -88,6 +88,9 @@ library
     Czz.Result
     Czz.Run
     Czz.Script
+    Czz.Script.API
+    Czz.Script.API.Config
+    Czz.Script.API.Fuzz
     Czz.Seed
     Czz.State
     Czz.State.Stats

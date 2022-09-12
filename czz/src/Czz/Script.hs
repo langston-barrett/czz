@@ -7,6 +7,7 @@ module Czz.Script
 where
 
 import           Data.Function ((&))
+import           Control.Monad (foldM)
 import qualified Control.Monad.Except as Exc
 import           Control.Monad.IO.Class (liftIO)
 
@@ -25,9 +26,13 @@ import qualified Language.Scheme.ByteString as LSBS
 
 import qualified Language.Scheme.What4 as LSWhat4
 
-import           Czz.Config.Type (ScriptConfig)
+import qualified Czz.Concurrent.Lock as Lock
+import qualified Czz.Concurrent.Handle as Hand
+import           Czz.Config.Type (BaseConfig, ScriptConfig)
 import qualified Czz.Config.Type as Conf
+import qualified Czz.Log.Concurrent as CLog
 import qualified Czz.Run as Run
+import qualified Czz.Script.API as API
 
 globalEnv :: [((Char, String), LST.LispVal)]
 globalEnv =
@@ -39,19 +44,28 @@ globalEnv =
       liftIO (putStrLn ("Hello, " ++ s))
       return (LST.List [])
 
-run :: ScriptConfig -> IO ()
-run conf =
-  Run.withZ3 $ \bak -> do
-    let sym = C.backendGetSym bak
-    r5rsEnv <- LSC.r5rsEnv
-    env <-
-      LSWord.extendEnv "word" =<<
-        LSBS.extendEnv "bytes" =<<
-          LSWhat4.extendEnv sym "what4" =<<
-            LSV.extendEnv r5rsEnv globalEnv
-    let runIOThrows = LSC.runIOThrows . Exc.liftM show
-    let loadExpr = LST.List [LST.Atom "load", LST.String (Conf.script conf)]
-    (LSC.evalLisp env loadExpr & runIOThrows) >>=
-      \case
-        Just errMsg -> putStrLn errMsg
-        _  -> return ()
+run :: BaseConfig -> ScriptConfig -> IO ()
+run baseConf scriptConf = do
+  let v = Conf.verbosity baseConf
+  let cap = 4096 -- TODO(lb): Good default? Configurable?
+  lss <- Lock.new Hand.stdStreams
+  CLog.withStdoutLogger v lss cap $ \(_tid, stdoutLogger) ->
+    CLog.withStderrLogger v lss cap $ \(_tid, stderrLogger) -> do
+      Run.withZ3 $ \bak -> do
+        let sym = C.backendGetSym bak
+        r5rsEnv <- LSC.r5rsEnv
+        let libs =
+              [ API.extendEnv stdoutLogger stderrLogger
+              , LSWord.extendEnv "word"
+              , LSBS.extendEnv "bytes"
+              , LSWhat4.extendEnv sym "what4"
+              , flip LSV.extendEnv globalEnv
+              ]
+        env <- foldM (\env lib -> lib env) r5rsEnv libs
+        let runIOThrows = LSC.runIOThrows . Exc.liftM show
+        let loadExpr =
+              LST.List [LST.Atom "load", LST.String (Conf.script scriptConf)]
+        (LSC.evalLisp env loadExpr & runIOThrows) >>=
+          \case
+            Just errMsg -> putStrLn errMsg
+            _  -> return ()
