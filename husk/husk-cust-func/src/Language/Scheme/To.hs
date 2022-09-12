@@ -20,27 +20,35 @@ class To a where
 
 instance To LST.LispVal where
   to = id
+  {-# INLINE to #-}
 
 instance Typeable a => To (Opaque a) where
   to = LST.Opaque . Dyn.toDyn . getOpaque
+  {-# INLINE to #-}
 
 instance To a => To (Array Int a) where
   to = LST.Vector . fmap to
+  {-# INLINE to #-}
 
 instance To Bool where
   to = LST.Bool
+  {-# INLINE to #-}
 
 instance To Char where
   to = LST.Char
+  {-# INLINE to #-}
 
 instance To Double where
   to = LST.Float
+  {-# INLINE to #-}
 
 instance To Integer where
   to = LST.Number
+  {-# INLINE to #-}
 
 instance {-# OVERLAPPABLE #-} To a => To [a] where
   to = LST.List . fmap to
+  {-# INLINE to #-}
 
 instance
   ( Ord a
@@ -48,6 +56,8 @@ instance
   , To b
   ) => To (Map a b) where
   to = LST.HashTable . Map.mapKeys to . Map.map to
+  {-# INLINE to #-}
 
 instance To String where
   to = LST.String
+  {-# INLINE to #-}
