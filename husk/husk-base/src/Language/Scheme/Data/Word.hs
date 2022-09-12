@@ -8,7 +8,7 @@ import qualified Data.Word as Word
 import qualified Language.Scheme.Types as LST
 import qualified Language.Scheme.Variables as LSV
 
-import           Language.Scheme.CustFunc as Cust
+import qualified Language.Scheme.CustFunc as Cust
 import           Language.Scheme.To ()
 
 extendEnv :: String -> LST.Env -> IO LST.Env

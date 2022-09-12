@@ -7,6 +7,7 @@
 
 module Czz.Run
   ( run
+  , withZ3
   , runWithZ3
   )
 where
@@ -143,7 +144,6 @@ run bak halloc doMut seed fuzzer = do
       , Rec.feedback = fb
       }
 
--- | Not exported.
 withZ3 ::
   (forall sym bak solver s st fs.
    C.IsSymBackend sym bak =>
@@ -155,7 +155,7 @@ withZ3 ::
   IO a
 withZ3 k = do
   Some (nonceGen :: Nonce.NonceGenerator IO s) <- Nonce.newIONonceGenerator
-  sym :: What4.ExprBuilder t st (What4.Flags fm) <-
+  sym :: What4.ExprBuilder s st (What4.Flags fm) <-
     What4.newExprBuilder What4.FloatIEEERepr What4.EmptyExprBuilderState nonceGen
   What4.extendConfig What4.z3Options (What4.getConfiguration sym)
   C.withZ3OnlineBackend sym C.NoUnsatFeatures What4.noFeatures k
