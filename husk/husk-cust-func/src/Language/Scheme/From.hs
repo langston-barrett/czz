@@ -32,6 +32,7 @@ from v =
     (Left (LST.TypeMismatch (name (Proxy :: Proxy a)) v))
     Right
     (maybeFrom v)
+{-# INLINABLE from #-}
 
 instance Typeable a => From (Opaque a) where
   name _proxy = show (Typ.typeRep (Proxy @a))
@@ -39,6 +40,7 @@ instance Typeable a => From (Opaque a) where
     \case
       LST.Opaque o -> Opaque <$> Dyn.fromDynamic o
       _ -> Nothing
+  {-# INLINABLE maybeFrom #-}
 
 instance From a => From (Array Int a) where
   name _proxy = unwords ["vector of" , name (Proxy @a)]
@@ -46,6 +48,7 @@ instance From a => From (Array Int a) where
     \case
       LST.Vector v -> traverse maybeFrom v
       _ -> Nothing
+  {-# INLINABLE maybeFrom #-}
 
 instance From Bool where
   name _proxy = "bool"
@@ -53,6 +56,7 @@ instance From Bool where
     \case
       LST.Bool b -> Just b
       _ -> Nothing
+  {-# INLINABLE maybeFrom #-}
 
 instance From Char where
   name _proxy = "char"
@@ -60,6 +64,7 @@ instance From Char where
     \case
       LST.Char c -> Just c
       _ -> Nothing
+  {-# INLINABLE maybeFrom #-}
 
 instance From Double where
   name _proxy = "float"
@@ -67,6 +72,7 @@ instance From Double where
     \case
       LST.Float f -> Just f
       _ -> Nothing
+  {-# INLINABLE maybeFrom #-}
 
 instance From Integer where
   name _proxy = "number"
@@ -74,6 +80,7 @@ instance From Integer where
     \case
       LST.Number i -> Just i
       _ -> Nothing
+  {-# INLINABLE maybeFrom #-}
 
 instance {-# OVERLAPPABLE #-} From a => From [a] where
   name _proxy = unwords ["list of" , name (Proxy @a)]
@@ -81,6 +88,7 @@ instance {-# OVERLAPPABLE #-} From a => From [a] where
     \case
       LST.List l -> traverse maybeFrom l
       _ -> Nothing
+  {-# INLINABLE maybeFrom #-}
 
 instance
   ( Ord a
@@ -103,6 +111,7 @@ instance
             (\(k, v) -> (,) <$> maybeFrom k <*> maybeFrom v)
             (Map.toList m)
       _ -> Nothing
+  {-# INLINABLE maybeFrom #-}
 
 instance From String where
   name _proxy = "string"
@@ -110,3 +119,4 @@ instance From String where
     \case
       LST.String s -> Just s
       _ -> Nothing
+  {-# INLINABLE maybeFrom #-}
