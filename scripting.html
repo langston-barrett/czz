@@ -5,7 +5,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Fuzzing Approach &#8212; czz  documentation</title>
+    <title>Scripting &#8212; czz  documentation</title>
     
   <!-- Loaded before other Sphinx assets -->
   <link href="_static/styles/theme.css?digest=1999514e3f237ded88cf" rel="stylesheet">
@@ -32,8 +32,8 @@
     <script src="_static/scripts/sphinx-book-theme.js?digest=9c920249402e914e316237a7dbc6769907cce411"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Scripting" href="scripting.html" />
-    <link rel="prev" title="Architecture" href="architecture.html" />
+    <link rel="next" title="Configuration" href="llvm/config.html" />
+    <link rel="prev" title="Fuzzing Approach" href="fuzzing.html" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="docsearch:language" content="None">
     
@@ -108,13 +108,13 @@
    Architecture
   </a>
  </li>
- <li class="toctree-l1 current active">
-  <a class="current reference internal" href="#">
+ <li class="toctree-l1">
+  <a class="reference internal" href="fuzzing.html">
    Fuzzing Approach
   </a>
  </li>
- <li class="toctree-l1">
-  <a class="reference internal" href="scripting.html">
+ <li class="toctree-l1 current active">
+  <a class="current reference internal" href="#">
    Scripting
   </a>
  </li>
@@ -242,7 +242,7 @@ title="Fullscreen mode"
   <div class="menu-dropdown__content">
     <ul>
       <li>
-        <a href="_sources/fuzzing.rst.txt"
+        <a href="_sources/scripting.rst.txt"
    class="headerbtn"
    data-toggle="tooltip"
 data-placement="left"
@@ -302,19 +302,69 @@ title="Print to PDF"
     <nav id="bd-toc-nav" aria-label="Page">
         <ul class="visible nav section-nav flex-column">
  <li class="toc-h2 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#coverage">
-   Coverage
+  <a class="reference internal nav-link" href="#api-reference">
+   API Reference
   </a>
- </li>
- <li class="toc-h2 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#mutations">
-   Mutations
-  </a>
- </li>
- <li class="toc-h2 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#power-schedule">
-   Power Schedule
-  </a>
+  <ul class="nav section-nav flex-column">
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#czz">
+     <code class="docutils literal notranslate">
+      <span class="pre">
+       czz
+      </span>
+     </code>
+    </a>
+    <ul class="nav section-nav flex-column">
+     <li class="toc-h4 nav-item toc-entry">
+      <a class="reference internal nav-link" href="#czz-bv-lit">
+       <code class="docutils literal notranslate">
+        <span class="pre">
+         czz-bv-lit
+        </span>
+       </code>
+      </a>
+     </li>
+     <li class="toc-h4 nav-item toc-entry">
+      <a class="reference internal nav-link" href="#czz-default-fuzz-config">
+       <code class="docutils literal notranslate">
+        <span class="pre">
+         czz-default-fuzz-config
+        </span>
+       </code>
+      </a>
+     </li>
+     <li class="toc-h4 nav-item toc-entry">
+      <a class="reference internal nav-link" href="#czz-fuzz">
+       <code class="docutils literal notranslate">
+        <span class="pre">
+         czz-fuzz
+        </span>
+       </code>
+      </a>
+     </li>
+    </ul>
+   </li>
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#word">
+     <code class="docutils literal notranslate">
+      <span class="pre">
+       word
+      </span>
+     </code>
+    </a>
+    <ul class="nav section-nav flex-column">
+     <li class="toc-h4 nav-item toc-entry">
+      <a class="reference internal nav-link" href="#word-bit-reverse-8">
+       <code class="docutils literal notranslate">
+        <span class="pre">
+         word-bit-reverse-8
+        </span>
+       </code>
+      </a>
+     </li>
+    </ul>
+   </li>
+  </ul>
  </li>
 </ul>
 
@@ -325,7 +375,7 @@ title="Print to PDF"
         <div class="col pl-md-3 pl-lg-5 content-container">
             <!-- Table of contents that is only displayed when printing the page -->
             <div id="jb-print-docs-body" class="onlyprint">
-                <h1>Fuzzing Approach</h1>
+                <h1>Scripting</h1>
                 <!-- Table of contents -->
                 <div id="print-main-content">
                     <div id="jb-print-toc">
@@ -336,19 +386,69 @@ title="Print to PDF"
                         <nav aria-label="Page">
                             <ul class="visible nav section-nav flex-column">
  <li class="toc-h2 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#coverage">
-   Coverage
+  <a class="reference internal nav-link" href="#api-reference">
+   API Reference
   </a>
- </li>
- <li class="toc-h2 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#mutations">
-   Mutations
-  </a>
- </li>
- <li class="toc-h2 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#power-schedule">
-   Power Schedule
-  </a>
+  <ul class="nav section-nav flex-column">
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#czz">
+     <code class="docutils literal notranslate">
+      <span class="pre">
+       czz
+      </span>
+     </code>
+    </a>
+    <ul class="nav section-nav flex-column">
+     <li class="toc-h4 nav-item toc-entry">
+      <a class="reference internal nav-link" href="#czz-bv-lit">
+       <code class="docutils literal notranslate">
+        <span class="pre">
+         czz-bv-lit
+        </span>
+       </code>
+      </a>
+     </li>
+     <li class="toc-h4 nav-item toc-entry">
+      <a class="reference internal nav-link" href="#czz-default-fuzz-config">
+       <code class="docutils literal notranslate">
+        <span class="pre">
+         czz-default-fuzz-config
+        </span>
+       </code>
+      </a>
+     </li>
+     <li class="toc-h4 nav-item toc-entry">
+      <a class="reference internal nav-link" href="#czz-fuzz">
+       <code class="docutils literal notranslate">
+        <span class="pre">
+         czz-fuzz
+        </span>
+       </code>
+      </a>
+     </li>
+    </ul>
+   </li>
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#word">
+     <code class="docutils literal notranslate">
+      <span class="pre">
+       word
+      </span>
+     </code>
+    </a>
+    <ul class="nav section-nav flex-column">
+     <li class="toc-h4 nav-item toc-entry">
+      <a class="reference internal nav-link" href="#word-bit-reverse-8">
+       <code class="docutils literal notranslate">
+        <span class="pre">
+         word-bit-reverse-8
+        </span>
+       </code>
+      </a>
+     </li>
+    </ul>
+   </li>
+  </ul>
  </li>
 </ul>
 
@@ -360,47 +460,42 @@ title="Print to PDF"
                 
               <div>
                 
-  <div class="section" id="fuzzing-approach">
-<h1>Fuzzing Approach<a class="headerlink" href="#fuzzing-approach" title="Permalink to this headline">#</a></h1>
-<p>This page describes aspects of czz’s fuzzing algorithm.</p>
-<p>Generally, czz is inspired by AFL, <a class="reference external" href="https://lcamtuf.coredump.cx/afl/technical_details.txt">the AFL whitepaper</a> contains helpful
-background for understanding czz.</p>
-<div class="section" id="coverage">
-<span id="id1"></span><h2>Coverage<a class="headerlink" href="#coverage" title="Permalink to this headline">#</a></h2>
-<p>To determine whether or to keep a seed in the seed pool, czz tracks the
-<em>coverage</em> that the seed achieves. This tracking is configurable. Fine-grained
-coverage tracking results in a larger seed pool, which is beneficial if the
-difference in coverage reflects an interesting difference between the seeds, but
-can be detrimental if it ends up adding fundamentally similar, redundant seeds
-to the pool.</p>
-<p>When executing the target with the seed, czz tracks how many times the program
-executes each <em>k</em>-length chain of edges between basic blocks. Particular choices
-of <em>k</em> reduce to more familiar coverage tracking schemes:</p>
-<ul class="simple">
-<li><p><em>k</em> = 1: Basic block coverage</p></li>
-<li><p><em>k</em> = 2: Edge coverage (like AFL)</p></li>
-</ul>
-<p>Higher values of <em>k</em> correspond to more fine-grained distinctions in coverage.</p>
-<p>Like AFL, czz tracks not just whether an edge was covered, but further tracks
-the <em>hit counts</em> of each <em>k</em>-edge chain (i.e., how many times the chain was
-executed). These hit counts are <em>bucketed</em> at the end of the execution, meaning
-they are collapsed into a more granular form. czz currently provides two
-bucketing strategies:</p>
-<ul class="simple">
-<li><p>log2: Take the (integer) logarithm base 2 of each hit count</p></li>
-<li><p>zero-one-many: Record only whether the edge was hit one or more than one time</p></li>
-</ul>
-<p>log2 is more fine-grained than zero-one-many.</p>
-<p>TODO(lb)</p>
+  <div class="section" id="scripting">
+<h1>Scripting<a class="headerlink" href="#scripting" title="Permalink to this headline">#</a></h1>
+<p>czz can be scripted using <a class="reference external" href="http://justinethier.github.io/husk-scheme/manual/index.html">Scheme</a>.</p>
+<div class="section" id="api-reference">
+<h2>API Reference<a class="headerlink" href="#api-reference" title="Permalink to this headline">#</a></h2>
+<div class="section" id="czz">
+<h3><code class="docutils literal notranslate"><span class="pre">czz</span></code><a class="headerlink" href="#czz" title="Permalink to this headline">#</a></h3>
+<div class="section" id="czz-bv-lit">
+<h4><code class="docutils literal notranslate"><span class="pre">czz-bv-lit</span></code><a class="headerlink" href="#czz-bv-lit" title="Permalink to this headline">#</a></h4>
+<div class="highlight-haskell notranslate"><div class="highlight"><pre><span></span><span class="kt">Number</span> <span class="ow">-&gt;</span> <span class="kt">Number</span> <span class="ow">-&gt;</span> <span class="kt">Expr</span>
+</pre></div>
 </div>
-<div class="section" id="mutations">
-<h2>Mutations<a class="headerlink" href="#mutations" title="Permalink to this headline">#</a></h2>
-<p>TODO(lb)</p>
 </div>
-<div class="section" id="power-schedule">
-<h2>Power Schedule<a class="headerlink" href="#power-schedule" title="Permalink to this headline">#</a></h2>
-<p>czz does not yet support interesting power schedules, it picks seeds to mutate
-uniformly at random from the seed pool.</p>
+<div class="section" id="czz-default-fuzz-config">
+<h4><code class="docutils literal notranslate"><span class="pre">czz-default-fuzz-config</span></code><a class="headerlink" href="#czz-default-fuzz-config" title="Permalink to this headline">#</a></h4>
+<div class="highlight-haskell notranslate"><div class="highlight"><pre><span></span><span class="kt">FuzzConfig</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="czz-fuzz">
+<h4><code class="docutils literal notranslate"><span class="pre">czz-fuzz</span></code><a class="headerlink" href="#czz-fuzz" title="Permalink to this headline">#</a></h4>
+<div class="highlight-haskell notranslate"><div class="highlight"><pre><span></span><span class="kt">Fuzzer</span> <span class="ow">-&gt;</span> <span class="kt">FuzzConfig</span> <span class="ow">-&gt;</span> <span class="kt">Either</span> <span class="kt">FuzzError</span> <span class="kt">State</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="word">
+<h3><code class="docutils literal notranslate"><span class="pre">word</span></code><a class="headerlink" href="#word" title="Permalink to this headline">#</a></h3>
+<p>Corresponding to Haskell’s <code class="docutils literal notranslate"><span class="pre">Data.Word</span></code>.</p>
+<div class="section" id="word-bit-reverse-8">
+<h4><code class="docutils literal notranslate"><span class="pre">word-bit-reverse-8</span></code><a class="headerlink" href="#word-bit-reverse-8" title="Permalink to this headline">#</a></h4>
+<div class="highlight-haskell notranslate"><div class="highlight"><pre><span></span><span class="kt">Fuzzer</span> <span class="ow">-&gt;</span> <span class="kt">FuzzConfig</span> <span class="ow">-&gt;</span> <span class="kt">Either</span> <span class="kt">FuzzError</span> <span class="kt">State</span>
+</pre></div>
+</div>
+</div>
+</div>
 </div>
 </div>
 
@@ -412,17 +507,17 @@ uniformly at random from the seed pool.</p>
                 
     <!-- Previous / next buttons -->
 <div class='prev-next-area'>
-    <a class='left-prev' id="prev-link" href="architecture.html" title="previous page">
+    <a class='left-prev' id="prev-link" href="fuzzing.html" title="previous page">
         <i class="fas fa-angle-left"></i>
         <div class="prev-next-info">
             <p class="prev-next-subtitle">previous</p>
-            <p class="prev-next-title">Architecture</p>
+            <p class="prev-next-title">Fuzzing Approach</p>
         </div>
     </a>
-    <a class='right-next' id="next-link" href="scripting.html" title="next page">
+    <a class='right-next' id="next-link" href="llvm/config.html" title="next page">
     <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">Scripting</p>
+        <p class="prev-next-title">Configuration</p>
     </div>
     <i class="fas fa-angle-right"></i>
     </a>

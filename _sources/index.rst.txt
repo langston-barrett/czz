@@ -39,6 +39,7 @@ Read more at the :doc:`overview`.
 
    architecture
    fuzzing
+   scripting
 
 .. toctree::
    :hidden:
@@ -52,6 +53,7 @@ Read more at the :doc:`overview`.
    :caption: czz-llvm Reference
 
    llvm/model
+   llvm/scripting
    llvm/status
 
 
