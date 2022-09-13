@@ -19,7 +19,8 @@ import qualified Lang.Crucible.Types as C
 
 -- crucible-llvm
 import           Lang.Crucible.LLVM.Extension (ArchWidth)
-import           Lang.Crucible.LLVM.Intrinsics as CLLVM
+import           Lang.Crucible.LLVM.Intrinsics (OverrideTemplate)
+import qualified Lang.Crucible.LLVM.Intrinsics as CLLVM
 import           Lang.Crucible.LLVM.MemModel (HasLLVMAnn)
 import qualified Lang.Crucible.LLVM.MemModel as CLLVM
 import           Lang.Crucible.LLVM.Translation (ModuleTranslation)
@@ -47,8 +48,8 @@ overrides trans toSkip = Maybe.mapMaybe mkOverride toSkip
         return $
           CLLVM.basic_llvm_override $
             CLLVM.LLVMOverride
-              { llvmOverride_declare = decl,
-                llvmOverride_args = args,
-                llvmOverride_ret = ret,
-                llvmOverride_def = \_mvar _sym _args -> return ()
+              { CLLVM.llvmOverride_declare = decl,
+                CLLVM.llvmOverride_args = args,
+                CLLVM.llvmOverride_ret = ret,
+                CLLVM.llvmOverride_def = \_mvar _sym _args -> return ()
               }
