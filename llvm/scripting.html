@@ -316,10 +316,28 @@ title="Print to PDF"
     </a>
    </li>
    <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#czz-llvm-from-what4">
+     <code class="docutils literal notranslate">
+      <span class="pre">
+       czz-llvm-from-what4
+      </span>
+     </code>
+    </a>
+   </li>
+   <li class="toc-h3 nav-item toc-entry">
     <a class="reference internal nav-link" href="#czz-llvm-fuzzer">
      <code class="docutils literal notranslate">
       <span class="pre">
        czz-llvm-fuzzer
+      </span>
+     </code>
+    </a>
+   </li>
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#czz-llvm-override">
+     <code class="docutils literal notranslate">
+      <span class="pre">
+       czz-llvm-override
       </span>
      </code>
     </a>
@@ -369,10 +387,28 @@ title="Print to PDF"
     </a>
    </li>
    <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#czz-llvm-from-what4">
+     <code class="docutils literal notranslate">
+      <span class="pre">
+       czz-llvm-from-what4
+      </span>
+     </code>
+    </a>
+   </li>
+   <li class="toc-h3 nav-item toc-entry">
     <a class="reference internal nav-link" href="#czz-llvm-fuzzer">
      <code class="docutils literal notranslate">
       <span class="pre">
        czz-llvm-fuzzer
+      </span>
+     </code>
+    </a>
+   </li>
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#czz-llvm-override">
+     <code class="docutils literal notranslate">
+      <span class="pre">
+       czz-llvm-override
       </span>
      </code>
     </a>
@@ -409,9 +445,24 @@ title="Print to PDF"
 </pre></div>
 </div>
 </div>
+<div class="section" id="czz-llvm-from-what4">
+<h3><code class="docutils literal notranslate"><span class="pre">czz-llvm-from-what4</span></code><a class="headerlink" href="#czz-llvm-from-what4" title="Permalink to this headline">#</a></h3>
+<div class="highlight-haskell notranslate"><div class="highlight"><pre><span></span><span class="kt">Expr</span> <span class="ow">-&gt;</span> <span class="kt">SVal</span>
+</pre></div>
+</div>
+</div>
 <div class="section" id="czz-llvm-fuzzer">
 <h3><code class="docutils literal notranslate"><span class="pre">czz-llvm-fuzzer</span></code><a class="headerlink" href="#czz-llvm-fuzzer" title="Permalink to this headline">#</a></h3>
-<div class="highlight-haskell notranslate"><div class="highlight"><pre><span></span><span class="kt">Number</span> <span class="ow">-&gt;</span> <span class="kt">LLVMConfig</span> <span class="ow">-&gt;</span> <span class="kt">LLVMTranslation</span> <span class="ow">-&gt;</span> <span class="kt">Fuzzer</span>
+<div class="highlight-haskell notranslate"><div class="highlight"><pre><span></span><span class="kt">Number</span> <span class="ow">-&gt;</span> <span class="kt">LLVMConfig</span> <span class="ow">-&gt;</span> <span class="kt">LLVMTranslation</span> <span class="ow">-&gt;</span> <span class="kt">List</span> <span class="kt">LLVMOverride</span> <span class="ow">-&gt;</span> <span class="kt">Fuzzer</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="czz-llvm-override">
+<h3><code class="docutils literal notranslate"><span class="pre">czz-llvm-override</span></code><a class="headerlink" href="#czz-llvm-override" title="Permalink to this headline">#</a></h3>
+<div class="highlight-haskell notranslate"><div class="highlight"><pre><span></span><span class="kt">Translation</span> <span class="ow">-&gt;</span>
+<span class="kt">String</span> <span class="ow">-&gt;</span>
+<span class="p">((</span><span class="kt">ExprBuilder</span><span class="p">,</span> <span class="kt">Mem</span><span class="p">,</span> <span class="p">[</span><span class="kt">Val</span><span class="p">])</span> <span class="ow">-&gt;</span> <span class="p">(</span><span class="kt">Mem</span><span class="p">,</span> <span class="kt">Val</span><span class="p">))</span> <span class="ow">-&gt;</span>
+<span class="kt">Maybe</span> <span class="kt">Override</span>
 </pre></div>
 </div>
 </div>
