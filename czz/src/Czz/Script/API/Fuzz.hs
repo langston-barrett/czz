@@ -46,8 +46,8 @@ extendEnv stdoutLogger stderrLogger pfx e = do
       [ fuzz stdoutLogger stderrLogger
       ]
 
-data KFuzzer where
-  KFuzzer ::
+data SFuzzer where
+  SFuzzer ::
     ( Aeson.ToJSON env
     , Aeson.ToJSON eff
     , Aeson.ToJSON fb
@@ -59,10 +59,10 @@ data KFuzzer where
     Nonce Nonce.GlobalNonceGenerator eff ->
     Nonce Nonce.GlobalNonceGenerator fb ->
     Fuzzer ext env eff k fb ->
-    KFuzzer
+    SFuzzer
 
-data SomeState where
-  SomeState ::
+data SState where
+  SState ::
     ( Aeson.ToJSON env
     , Aeson.ToJSON eff
     , Aeson.ToJSON fb
@@ -74,7 +74,7 @@ data SomeState where
     Nonce Nonce.GlobalNonceGenerator eff ->
     Nonce Nonce.GlobalNonceGenerator fb ->
     State env eff k fb ->
-    SomeState
+    SState
 
 fuzz ::
   Logger (Msg Text) ->
@@ -88,12 +88,12 @@ fuzz stdoutLogger stderrLogger =
   }
   where
     impl ::
-      KFuzzer ->
+      SFuzzer ->
       Conf.FuzzConfig ->
-      IO (Either FuzzError SomeState)
-    impl (KFuzzer next nenv neff nfb fuzzer) fuzzConf = do
+      IO (Either FuzzError SState)
+    impl (SFuzzer next nenv neff nfb fuzzer) fuzzConf = do
       stop <- Stop.new
       liftIO (Fuzz.fuzz fuzzConf stop fuzzer stdoutLogger stderrLogger) <&>
         \case
           Left err -> Left err
-          Right state -> Right (SomeState next nenv neff nfb state)
+          Right state -> Right (SState next nenv neff nfb state)
