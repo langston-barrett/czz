@@ -305,6 +305,35 @@ title="Print to PDF"
   <a class="reference internal nav-link" href="#api-reference">
    API Reference
   </a>
+  <ul class="nav section-nav flex-column">
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#czz-llvm-default-config">
+     <code class="docutils literal notranslate">
+      <span class="pre">
+       czz-llvm-default-config
+      </span>
+     </code>
+    </a>
+   </li>
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#czz-llvm-fuzzer">
+     <code class="docutils literal notranslate">
+      <span class="pre">
+       czz-llvm-fuzzer
+      </span>
+     </code>
+    </a>
+   </li>
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#czz-llvm-translate">
+     <code class="docutils literal notranslate">
+      <span class="pre">
+       czz-llvm-translate
+      </span>
+     </code>
+    </a>
+   </li>
+  </ul>
  </li>
 </ul>
 
@@ -329,6 +358,35 @@ title="Print to PDF"
   <a class="reference internal nav-link" href="#api-reference">
    API Reference
   </a>
+  <ul class="nav section-nav flex-column">
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#czz-llvm-default-config">
+     <code class="docutils literal notranslate">
+      <span class="pre">
+       czz-llvm-default-config
+      </span>
+     </code>
+    </a>
+   </li>
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#czz-llvm-fuzzer">
+     <code class="docutils literal notranslate">
+      <span class="pre">
+       czz-llvm-fuzzer
+      </span>
+     </code>
+    </a>
+   </li>
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#czz-llvm-translate">
+     <code class="docutils literal notranslate">
+      <span class="pre">
+       czz-llvm-translate
+      </span>
+     </code>
+    </a>
+   </li>
+  </ul>
  </li>
 </ul>
 
@@ -345,6 +403,24 @@ title="Print to PDF"
 <p>czz-llvm can be scripted using <a class="reference external" href="http://justinethier.github.io/husk-scheme/manual/index.html">Scheme</a>.</p>
 <div class="section" id="api-reference">
 <h2>API Reference<a class="headerlink" href="#api-reference" title="Permalink to this headline">#</a></h2>
+<div class="section" id="czz-llvm-default-config">
+<h3><code class="docutils literal notranslate"><span class="pre">czz-llvm-default-config</span></code><a class="headerlink" href="#czz-llvm-default-config" title="Permalink to this headline">#</a></h3>
+<div class="highlight-haskell notranslate"><div class="highlight"><pre><span></span><span class="kt">LLVMConfig</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="czz-llvm-fuzzer">
+<h3><code class="docutils literal notranslate"><span class="pre">czz-llvm-fuzzer</span></code><a class="headerlink" href="#czz-llvm-fuzzer" title="Permalink to this headline">#</a></h3>
+<div class="highlight-haskell notranslate"><div class="highlight"><pre><span></span><span class="kt">Number</span> <span class="ow">-&gt;</span> <span class="kt">LLVMConfig</span> <span class="ow">-&gt;</span> <span class="kt">LLVMTranslation</span> <span class="ow">-&gt;</span> <span class="kt">Fuzzer</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="czz-llvm-translate">
+<h3><code class="docutils literal notranslate"><span class="pre">czz-llvm-translate</span></code><a class="headerlink" href="#czz-llvm-translate" title="Permalink to this headline">#</a></h3>
+<div class="highlight-haskell notranslate"><div class="highlight"><pre><span></span><span class="kt">LLVMConfig</span> <span class="ow">-&gt;</span> <span class="kt">LLVMTranslation</span>
+</pre></div>
+</div>
+</div>
 </div>
 </div>
 
