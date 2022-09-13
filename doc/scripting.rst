@@ -15,7 +15,7 @@ API Reference
 
 .. code-block:: haskell
 
-  Number -> Number -> Expr
+  ExprBuilder -> Number -> Number -> Expr
 
 ``czz-default-fuzz-config``
 ***************************
