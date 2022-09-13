@@ -3,9 +3,12 @@
 
 module Czz.Script.API.Fuzz
   ( extendEnv
+  , SFuzzer(..)
+  , SState(..)
   , fuzz
   ) where
 
+import           Control.Monad.Except (ExceptT(..))  -- for auto
 import           Control.Monad.IO.Class (liftIO)
 import qualified Data.Aeson as Aeson
 import           Data.Functor ((<&>))
@@ -46,6 +49,22 @@ extendEnv stdoutLogger stderrLogger pfx e = do
       [ fuzz stdoutLogger stderrLogger
       ]
 
+-- | Helper, not exported
+_lift :: IO a -> LST.IOThrowsError a
+_lift = liftIO
+{-# INLINE _lift #-}
+
+-- | Helper, not exported
+_lift1 :: (a -> IO b) -> a -> LST.IOThrowsError b
+_lift1 f a = liftIO (f a)
+{-# INLINE _lift1 #-}
+
+-- | Helper, not exported
+lift2 :: (a -> b -> IO c) -> a -> b -> LST.IOThrowsError c
+lift2 f a b = liftIO (f a b)
+{-# INLINE lift2 #-}
+
+-- | Monomorphic view of 'Fuzzer' exposed to Scheme.
 data SFuzzer where
   SFuzzer ::
     ( Aeson.ToJSON env
@@ -61,6 +80,7 @@ data SFuzzer where
     Fuzzer ext env eff k fb ->
     SFuzzer
 
+-- | Monomorphic view of 'State' exposed to Scheme.
 data SState where
   SState ::
     ( Aeson.ToJSON env
@@ -83,8 +103,7 @@ fuzz ::
 fuzz stdoutLogger stderrLogger =
   Cust.CustFunc
   { Cust.custFuncName = "fuzz"
-  , Cust.custFuncImpl =
-      Cust.evalHuskable (Cust.auto impl)
+  , Cust.custFuncImpl = Cust.evalHuskable (Cust.auto (lift2 impl))
   }
   where
     impl ::

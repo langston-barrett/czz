@@ -24,7 +24,7 @@ import qualified Czz.KLimited as KLimit
 import qualified Czz.State as State
 import qualified Czz.Stop as Stop
 
-import qualified Czz.LLVM as Main
+import qualified Czz.LLVM.Fuzz as Fuzz
 import qualified Czz.LLVM.Compile as Compile
 import qualified Czz.LLVM.Config.Type as Conf
 import qualified Czz.LLVM.Init as Init
@@ -79,7 +79,7 @@ tests = do
            maybeFail $
              TastyG.goldenVsFile (Conf.prog cf <> " output") gold out $ do
                KLimit.withSomeKLimit 1 $
-                 Main.fuzz cf (oneExec fuzzConf) stop simLog logger logger >>=
+                 Fuzz.fuzz cf (oneExec fuzzConf) stop simLog logger logger >>=
                    \case
                      Left err -> error (show err)
                      Right _finalState -> return ()
@@ -87,7 +87,7 @@ tests = do
   let simLog = Log.with Log.void Init.logToTempFile
   let assertFinalState cf fcf logger f =
         TastyH.testCase (Conf.prog cf) $ do
-          Main.fuzz cf fcf stop simLog logger logger >>=
+          Fuzz.fuzz cf fcf stop simLog logger logger >>=
             \case
               Left err -> error (show err)
               Right finalState -> f finalState

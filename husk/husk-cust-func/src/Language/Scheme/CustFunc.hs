@@ -1,3 +1,4 @@
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -259,6 +260,12 @@ opaqueRet5 = coerce
 -- Auto
 
 type family Auto a where
+  Auto (LST.IOThrowsError a) = LST.IOThrowsError (Auto a)
+  -- This won't be able to match with Coercible, so it will raise an error.
+  -- You should use LST.IOThrowsError instead. Catches silly mistakes that would
+  -- end up turning IO computations opaque, instead of running them.
+  Auto (IO a) = ()
+
   Auto LST.LispVal = LST.LispVal
   Auto (Array i a) = Array i a
   Auto Bool = Bool

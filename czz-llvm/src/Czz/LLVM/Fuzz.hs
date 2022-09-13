@@ -1,16 +1,12 @@
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE ExplicitNamespaces #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE ImplicitParams #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TupleSections #-}
 
-module Czz.LLVM
+module Czz.LLVM.Fuzz
   ( llvmFuzzer
   , fuzz
-  , main
   )
 where
 
@@ -22,7 +18,6 @@ import qualified Data.Set as Set
 import           Data.Text (Text)
 import qualified Data.Text as Text
 import qualified Control.Lens as Lens
-import qualified System.Exit as Exit
 import           System.IO (Handle)
 import qualified System.Random as Random
 
@@ -43,23 +38,18 @@ import qualified Lang.Crucible.LLVM.MemModel.CallStack as CLLVM
 import qualified Lang.Crucible.LLVM.MemModel.Partial as CLLVM
 
 import           Czz.Config.Type (FuzzConfig)
-import qualified Czz.Config.Type as CConf
 import           Czz.Log (Logger, Msg)
 import qualified Czz.Log as Log
 import           Czz.KLimited (IsKLimited)
-import qualified Czz.KLimited as KLimit
 import           Czz.Fuzz (Fuzzer, FuzzError)
 import qualified Czz.Fuzz as Fuzz
 import qualified Czz.Random as Rand
 import qualified Czz.Record as Rec
 import qualified Czz.Result as Res
-import qualified Czz.Script as Script
 import qualified Czz.Seed as Seed
 import           Czz.State (State)
 import           Czz.Stop (Stop)
-import qualified Czz.Stop as Stop
 
-import qualified Czz.LLVM.Config.CLI as CLI
 import           Czz.LLVM.Config.Type (LLVMConfig)
 import qualified Czz.LLVM.Config.Type as Conf
 import           Czz.LLVM.Env (Env)
@@ -194,65 +184,3 @@ fuzz llvmConf fuzzConf stop simLogs stdoutLogger stderrLogger = do
   translation <- Trans.translate llvmConf  -- Allowed to fail/call exit
   let fuzzer = llvmFuzzer llvmConf translation simLogs
   Fuzz.fuzz fuzzConf stop fuzzer stdoutLogger stderrLogger
-
--- | CLI entry point
-main :: IO Exit.ExitCode
-main = do
-  conf <- CLI.cliConfig
-  let commonConf = Conf.common conf
-  let baseConf = CConf.base commonConf
-  let llvmConf = Conf.llvm conf
-  case CConf.command commonConf of
-    CConf.CmdFuzz fuzzConf -> do
-      withFuzzer llvmConf (CConf.pathLen fuzzConf) $ \fuzzer -> do
-        doFuzz baseConf fuzzConf fuzzer
-    CConf.CmdScript scriptConf -> Script.run baseConf scriptConf
-  return Exit.ExitSuccess
-
-  where
-    withFuzzer ::
-      LLVMConfig ->
-      Int ->
-      (forall k. IsKLimited k => Fuzzer LLVM Env Effect k Feedback -> IO a) ->
-      IO a
-    withFuzzer llvmConf kLimit k =
-      KLimit.withSomeKLimit kLimit $ do
-        translation <- Trans.translate llvmConf  -- Allowed to fail/call exit
-        -- TODO(lb): non-void logger
-        let simLog = Log.with Log.void Init.logToTempFile
-        k (llvmFuzzer llvmConf translation simLog)
-
-    doFuzz baseConf fuzzConf fuzzer = do
-      stop <- Stop.new
-      _finalState <- Fuzz.main baseConf fuzzConf stop fuzzer
-      return ()
-
--- TODO(lb):
--- printStats :: L.Module -> State -> IO ()
--- printStats llvmAst state = do
---   putStrLn "Stats:"
---   putStrLn ("Seeds: " ++ show (Seq.length (sPool state)))
---   putStrLn ("Blocks hit: " ++ show (Set.size (Set.unions (sCover state))))
-
---   let hit = Set.map Cover.getFnName (Set.unions (sCover state))
---   let defined = map ((\(L.Symbol s) -> s) . L.defName) (L.modDefines llvmAst)
---   let missed = Set.fromList defined `Set.difference` hit
---   putStrLn ("Functions hit (" ++ show (Set.size hit) ++ "):")
---   forM_ (Set.toList hit) $ \fn -> putStrLn ("- " ++ fn)
---   putStrLn ("Functions missed (" ++ show (Set.size missed) ++ "):")
---   forM_ (Set.toList missed) $ \fn -> putStrLn ("- " ++ fn)
-
---   putStrLn "Missing overrides:"
---   -- this miscounts....
---   let flat = mconcat . map Set.toList . Fold.toList
---   let ovs = Maybe.mapMaybe getOv (flat (fmap Rec.result (sPool state)))
---   forM_ (Map.toList (frequencies ovs)) $ \(nm, freq) ->
---     putStrLn ("  " ++ nm ++ ": " ++ show freq)
---   where
---     frequencies :: Ord a => [a] -> Map a Word
---     frequencies = foldr (\tag mp -> Map.insertWith (+) tag 1 mp) Map.empty
-
---     getOv =
---       \case
---         Res.MissingOverride ov -> Just ov
---         _ -> Nothing

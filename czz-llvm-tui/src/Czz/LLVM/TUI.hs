@@ -48,7 +48,7 @@ import qualified Czz.State as State
 import qualified Czz.State.Stats as Stats
 import qualified Czz.Stop as Stop
 
-import qualified Czz.LLVM as CL
+import qualified Czz.LLVM.Fuzz as CL
 import           Czz.LLVM.Feedback (Feedback)
 import qualified Czz.LLVM.Init as Init
 import qualified Czz.LLVM.Translate as Trans
