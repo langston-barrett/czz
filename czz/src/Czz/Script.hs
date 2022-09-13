@@ -44,8 +44,8 @@ globalEnv =
       liftIO (putStrLn ("Hello, " ++ s))
       return (LST.List [])
 
-run :: BaseConfig -> ScriptConfig -> IO ()
-run baseConf scriptConf = do
+run :: BaseConfig -> ScriptConfig -> (LST.Env -> IO LST.Env) -> IO ()
+run baseConf scriptConf extraLibs = do
   let v = Conf.verbosity baseConf
   let cap = 4096 -- TODO(lb): Good default? Configurable?
   lss <- Lock.new Hand.stdStreams
@@ -55,7 +55,8 @@ run baseConf scriptConf = do
         let sym = C.backendGetSym bak
         r5rsEnv <- LSC.r5rsEnv
         let libs =
-              [ API.extendEnv stdoutLogger stderrLogger
+              [ extraLibs
+              , API.extendEnv stdoutLogger stderrLogger
               , LSWord.extendEnv "word"
               , LSBS.extendEnv "bytes"
               , LSWhat4.extendEnv sym "czz"

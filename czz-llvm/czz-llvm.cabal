@@ -63,7 +63,6 @@ library
   hs-source-dirs: src
 
   exposed-modules:
-    Czz.LLVM
     Czz.LLVM.Config.CLI
     Czz.LLVM.CString
     Czz.LLVM.Compile
@@ -72,7 +71,9 @@ library
     Czz.LLVM.Env.Args
     Czz.LLVM.Env.FileSystem
     Czz.LLVM.Feedback
+    Czz.LLVM.Fuzz
     Czz.LLVM.Init
+    Czz.LLVM.Main
     Czz.LLVM.Mutate
     Czz.LLVM.Overrides
     Czz.LLVM.Overrides.Env
@@ -89,6 +90,7 @@ library
     Czz.LLVM.Overrides.Time
     Czz.LLVM.Overrides.Util
     Czz.LLVM.QQ
+    Czz.LLVM.Script
     Czz.LLVM.Translate
     Czz.LLVM.Unimplemented
     Paths_czz_llvm
@@ -111,6 +113,8 @@ library
     directory,
     filepath >= 1.0,
     hashable,
+    husk-cust-func,
+    husk-scheme,
     lens,
     llvm-pretty,
     llvm-pretty-bc-parser,

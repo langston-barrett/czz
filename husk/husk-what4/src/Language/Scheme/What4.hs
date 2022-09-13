@@ -8,6 +8,7 @@ module Language.Scheme.What4
 
 import           Control.Monad.IO.Class (liftIO)
 import qualified Data.BitVector.Sized as BV
+import           Control.Monad.Except (ExceptT(..))  -- for auto
 
 import           Data.Parameterized.NatRepr (NatRepr)
 import qualified Data.Parameterized.NatRepr as NatRepr
@@ -44,7 +45,7 @@ lift = liftIO
 {-# INLINE lift #-}
 
 data SExpr where
-  SomeBV ::
+  SBV ::
     IsSymExprBuilder sym =>
     Nonce Nonce.GlobalNonceGenerator sym ->
     NatRepr w ->
@@ -60,16 +61,15 @@ bvLit ::
 bvLit sym symNonce =
   Cust.CustFunc
   { Cust.custFuncName = "bv-lit"
-  , Cust.custFuncImpl =
-      Cust.evalHuskable (Cust.auto (\w i -> lift (impl w i)))
+  , Cust.custFuncImpl = Cust.evalHuskable (Cust.auto impl)
   }
   where
-    impl :: Integer -> Integer -> IO SExpr
-    impl w i = do
+    impl :: Integer -> Integer -> LST.IOThrowsError SExpr
+    impl w i = lift $ do
       -- TODO(lb): can fail
       Some wRepr <- return (NatRepr.mkNatRepr (fromIntegral w))
       case NatRepr.isZeroOrGT1 wRepr of
         Left NatRepr.Refl -> fail "Bad bitvector width"
         Right NatRepr.LeqProof -> do
           bv <- What4.bvLit sym wRepr (BV.mkBV wRepr i)
-          return (SomeBV symNonce wRepr bv)
+          return (SBV symNonce wRepr bv)

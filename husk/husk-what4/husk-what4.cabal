@@ -68,4 +68,5 @@ library
     husk-cust-func,
     husk-scheme,
     parameterized-utils,
+    mtl,
     what4

@@ -24,8 +24,7 @@ defaultFuzzConfig :: CustFunc
 defaultFuzzConfig =
   Cust.CustFunc
   { Cust.custFuncName = "default-fuzz-config"
-  , Cust.custFuncImpl =
-      Cust.evalHuskable (Cust.auto conf)
+  , Cust.custFuncImpl = Cust.evalHuskable (Cust.auto conf)
   }
   where
     conf =
