@@ -74,8 +74,9 @@ llvmFuzzer ::
   Translation ->
   -- | Where to put simulator logs
   IO Handle ->
+  Init.ExtraInit ->
   Fuzzer LLVM Env Effect k Feedback
-llvmFuzzer llvmConf translation simLogs =
+llvmFuzzer llvmConf translation simLogs extraInit =
   Fuzz.Fuzzer
   { Fuzz.nextSeed = \records -> do
       -- TODO(lb): power schedule, mutation schedule
@@ -114,6 +115,7 @@ llvmFuzzer llvmConf translation simLogs =
               effectRef
               seed
               (Conf.skip llvmConf)
+              extraInit
         , Fuzz.explainResults = \failedGoals _simResult -> do
             bbMap <- IORef.readIORef bbMapRef
             goalExpls <- mapM (explainFailedGoal sym bbMap) failedGoals
@@ -182,5 +184,5 @@ fuzz llvmConf fuzzConf stop simLogs stdoutLogger stderrLogger = do
   Log.with stdoutLogger $
     Log.info ("Fuzzing program " <> Text.pack (Conf.prog llvmConf))
   translation <- Trans.translate llvmConf  -- Allowed to fail/call exit
-  let fuzzer = llvmFuzzer llvmConf translation simLogs
+  let fuzzer = llvmFuzzer llvmConf translation simLogs Init.noExtraInit
   Fuzz.fuzz fuzzConf stop fuzzer stdoutLogger stderrLogger

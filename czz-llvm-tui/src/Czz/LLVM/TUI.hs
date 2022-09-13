@@ -225,7 +225,7 @@ main = do
     let simLog = Log.with Log.void Init.logToTempFile
     _threadId <- flip Con.forkFinally fuzzerDone $ do
         let fuzzer =
-              (CL.llvmFuzzer llvmConf translation simLog)
+              (CL.llvmFuzzer llvmConf translation simLog Init.noExtraInit)
               { Fuzz.onUpdate = \tstates -> do
                   _didUpdate <-
                     BChan.writeBChanNonBlocking eventChan (NewState tstates)

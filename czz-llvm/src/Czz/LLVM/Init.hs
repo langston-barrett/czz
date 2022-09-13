@@ -2,15 +2,19 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE ImplicitParams #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RankNTypes #-}
 
 module Czz.LLVM.Init
   ( logToTempFile
+  , ExtraInit(..)
+  , noExtraInit
   , initState
   )
 where
 
 import qualified Control.Lens as Lens
 import           Control.Monad (forM_)
+import           Control.Monad.IO.Class (liftIO)
 import           Data.ByteString (ByteString)
 import qualified Data.Foldable as Fold
 import           Data.Functor.Contravariant ((>$<))
@@ -24,6 +28,9 @@ import qualified Data.Text.IO as TextIO
 import qualified Data.Vector as Vec
 import           System.IO (Handle)
 import qualified System.IO as IO
+
+import           Data.Parameterized.Nonce (Nonce)
+import qualified Data.Parameterized.Nonce as Nonce
 
 import qualified Text.LLVM.AST as L
 import qualified Text.LLVM.PP as L
@@ -71,6 +78,25 @@ import qualified Czz.LLVM.Overrides.SymIO as CzzSymIO
 import           Czz.LLVM.Translate (Translation, EntryPoint)
 import qualified Czz.LLVM.Translate as Trans
 
+-- | Additional code to run to initialize the simulator state
+--
+-- TODO(lb): skip overrides should be part of this
+newtype ExtraInit
+  = ExtraInit
+    { getExtraInit ::
+        forall p sym rtp args ret.
+        C.IsSymInterface sym =>
+        CLLVM.HasLLVMAnn sym =>
+        (?intrinsicsOpts::CLLVM.IntrinsicsOptions) =>
+        (?memOpts :: CLLVM.MemOptions) =>
+        sym ->
+        Nonce Nonce.GlobalNonceGenerator sym ->
+        C.OverrideSim p sym CLLVM.LLVM rtp args ret ()
+    }
+
+noExtraInit :: ExtraInit
+noExtraInit = ExtraInit (\_sym _nsym -> return ())
+
 logToTempFile :: Log.Has Text => IO Handle
 logToTempFile = do
   -- Forward simulator logs to parent logger
@@ -100,8 +126,9 @@ initState ::
   Seed t Env Effect ->
   -- | Functions to skip
   [String] ->
+  ExtraInit ->
   IO (Handle, C.ExecState CzzPersonality sym CLLVM.LLVM (C.RegEntry sym UnitType))
-initState _proxy bak halloc translation logHandle envVarRef openedRef effectRef seed skip = do
+initState _proxy bak halloc translation logHandle envVarRef openedRef effectRef seed skip extraInit = do
   Trans.Translation trans memVar entryPoint <- return translation
   let llvmAst0 = trans Lens.^. CLLVM.modTransModule
   let llvmAst = llvmAst0 { L.modGlobals = Errno.global : L.modGlobals llvmAst0 }
@@ -148,7 +175,7 @@ initState _proxy bak halloc translation logHandle envVarRef openedRef effectRef 
             C.runOverrideSim C.UnitRepr $ do
               act  -- see comment on initialLLVMFileSystem
               let args = Env.args (Seed.env seed)
-              setupInitState halloc bak entryPoint trans memVar initFs envVarRef openedRef effectRef skip args
+              setupInitState halloc bak entryPoint trans memVar initFs envVarRef openedRef effectRef skip args extraInit
     return (logHand, st)
 
 -- | Not exported.
@@ -173,13 +200,18 @@ setupInitState ::
   -- | Functions to skip
   [String] ->
   Args.Template ->
+  ExtraInit ->
   C.OverrideSim p sym CLLVM.LLVM rtp args ret ()
-setupInitState halloc bak entryPoint trans memVar initFs envVarRef openedRef effectRef skip template = do
+setupInitState halloc bak entryPoint trans memVar initFs envVarRef openedRef effectRef skip template extraInit = do
   registerDefinedFunctions
   -- TODO(lb): initial file system?
   mainArgs <- Args.genArgs bak trans memVar template
   -- TODO(lb): set up env vars
   registerOverrides
+
+  let ?intrinsicsOpts = CLLVM.defaultIntrinsicsOptions
+  nsym <- liftIO (Nonce.freshNonce Nonce.globalNonceGenerator)
+  getExtraInit extraInit sym nsym
 
   () <-
     case entryPoint of
