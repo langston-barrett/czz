@@ -48,7 +48,8 @@ jobs:
         czz/src
         czz-jvm/{exe,src,test}
         czz-llvm/{exe,src,test}
-        czz-llvm-tui/{exe,src}
+        czz-llvm-tui/{exe,src}/
+        husk/
 
   doc:
     name: doc
