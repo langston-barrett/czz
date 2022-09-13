@@ -5,7 +5,11 @@
 
 module Czz.LLVM.Script.Overrides
   ( extendEnv
+  , SVal(..)
+  , SMem(..)
   , fromWhat4
+  , SOverride(..)
+  , registerSOverrides
   , override
   ) where
 
@@ -40,25 +44,19 @@ import           Language.Scheme.CustFunc (CustFunc)
 import qualified Language.Scheme.CustFunc as Cust
 import           Language.Scheme.Opaque (Opaque(..))  -- for auto
 
-import           Language.Scheme.What4 (SExpr)
+import           Language.Scheme.What4 (SExpr, SExprBuilder)
 import qualified Language.Scheme.What4 as SWhat4
 
 import           Czz.LLVM.Translate (Translation)
 import qualified Czz.LLVM.Translate as Trans
 
-extendEnv ::
-  IsSymInterface sym =>
-  sym ->
-  Nonce Nonce.GlobalNonceGenerator sym ->
-  String ->
-  LST.Env ->
-  IO LST.Env
-extendEnv sym nsym pfx e = do
+extendEnv :: String -> LST.Env -> IO LST.Env
+extendEnv pfx e = do
   Cust.extendEnv funcs pfx e
   where
     funcs =
-      [ fromWhat4 sym nsym
-      , override sym nsym
+      [ fromWhat4
+      , override
       ]
 
 -- | Helper, not exported
@@ -89,15 +87,35 @@ data SMem where
 
 data SOverride where
   SOverride ::
-    Nonce Nonce.GlobalNonceGenerator sym ->
-    (forall arch wptr p rtp l a.
+    (forall proxy arch sym wptr p rtp l a.
      ( IsSymInterface sym
      , (wptr ~ ArchWidth arch)
      , CLLVM.HasPtrWidth wptr
      , CLLVM.HasLLVMAnn sym
      ) =>
+     proxy arch ->
+     sym ->
+     Nonce Nonce.GlobalNonceGenerator sym ->
      OverrideTemplate p sym arch rtp l a) ->
     SOverride
+
+registerSOverrides ::
+  IsSymInterface sym =>
+  (wptr ~ ArchWidth arch) =>
+  CLLVM.HasPtrWidth wptr =>
+  CLLVM.HasLLVMAnn sym =>
+  (?memOpts :: CLLVM.MemOptions) =>
+  (?intrinsicsOpts :: CLLVM.IntrinsicsOptions) =>
+  sym ->
+  Nonce Nonce.GlobalNonceGenerator sym ->
+  CLLVM.ModuleTranslation arch ->
+  [SOverride] ->
+  C.OverrideSim p sym CLLVM.LLVM rtp args ret ()
+registerSOverrides sym nsym trans ovs = do
+  let llvmAst = trans Lens.^. CLLVM.modTransModule
+  let llvmCtx = trans Lens.^. CLLVM.transContext
+  CLLVM.register_llvm_overrides llvmAst (map get ovs) [] llvmCtx
+  where get (SOverride s) = s trans sym nsym
 
 data SVal where
   -- TODO(lb): also pointers
@@ -106,12 +124,8 @@ data SVal where
     C.RegEntry sym tp ->
     SVal
 
-fromWhat4 ::
-  IsSymInterface sym =>
-  sym ->
-  Nonce Nonce.GlobalNonceGenerator sym ->
-  CustFunc
-fromWhat4 _sym nsym =
+fromWhat4 :: CustFunc
+fromWhat4 =
   Cust.CustFunc
   { Cust.custFuncName = "from-what4"
   , Cust.custFuncImpl = Cust.evalHuskable (Cust.auto impl)
@@ -120,20 +134,12 @@ fromWhat4 _sym nsym =
     impl :: SExpr -> LST.IOThrowsError SVal
     impl =
       \case
-        SWhat4.SBV nsym' w bvExpr ->
-          case testEquality nsym nsym' of
-            -- TODO(lb): error message, panic?
-            Nothing -> fail "Mismatched symbolic backends..?"
-            Just Refl ->
-              return (SVal nsym (C.RegEntry (C.BVRepr w) bvExpr))
+        SWhat4.SBV nsym w bvExpr ->
+          return (SVal nsym (C.RegEntry (C.BVRepr w) bvExpr))
 
 
-override ::
-  IsSymInterface sym =>
-  sym ->
-  Nonce Nonce.GlobalNonceGenerator sym ->
-  CustFunc
-override _sym nsym =
+override :: CustFunc
+override =
   Cust.CustFunc
   { Cust.custFuncName = "override"
   , Cust.custFuncImpl = Cust.evalHuskable (Cust.auto impl)
@@ -142,7 +148,7 @@ override _sym nsym =
     impl ::
       Translation ->
       String ->
-      ((SMem, [SVal]) -> LST.IOThrowsError (SMem, SVal)) ->
+      ((SExprBuilder, SMem, [SVal]) -> LST.IOThrowsError (SMem, SVal)) ->
       Maybe SOverride
     impl t name f = do
       Trans.Translation trans _memVar _entry <- return t
@@ -153,16 +159,18 @@ override _sym nsym =
       let ?lc = llvmCtx Lens.^. CLLVM.llvmTypeCtx
       CLLVM.llvmPtrWidth llvmCtx $ \ptrW -> CLLVM.withPtrWidth ptrW $ do
         CLLVM.llvmDeclToFunHandleRepr' decl $ \argTys retTy -> Just $
-          SOverride nsym $
+          SOverride $ \_proxy sym nsym ->
             CLLVM.basic_llvm_override $
               CLLVM.LLVMOverride
                 { CLLVM.llvmOverride_declare = decl,
                   CLLVM.llvmOverride_args = argTys,
                   CLLVM.llvmOverride_ret = retTy,
-                  CLLVM.llvmOverride_def = \memVar _sym cArgs -> do
+                  CLLVM.llvmOverride_def = \memVar _bak cArgs -> do
                     C.modifyGlobal memVar $ \mem -> do
+                      let ssym = SWhat4.SExprBuilder sym nsym
+                      let smem = SMem nsym mem
                       let args = toListFC (SVal nsym) cArgs
-                      liftIO (Exc.runExceptT (f (SMem nsym mem, args))) >>=
+                      liftIO (Exc.runExceptT (f (ssym, smem, args))) >>=
                         \case
                           Left err -> fail (show err)
                           Right (SMem nmem mem', SVal nsym' ret) -> do

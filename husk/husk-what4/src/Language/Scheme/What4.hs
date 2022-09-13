@@ -5,6 +5,7 @@
 
 module Language.Scheme.What4
   ( extendEnv
+  , SExprBuilder(..)
   , SExpr(..)
   , bvLit
   ) where
@@ -19,6 +20,7 @@ import           Data.Parameterized.Nonce (Nonce)
 import qualified Data.Parameterized.Nonce as Nonce
 import           Data.Parameterized.Some (Some(Some))
 
+import           What4.InterpretedFloatingPoint (IsInterpretedFloatSymExprBuilder)
 import           What4.Interface (IsSymExprBuilder, SymExpr)
 import qualified What4.Interface as What4
 
@@ -28,24 +30,26 @@ import           Language.Scheme.CustFunc (CustFunc)
 import qualified Language.Scheme.CustFunc as Cust
 import           Language.Scheme.Opaque (Opaque(..))  -- for auto
 
-extendEnv ::
-  IsSymExprBuilder sym =>
-  sym ->
-  String ->
-  LST.Env ->
-  IO LST.Env
-extendEnv sym pfx e = do
-  symNonce <- Nonce.freshNonce Nonce.globalNonceGenerator
-  Cust.extendEnv (funcs symNonce) pfx e
+extendEnv :: String -> LST.Env -> IO LST.Env
+extendEnv pfx e = Cust.extendEnv funcs pfx e
   where
-    funcs symNonce =
-      [ bvLit sym symNonce
+    funcs =
+      [ bvLit
       ]
 
 -- | Helper, not exported
 lift :: IO a -> LST.IOThrowsError a
 lift = liftIO
 {-# INLINE lift #-}
+
+data SExprBuilder where
+  SExprBuilder ::
+    ( IsSymExprBuilder sym
+    , IsInterpretedFloatSymExprBuilder sym
+    ) =>
+    sym ->
+    Nonce Nonce.GlobalNonceGenerator sym ->
+    SExprBuilder
 
 data SExpr where
   SBV ::
@@ -55,24 +59,20 @@ data SExpr where
     SymExpr sym (What4.BaseBVType w) ->
     SExpr
 
-bvLit ::
-  forall sym.
-  IsSymExprBuilder sym =>
-  sym ->
-  Nonce Nonce.GlobalNonceGenerator sym ->
-  CustFunc
-bvLit sym symNonce =
+bvLit :: CustFunc
+bvLit =
   Cust.CustFunc
   { Cust.custFuncName = "bv-lit"
   , Cust.custFuncImpl = Cust.evalHuskable (Cust.auto impl)
   }
   where
-    impl :: Integer -> Integer -> LST.IOThrowsError SExpr
-    impl w i = lift $ do
+    impl :: SExprBuilder -> Integer -> Integer -> LST.IOThrowsError SExpr
+    impl sExprBuilder w i = lift $ do
+      SExprBuilder sym nsym <- return sExprBuilder
       -- TODO(lb): can fail
       Some wRepr <- return (NatRepr.mkNatRepr (fromIntegral w))
       case NatRepr.isZeroOrGT1 wRepr of
         Left NatRepr.Refl -> fail "Bad bitvector width"
         Right NatRepr.LeqProof -> do
           bv <- What4.bvLit sym wRepr (BV.mkBV wRepr i)
-          return (SBV symNonce wRepr bv)
+          return (SBV nsym wRepr bv)

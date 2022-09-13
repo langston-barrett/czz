@@ -53,7 +53,7 @@ main = do
         translation <- Trans.translate llvmConf  -- Allowed to fail/call exit
         -- TODO(lb): non-void logger
         let simLog = Log.with Log.void Init.logToTempFile
-        k (LFuzz.llvmFuzzer llvmConf translation simLog)
+        k (LFuzz.llvmFuzzer llvmConf translation simLog Init.noExtraInit)
 
     doFuzz baseConf fuzzConf fuzzer = do
       stop <- Stop.new
