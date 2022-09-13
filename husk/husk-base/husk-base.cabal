@@ -60,9 +60,30 @@ library
   hs-source-dirs: src
 
   exposed-modules:
+    Language.Scheme.Data.Maybe
     Language.Scheme.Data.Word
 
   build-depends:
     base >= 4.13 && < 4.17,
     husk-cust-func,
-    husk-scheme
+    husk-scheme,
+    mtl
+
+test-suite husk-base-test
+  import: common
+  type: exitcode-stdio-1.0
+  hs-source-dirs: test
+  main-is: Main.hs
+  other-modules:
+    Test
+  build-depends:
+    base,
+    directory,
+    husk-base,
+    husk-scheme,
+    mtl,
+    silently,
+    tasty >= 1.4 && < 2.0,
+    tasty-golden >= 2.0 && < 3.0,
+    tasty-hunit >= 0.10 && < 1.0,
+    text

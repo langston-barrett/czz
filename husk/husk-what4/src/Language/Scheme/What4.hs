@@ -1,8 +1,11 @@
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeOperators #-}
 
 module Language.Scheme.What4
   ( extendEnv
+  , SExpr(..)
   , bvLit
   ) where
 
@@ -46,7 +49,7 @@ lift = liftIO
 
 data SExpr where
   SBV ::
-    IsSymExprBuilder sym =>
+    (1 NatRepr.<= w) =>
     Nonce Nonce.GlobalNonceGenerator sym ->
     NatRepr w ->
     SymExpr sym (What4.BaseBVType w) ->

@@ -42,7 +42,7 @@ import           Data.Typeable (Typeable)
 import qualified Language.Scheme.Types as LST
 import qualified Language.Scheme.Variables as LSV
 
-import           Language.Scheme.From (From, Opaque)
+import           Language.Scheme.From (FromIO, Opaque)
 import qualified Language.Scheme.From as From
 import           Language.Scheme.To (To(to))
 
@@ -58,7 +58,7 @@ instance Huskable a => Huskable (LST.IOThrowsError a) where
 instance Huskable LST.LispVal where
   evalHuskable x as =
     if null as
-    then return x 
+    then return x
     else Exc.throwError (LST.NumArgs Nothing as)
   {-# INLINABLE evalHuskable #-}
 
@@ -103,14 +103,14 @@ instance Huskable String where
   {-# INLINABLE evalHuskable #-}
 
 instance
-  ( From a
+  ( FromIO a
   , Huskable b
   ) => Huskable (a -> b) where
   evalHuskable f as =
     case as of
       [] -> Exc.throwError (LST.NumArgs Nothing as)
       (x:xs) -> do
-        x' <- Exc.ExceptT (return (From.from x))
+        x' <- Exc.ExceptT (From.fromIO x)
         evalHuskable (f x') xs
   {-# INLINABLE evalHuskable #-}
 

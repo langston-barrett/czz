@@ -116,7 +116,7 @@ main = do
     CConf.CmdFuzz fuzzConf -> do
       withFuzzer jvmConf (CConf.pathLen fuzzConf) $ \fuzzer -> do
         doFuzz baseConf fuzzConf fuzzer
-    CConf.CmdScript scriptConf -> Script.run baseConf scriptConf return
+    CConf.CmdScript scriptConf -> Script.run baseConf scriptConf (const return)
   return Exit.ExitSuccess
 
   where
