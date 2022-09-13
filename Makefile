@@ -19,7 +19,12 @@ doc:
 
 .PHONY: lint
 lint:
-	$(HLINT) czz/src czz-jvm/{exe,src,test} czz-llvm/{exe,src,test} czz-llvm-tui/{exe,src}
+	$(HLINT) \
+	  czz/src \
+	  czz-jvm/{exe,src,test} \
+	  czz-llvm/{exe,src,test} \
+	  czz-llvm-tui/{exe,src} \
+	  husk/
 
 .PHONY: entr-lint
 entr-lint:

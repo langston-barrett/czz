@@ -29,7 +29,7 @@ class From a where
 from :: forall a. From a => LST.LispVal -> Either LST.LispError a
 from v =
   maybe
-    (Left (LST.TypeMismatch (name (Proxy :: Proxy a)) v))
+    (Left (LST.TypeMismatch (name (Proxy @a)) v))
     Right
     (maybeFrom v)
 {-# INLINABLE from #-}
