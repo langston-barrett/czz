@@ -145,8 +145,10 @@ allocation.
   TODO(lb): Behavior when ${v} is empty? Writability and region of memory
   allocated?
 
+.. _unsetenv:
+
 ``unsetenv``
-----------
+------------
 
 ``unsetenv(s)`` removes all variables of the form ``s=v``. It always succeeds
 and returns 0.

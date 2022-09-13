@@ -43,13 +43,13 @@ lift :: IO a -> LST.IOThrowsError a
 lift = liftIO
 {-# INLINE lift #-}
 
-data SomeExpr where
+data SExpr where
   SomeBV ::
     IsSymExprBuilder sym =>
     Nonce Nonce.GlobalNonceGenerator sym ->
     NatRepr w ->
     SymExpr sym (What4.BaseBVType w) ->
-    SomeExpr
+    SExpr
 
 bvLit ::
   forall sym.
@@ -64,7 +64,7 @@ bvLit sym symNonce =
       Cust.evalHuskable (Cust.auto (\w i -> lift (impl w i)))
   }
   where
-    impl :: Integer -> Integer -> IO SomeExpr
+    impl :: Integer -> Integer -> IO SExpr
     impl w i = do
       -- TODO(lb): can fail
       Some wRepr <- return (NatRepr.mkNatRepr (fromIntegral w))

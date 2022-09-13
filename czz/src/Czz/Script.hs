@@ -58,7 +58,7 @@ run baseConf scriptConf = do
               [ API.extendEnv stdoutLogger stderrLogger
               , LSWord.extendEnv "word"
               , LSBS.extendEnv "bytes"
-              , LSWhat4.extendEnv sym "what4"
+              , LSWhat4.extendEnv sym "czz"
               , flip LSV.extendEnv globalEnv
               ]
         env <- foldM (\env lib -> lib env) r5rsEnv libs
