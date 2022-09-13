@@ -145,7 +145,7 @@ jobs:
       shell: bash
       run: |
         sudo apt-get install -y llvm z3
-        cabal test czz-llvm
+        cabal test czz-llvm husk-base
 
     # TODO(#52)
 

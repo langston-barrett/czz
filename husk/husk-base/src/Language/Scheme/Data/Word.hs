@@ -1,5 +1,6 @@
 module Language.Scheme.Data.Word
   ( extendEnv
+  , extendEnv'
   , bitReverse8
   )
 where
@@ -17,6 +18,9 @@ extendEnv =
   Cust.extendEnv
     [ bitReverse8
     ]
+
+extendEnv' :: LST.Env -> IO LST.Env
+extendEnv' = extendEnv "word"
 
 bitReverse8 :: CustFunc
 bitReverse8 =

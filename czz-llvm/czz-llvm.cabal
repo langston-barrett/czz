@@ -91,6 +91,10 @@ library
     Czz.LLVM.Overrides.Util
     Czz.LLVM.QQ
     Czz.LLVM.Script
+    Czz.LLVM.Script.Config
+    Czz.LLVM.Script.Fuzz
+    Czz.LLVM.Script.Overrides
+    Czz.LLVM.Script.Translate
     Czz.LLVM.Translate
     Czz.LLVM.Unimplemented
     Paths_czz_llvm
@@ -115,6 +119,7 @@ library
     hashable,
     husk-cust-func,
     husk-scheme,
+    husk-what4,
     lens,
     llvm-pretty,
     llvm-pretty-bc-parser,

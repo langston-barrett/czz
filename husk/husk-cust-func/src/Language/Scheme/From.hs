@@ -1,3 +1,4 @@
+{-# LANGUAGE DefaultSignatures #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE LambdaCase #-}
@@ -8,8 +9,13 @@ module Language.Scheme.From
   ( From(maybeFrom)
   , from
   , Opaque(..)
+  -- * FromIO
+  , FromIO
+  , fromIO
   ) where
 
+import           Control.Monad.IO.Class (liftIO)
+import qualified Control.Monad.Except as Exc
 import           Data.Array (Array)
 import qualified Data.Dynamic as Dyn
 import           Data.Map (Map)
@@ -18,9 +24,11 @@ import           Data.Proxy (Proxy(Proxy))
 import           Data.Typeable (Typeable)
 import qualified Data.Typeable as Typ
 
+import qualified Language.Scheme.Core as LSC
 import qualified Language.Scheme.Types as LST
 
 import           Language.Scheme.Opaque (Opaque(..))
+import           Language.Scheme.To (To, to)
 
 class From a where
   name :: proxy a -> String
@@ -33,6 +41,11 @@ from v =
     Right
     (maybeFrom v)
 {-# INLINABLE from #-}
+
+instance From LST.LispVal where
+  name _proxy = "lisp value"
+  maybeFrom = Just
+  {-# INLINABLE maybeFrom #-}
 
 instance Typeable a => From (Opaque a) where
   name _proxy = show (Typ.typeRep (Proxy @a))
@@ -120,3 +133,55 @@ instance From String where
       LST.String s -> Just s
       _ -> Nothing
   {-# INLINABLE maybeFrom #-}
+
+--------------------------------------------------------------------------------
+-- FromIO
+
+class FromIO a where
+  nameIO :: proxy a -> String
+  maybeFromIO :: LST.LispVal -> Maybe (LST.IOThrowsError a)
+
+  default nameIO :: From a => proxy a -> String
+  nameIO = name
+
+  default maybeFromIO :: From a => LST.LispVal -> Maybe (LST.IOThrowsError a)
+  maybeFromIO = fmap return . maybeFrom
+
+fromIO :: forall a. FromIO a => LST.LispVal -> IO (Either LST.LispError a)
+fromIO v = do
+  case maybeFromIO v of
+    Nothing -> return (Left (LST.TypeMismatch (nameIO (Proxy @a)) v))
+    Just comp -> Exc.runExceptT comp
+{-# INLINABLE fromIO #-}
+
+instance FromIO LST.LispVal where
+instance Typeable a => FromIO (Opaque a) where
+instance From a => FromIO (Array Int a) where
+instance FromIO Bool where
+instance FromIO Char where
+instance FromIO Double where
+instance FromIO Integer where
+instance {-# OVERLAPPABLE #-} From a => FromIO [a] where
+instance (Ord a , From a, From b) => FromIO (Map a b) where
+instance FromIO String where
+
+isFunc :: LST.LispVal -> Bool
+isFunc =
+  \case
+    LST.CustFunc {} -> True
+    LST.Func {} -> True
+    LST.HFunc {} -> True
+    LST.IOFunc {} -> True
+    LST.PrimitiveFunc {} -> True
+    _ -> False
+
+instance (FromIO a, To a, FromIO b) => FromIO (a -> LST.IOThrowsError b) where
+  nameIO _proxy = unwords [nameIO (Proxy @a), "->", nameIO (Proxy @b)]
+  maybeFromIO =
+    \case
+      f | isFunc f ->
+       Just $ return $ \a -> do
+         env <- liftIO LSC.r5rsEnv
+         lispVal <- LSC.evalLisp env (LST.List [f, to a])
+         Exc.ExceptT (fromIO lispVal)
+      _ -> Nothing

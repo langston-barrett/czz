@@ -1,5 +1,6 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE RankNTypes #-}
 
 module Czz.Script
   ( run
@@ -12,6 +13,7 @@ import qualified Control.Monad.Except as Exc
 import           Control.Monad.IO.Class (liftIO)
 
 import qualified Lang.Crucible.Backend as C
+import           Lang.Crucible.Backend (IsSymInterface)
 
 import qualified Language.Scheme.Core as LSC
 import qualified Language.Scheme.Types as LST
@@ -44,7 +46,11 @@ globalEnv =
       liftIO (putStrLn ("Hello, " ++ s))
       return (LST.List [])
 
-run :: BaseConfig -> ScriptConfig -> (LST.Env -> IO LST.Env) -> IO ()
+run ::
+  BaseConfig ->
+  ScriptConfig ->
+  (forall sym. IsSymInterface sym => sym -> LST.Env -> IO LST.Env) ->
+  IO ()
 run baseConf scriptConf extraLibs = do
   let v = Conf.verbosity baseConf
   let cap = 4096 -- TODO(lb): Good default? Configurable?
@@ -55,7 +61,7 @@ run baseConf scriptConf extraLibs = do
         let sym = C.backendGetSym bak
         r5rsEnv <- LSC.r5rsEnv
         let libs =
-              [ extraLibs
+              [ extraLibs sym
               , API.extendEnv stdoutLogger stderrLogger
               , LSWord.extendEnv "word"
               , LSBS.extendEnv "bytes"
