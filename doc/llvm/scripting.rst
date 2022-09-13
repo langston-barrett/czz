@@ -14,12 +14,29 @@ API Reference
 
   LLVMConfig
 
+``czz-llvm-from-what4``
+**********************
+
+.. code-block:: haskell
+
+  Expr -> SVal
+
 ``czz-llvm-fuzzer``
 *******************
 
 .. code-block:: haskell
 
-  Number -> LLVMConfig -> LLVMTranslation -> Fuzzer
+  Number -> LLVMConfig -> LLVMTranslation -> List LLVMOverride -> Fuzzer
+
+``czz-llvm-override``
+*********************
+
+.. code-block:: haskell
+
+  Translation ->
+  String ->
+  ((ExprBuilder, Mem, [Val]) -> (Mem, Val)) ->
+  Maybe Override
 
 ``czz-llvm-translate``
 **********************
