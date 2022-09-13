@@ -19,11 +19,12 @@ import qualified Language.Scheme.Variables as LSV
 import           Language.Scheme.CustFunc (evalHuskable)
 import           Language.Scheme.From ()
 
-import qualified Language.Scheme.Data.Word as LSWord
+import qualified Language.Scheme.Data.Maybe as SMaybe
+import qualified Language.Scheme.Data.Word as SWord
 
-import qualified Language.Scheme.ByteString as LSBS
+import qualified Language.Scheme.ByteString as SBS
 
-import qualified Language.Scheme.What4 as LSWhat4
+import qualified Language.Scheme.What4 as SWhat4
 
 import qualified Czz.Concurrent.Lock as Lock
 import qualified Czz.Concurrent.Handle as Hand
@@ -57,9 +58,10 @@ run baseConf scriptConf extraLibs = do
       let libs =
             [ extraLibs
             , API.extendEnv stdoutLogger stderrLogger
-            , LSWord.extendEnv "word"
-            , LSBS.extendEnv "bytes"
-            , LSWhat4.extendEnv "czz"
+            , SWord.extendEnv "word"
+            , SMaybe.extendEnv "maybe"
+            , SBS.extendEnv "bytes"
+            , SWhat4.extendEnv "czz"
             , flip LSV.extendEnv globalEnv
             ]
       env <- foldM (\env lib -> lib env) r5rsEnv libs
