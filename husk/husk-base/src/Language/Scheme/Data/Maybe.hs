@@ -1,12 +1,16 @@
+{-# LANGUAGE TypeApplications #-}
 module Language.Scheme.Data.Maybe
   ( extendEnv
   , extendEnv'
   , just
   , nothing
   , maybe_
+  , catMaybes
   )
 where
 
+import           Control.Monad.IO.Class (liftIO)
+import           Data.Coerce (coerce)
 import qualified Data.Maybe as Maybe
 
 import qualified Language.Scheme.Types as LST
@@ -22,6 +26,7 @@ extendEnv =
     [ just
     , nothing
     , maybe_
+    , catMaybes
     ]
 
 extendEnv' :: LST.Env -> IO LST.Env
@@ -61,3 +66,17 @@ maybe_ =
       LST.IOThrowsError LST.LispVal
     maybeM n j x = Maybe.maybe (return n) j x
 
+-- | Helper, not exported
+lift1 :: (a -> IO b) -> a -> LST.IOThrowsError b
+lift1 f a = liftIO (f a)
+{-# INLINE lift1 #-}
+
+catMaybes :: CustFunc
+catMaybes =
+  Cust.CustFunc
+  { Cust.custFuncName = "cat"
+  , Cust.custFuncImpl =
+      Cust.evalHuskable
+        (coerce (lift1 (return . (Maybe.catMaybes @LST.LispVal))) ::
+          [Opaque (Maybe LST.LispVal)] -> LST.IOThrowsError [LST.LispVal])
+  }
