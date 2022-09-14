@@ -134,6 +134,104 @@ instance From String where
       _ -> Nothing
   {-# INLINABLE maybeFrom #-}
 
+instance
+  ( From a
+  , From b
+  ) => From (a, b) where
+  name _proxy = concat ["(", name (Proxy @a), " ", name (Proxy @b), ")"]
+  maybeFrom =
+    \case
+      LST.List [a, b] -> (,) <$> maybeFrom a <*> maybeFrom b
+      _ -> Nothing
+  {-# INLINABLE maybeFrom #-}
+
+instance
+  ( From a
+  , From b
+  , From c
+  ) => From (a, b, c) where
+  name _proxy =
+    concat
+      [ "("
+      , name (Proxy @a)
+      , " "
+      , name (Proxy @b)
+      , " "
+      , name (Proxy @c)
+      , ")"
+      ]
+  maybeFrom =
+    \case
+      LST.List [a, b, c] ->
+        (,,)
+        <$> maybeFrom a
+        <*> maybeFrom b
+        <*> maybeFrom c
+      _ -> Nothing
+  {-# INLINABLE maybeFrom #-}
+
+instance
+  ( From a
+  , From b
+  , From c
+  , From d
+  ) => From (a, b, c, d) where
+  name _proxy =
+    concat
+      [ "("
+      , name (Proxy @a)
+      , " "
+      , name (Proxy @b)
+      , " "
+      , name (Proxy @c)
+      , " "
+      , name (Proxy @d)
+      , ")"
+      ]
+  maybeFrom =
+    \case
+      LST.List [a, b, c, d] ->
+        (,,,)
+        <$> maybeFrom a
+        <*> maybeFrom b
+        <*> maybeFrom c
+        <*> maybeFrom d
+      _ -> Nothing
+  {-# INLINABLE maybeFrom #-}
+
+instance
+  ( From a
+  , From b
+  , From c
+  , From d
+  , From e
+  ) => From (a, b, c, d, e) where
+  name _proxy =
+    concat
+      [ "("
+      , name (Proxy @a)
+      , " "
+      , name (Proxy @b)
+      , " "
+      , name (Proxy @c)
+      , " "
+      , name (Proxy @d)
+      , " "
+      , name (Proxy @e)
+      , ")"
+      ]
+  maybeFrom =
+    \case
+      LST.List [a, b, c, d, e] ->
+        (,,,,)
+        <$> maybeFrom a
+        <*> maybeFrom b
+        <*> maybeFrom c
+        <*> maybeFrom d
+        <*> maybeFrom e
+      _ -> Nothing
+  {-# INLINABLE maybeFrom #-}
+
 --------------------------------------------------------------------------------
 -- FromIO
 

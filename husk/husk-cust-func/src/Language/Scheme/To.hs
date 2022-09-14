@@ -61,3 +61,37 @@ instance
 instance To String where
   to = LST.String
   {-# INLINE to #-}
+
+instance
+  ( To a
+  , To b
+  ) => To (a, b) where
+  to (a, b) = LST.List [to a, to b]
+  {-# INLINE to #-}
+
+instance
+  ( To a
+  , To b
+  , To c
+  ) => To (a, b, c) where
+  to (a, b, c) = LST.List [to a, to b, to c]
+  {-# INLINE to #-}
+
+instance
+  ( To a
+  , To b
+  , To c
+  , To d
+  ) => To (a, b, c, d) where
+  to (a, b, c, d) = LST.List [to a, to b, to c, to d]
+  {-# INLINE to #-}
+
+instance
+  ( To a
+  , To b
+  , To c
+  , To d
+  , To e
+  ) => To (a, b, c, d, e) where
+  to (a, b, c, d, e) = LST.List [to a, to b, to c, to d, to e]
+  {-# INLINE to #-}
