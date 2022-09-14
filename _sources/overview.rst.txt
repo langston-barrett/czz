@@ -5,24 +5,29 @@ Overview
 ..
   This section is duplicated in the README and index.rst.
 
-czz is a *whole-program* coverage-guided mutational fuzzer. Instead of feeding
-input to the target program via a file or stdin, czz executes target from
-``main`` and provides it with manufactured data by intercepting calls to library
-functions like ``recv``, ``fopen``, and ``rand``. This approach has two primary
-benefits:
+czz is a *whole-program*, *scriptable*, *multi-language*, coverage-guided
+fuzzer.
 
-- It requires very little setup. In particular, it does not require users to
-  write a fuzzing harness.
-- It can exercise effectful, non-deterministic code that is not amenable to
-  traditional fuzzing techniques.
+**Whole-program**: Instead of feeding input to the target program via a file or
+stdin, czz executes target from ``main`` and provides it with manufactured data
+by intercepting calls to library functions like ``recv``, ``fopen``, and
+``rand``. This approach does not require users to write a fuzzing harness and
+can exercise effectful, non-deterministic code that is not amenable to
+traditional fuzzing techniques.
 
-Of course, it also has some notable :ref:`drawbacks and limitations
-<limitations>`.
+**Scriptable**: czz can be scripted in Scheme. Capabilities include overriding
+the behavior of functions in the target program, e.g., to :ref:`make a checksum
+function always pass <checksum>`. Use-cases that `we plan to support in the
+future <https://github.com/langston-barrett/czz/issues/124>`_ include writing
+custom power schedules and mutations.
 
-czz currently targets languages that compile to LLVM (e.g., C, C++, Rust, etc.),
-but is built on the language-agnostic
-`Crucible <https://github.com/GaloisInc/crucible>`_ library, and also includes
-a proof-of-concept fuzzer for JVM code.
+**Multi-language**: czz currently targets languages that compile to LLVM (e.g.,
+C, C++, Rust, etc.), but is built on the language-agnostic `Crucible
+<https://github.com/GaloisInc/crucible>`_ library, and also includes a
+proof-of-concept fuzzer for JVM code. Webassembly support is `planned
+<https://github.com/langston-barrett/czz/issues/109>`_.
+
+czz also has some notable :ref:`drawbacks and limitations <limitations>`.
 
 Introduction
 ============
@@ -51,7 +56,8 @@ passes it on to some mostly-side-effect-free subset of the target.
 czz works differently. Instead of executing code directly on the host, it acts
 as an *interpreter* for target program (like QEMU User Mode Emulation). This
 allows czz to completely control the target's environment, responding to library
-calls with generated data.
+calls with generated data. It also allows czz to be orchestrated and extensively
+customized with user-provided Scheme scripts.
 
 .. figure:: img/czz.svg
 
@@ -207,4 +213,47 @@ czz-llvm
 
   * It often lags a few versions behind the latest LLVM release.
 
-.. TODO(lb): examples
+.. _comparison:
+
+Comparisons to Other Tools
+==========================
+
+This list is meant to help you understand how czz fits into the broader
+landscape, and figure out whether czz or one of these tools is more appropriate
+for your use. It is based on the author's limited experience and understanding,
+and in no way meant to criticize the excellent work that has gone into the tools
+in the list.
+
+AFL, etc.
+---------
+
+There are many coverage-guided mutational fuzzers such as AFL, Honggfuzz, and
+libFuzzer. If these tools work for your program, you should absolutely use them.
+
+Advantages over czz: These tools are reliable and *actually find bugs in real
+programs*.
+
+Disadvantages vs. czz:
+
+- Can't handle effectful code well
+- Generally handle a single programming language (or a few, via LLVM)
+- Limited customizability
+- AFL's instrumentation `can record misleading coverage
+  <https://ieeexplore.ieee.org/document/8418631>`_, czz avoids this issue
+
+KLEE
+----
+
+czz is much akin to KLEE, they both analyze LLVM bitcode and provide models of
+library calls.
+
+Advantages over czz:
+
+- Support for symbolic execution
+- More developed, including probably more reliable
+
+Disadvantages vs. czz:
+
+- Symbolic execution suffers from solver limitations and path explosion
+- Only works on LLVM
+- Limited customizability

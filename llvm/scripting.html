@@ -568,11 +568,12 @@ title="Print to PDF"
                 
   <div class="section" id="scripting">
 <h1>Scripting<a class="headerlink" href="#scripting" title="Permalink to this headline">#</a></h1>
-<p>czz-llvm can be scripted using <a class="reference external" href="http://justinethier.github.io/husk-scheme/manual/index.html">Scheme</a>.</p>
+<p>czz-llvm can be scripted using <a class="reference external" href="http://justinethier.github.io/husk-scheme/manual/index.html">Scheme</a>. The API is unstable, and not yet even
+particularly well-documented.</p>
 <div class="section" id="examples">
 <h2>Examples<a class="headerlink" href="#examples" title="Permalink to this headline">#</a></h2>
 <div class="section" id="override-a-checksum-to-always-pass">
-<h3>Override a Checksum to Always Pass<a class="headerlink" href="#override-a-checksum-to-always-pass" title="Permalink to this headline">#</a></h3>
+<span id="checksum"></span><h3>Override a Checksum to Always Pass<a class="headerlink" href="#override-a-checksum-to-always-pass" title="Permalink to this headline">#</a></h3>
 <div class="highlight-scheme notranslate"><div class="highlight"><pre><span></span><span class="p">(</span><span class="k">define </span><span class="nv">test-c</span> <span class="s">&quot;</span>
 <span class="s">#include &lt;stdbool.h&gt;</span>
 <span class="s">#include &lt;stdio.h&gt;</span>

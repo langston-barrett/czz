@@ -12,6 +12,9 @@ The test suite compares the behavior of programs that make library calls when
 interpreted by czz-llvm to when they're compiled by Clang and executed on the
 host, to ensure fidelity of czz-llvm's models.
 
+The hope is to enrich the Scheme API to the point where many such models could
+be written in Scheme.
+
 Overrides
 =========
 
@@ -47,13 +50,6 @@ Category                           Name               Tests Impl. Sound Docs or 
 :ref:`Env. vars. <model_env_vars>` ``getenv``         5     czz   Yes?  :ref:`Docs <getenv>`
 :ref:`Env. vars. <model_env_vars>` ``setenv``         2     None  n/a   `#29`_
 :ref:`Env. vars. <model_env_vars>` ``unsetenv``       2     None  No    :ref:`Docs <unsetenv>`
-:ref:`Files <model_files>`         ``open``           0     None  n/a   TODO(lb)
-:ref:`Files <model_files>`         ``creat``          0     None  n/a   TODO(lb)
-:ref:`Files <model_files>`         ``unlink``         0     None  n/a   TODO(lb)
-:ref:`Files <model_files>`         ``remove``         0     None  n/a   TODO(lb)
-:ref:`Files <model_files>`         ``close``          0     None  n/a   TODO(lb)
-:ref:`Files <model_files>`         ``read``           0     None  n/a   TODO(lb)
-:ref:`Files <model_files>`         ``write``          0     None  n/a   TODO(lb)
 :ref:`Files <model_files>`         ``fclose``         0     None  n/a   `#43`_
 :ref:`Files <model_files>`         ``fopen``          0     None  n/a   `#42`_
 :ref:`Files <model_files>`         ``fprintf``              czz   n/a   :ref:`Docs <fprintf>`

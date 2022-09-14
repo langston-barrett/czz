@@ -2,6 +2,8 @@
 Architecture
 ============
 
+.. TODO(lb): https://github.com/langston-barrett/czz/issues/107
+
 .. important::
    This page is intended for the developers of czz and the very curious---it is
    not necessary for users.
@@ -41,4 +43,4 @@ intermediate representation (IR) with language-specific extensions. czz-jvm
 translates programs into the Crucible-JVM IR, whereas czz-llvm translates them
 into the Crucible-LLVM IR. The functionality in czz core is polymorphic over
 (i.e., agnostic to) the Crucible IR extension. While Crucible is capable of
-symbolic execution, czz only uses for concrete execution.
+symbolic execution, czz only uses it for concrete execution.

@@ -355,22 +355,22 @@ title="Print to PDF"
                 
   <div class="section" id="czz-whole-program-fuzzing">
 <h1>czz: Whole-Program Fuzzing<a class="headerlink" href="#czz-whole-program-fuzzing" title="Permalink to this headline">#</a></h1>
-<p>czz is a <em>whole-program</em> coverage-guided mutational fuzzer. Instead of feeding
-input to the target program via a file or stdin, czz executes target from
-<code class="docutils literal notranslate"><span class="pre">main</span></code> and provides it with manufactured data by intercepting calls to library
-functions like <code class="docutils literal notranslate"><span class="pre">recv</span></code>, <code class="docutils literal notranslate"><span class="pre">fopen</span></code>, and <code class="docutils literal notranslate"><span class="pre">rand</span></code>. This approach has two primary
-benefits:</p>
-<ul class="simple">
-<li><p>It requires very little setup. In particular, it does not require users to
-write a fuzzing harness.</p></li>
-<li><p>It can exercise effectful, non-deterministic code that is not amenable to
-traditional fuzzing techniques.</p></li>
-</ul>
-<p>Of course, it also has some notable <a class="reference internal" href="overview.html#limitations"><span class="std std-ref">drawbacks and limitations</span></a>.</p>
-<p>czz currently targets languages that compile to LLVM (e.g., C, C++, Rust, etc.),
-but is built on the language-agnostic
-<a class="reference external" href="https://github.com/GaloisInc/crucible">Crucible</a> library, and also includes
-a proof-of-concept fuzzer for JVM code.</p>
+<p>czz is a <em>whole-program</em>, <em>scriptable</em>, <em>multi-language</em>, coverage-guided
+fuzzer.</p>
+<p><strong>Whole-program</strong>: Instead of feeding input to the target program via a file or
+stdin, czz executes target from <code class="docutils literal notranslate"><span class="pre">main</span></code> and provides it with manufactured data
+by intercepting calls to library functions like <code class="docutils literal notranslate"><span class="pre">recv</span></code>, <code class="docutils literal notranslate"><span class="pre">fopen</span></code>, and
+<code class="docutils literal notranslate"><span class="pre">rand</span></code>. This approach does not require users to write a fuzzing harness and
+can exercise effectful, non-deterministic code that is not amenable to
+traditional fuzzing techniques.</p>
+<p><strong>Scriptable</strong>: czz can be scripted in Scheme. Capabilities include overriding
+the behavior of functions in the target program, e.g., to <a class="reference internal" href="llvm/scripting.html#checksum"><span class="std std-ref">make a checksum
+function always pass</span></a>. Use-cases that <a class="reference external" href="https://github.com/langston-barrett/czz/issues/124">we plan to support in the
+future</a> include writing
+custom power schedules and mutations.</p>
+<p><strong>Multi-language</strong>: czz currently targets languages that compile to LLVM (e.g.,
+C, C++, Rust, etc.), but is built on the language-agnostic <a class="reference external" href="https://github.com/GaloisInc/crucible">Crucible</a> library, and also includes a
+proof-of-concept fuzzer for JVM code. Webassembly support is <a class="reference external" href="https://github.com/langston-barrett/czz/issues/109">planned</a>.</p>
 <p>Read more at the <a class="reference internal" href="overview.html"><span class="doc">Overview</span></a>.</p>
 <div class="toctree-wrapper compound">
 </div>

@@ -328,6 +328,23 @@ title="Print to PDF"
    </li>
   </ul>
  </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#comparisons-to-other-tools">
+   Comparisons to Other Tools
+  </a>
+  <ul class="nav section-nav flex-column">
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#afl-etc">
+     AFL, etc.
+    </a>
+   </li>
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#klee">
+     KLEE
+    </a>
+   </li>
+  </ul>
+ </li>
 </ul>
 
     </nav>
@@ -374,6 +391,23 @@ title="Print to PDF"
    </li>
   </ul>
  </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#comparisons-to-other-tools">
+   Comparisons to Other Tools
+  </a>
+  <ul class="nav section-nav flex-column">
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#afl-etc">
+     AFL, etc.
+    </a>
+   </li>
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#klee">
+     KLEE
+    </a>
+   </li>
+  </ul>
+ </li>
 </ul>
 
                         </nav>
@@ -386,22 +420,23 @@ title="Print to PDF"
                 
   <div class="section" id="overview">
 <h1>Overview<a class="headerlink" href="#overview" title="Permalink to this headline">#</a></h1>
-<p>czz is a <em>whole-program</em> coverage-guided mutational fuzzer. Instead of feeding
-input to the target program via a file or stdin, czz executes target from
-<code class="docutils literal notranslate"><span class="pre">main</span></code> and provides it with manufactured data by intercepting calls to library
-functions like <code class="docutils literal notranslate"><span class="pre">recv</span></code>, <code class="docutils literal notranslate"><span class="pre">fopen</span></code>, and <code class="docutils literal notranslate"><span class="pre">rand</span></code>. This approach has two primary
-benefits:</p>
-<ul class="simple">
-<li><p>It requires very little setup. In particular, it does not require users to
-write a fuzzing harness.</p></li>
-<li><p>It can exercise effectful, non-deterministic code that is not amenable to
-traditional fuzzing techniques.</p></li>
-</ul>
-<p>Of course, it also has some notable <a class="reference internal" href="#limitations"><span class="std std-ref">drawbacks and limitations</span></a>.</p>
-<p>czz currently targets languages that compile to LLVM (e.g., C, C++, Rust, etc.),
-but is built on the language-agnostic
-<a class="reference external" href="https://github.com/GaloisInc/crucible">Crucible</a> library, and also includes
-a proof-of-concept fuzzer for JVM code.</p>
+<p>czz is a <em>whole-program</em>, <em>scriptable</em>, <em>multi-language</em>, coverage-guided
+fuzzer.</p>
+<p><strong>Whole-program</strong>: Instead of feeding input to the target program via a file or
+stdin, czz executes target from <code class="docutils literal notranslate"><span class="pre">main</span></code> and provides it with manufactured data
+by intercepting calls to library functions like <code class="docutils literal notranslate"><span class="pre">recv</span></code>, <code class="docutils literal notranslate"><span class="pre">fopen</span></code>, and
+<code class="docutils literal notranslate"><span class="pre">rand</span></code>. This approach does not require users to write a fuzzing harness and
+can exercise effectful, non-deterministic code that is not amenable to
+traditional fuzzing techniques.</p>
+<p><strong>Scriptable</strong>: czz can be scripted in Scheme. Capabilities include overriding
+the behavior of functions in the target program, e.g., to <a class="reference internal" href="llvm/scripting.html#checksum"><span class="std std-ref">make a checksum
+function always pass</span></a>. Use-cases that <a class="reference external" href="https://github.com/langston-barrett/czz/issues/124">we plan to support in the
+future</a> include writing
+custom power schedules and mutations.</p>
+<p><strong>Multi-language</strong>: czz currently targets languages that compile to LLVM (e.g.,
+C, C++, Rust, etc.), but is built on the language-agnostic <a class="reference external" href="https://github.com/GaloisInc/crucible">Crucible</a> library, and also includes a
+proof-of-concept fuzzer for JVM code. Webassembly support is <a class="reference external" href="https://github.com/langston-barrett/czz/issues/109">planned</a>.</p>
+<p>czz also has some notable <a class="reference internal" href="#limitations"><span class="std std-ref">drawbacks and limitations</span></a>.</p>
 <div class="section" id="introduction">
 <h2>Introduction<a class="headerlink" href="#introduction" title="Permalink to this headline">#</a></h2>
 <div class="admonition note">
@@ -425,7 +460,8 @@ passes it on to some mostly-side-effect-free subset of the target.</p>
 <p>czz works differently. Instead of executing code directly on the host, it acts
 as an <em>interpreter</em> for target program (like QEMU User Mode Emulation). This
 allows czz to completely control the target’s environment, responding to library
-calls with generated data.</p>
+calls with generated data. It also allows czz to be orchestrated and extensively
+customized with user-provided Scheme scripts.</p>
 <div class="figure align-default" id="id3">
 <img alt="_images/czz.svg" src="_images/czz.svg" /><p class="caption"><span class="caption-text">The czz approach</span><a class="headerlink" href="#id3" title="Permalink to this image">#</a></p>
 </div>
@@ -558,6 +594,44 @@ variable-arity functions (other than overrides like <code class="docutils litera
 <li><p>It often lags a few versions behind the latest LLVM release.</p></li>
 </ul>
 </li>
+</ul>
+</div>
+</div>
+<div class="section" id="comparisons-to-other-tools">
+<span id="comparison"></span><h2>Comparisons to Other Tools<a class="headerlink" href="#comparisons-to-other-tools" title="Permalink to this headline">#</a></h2>
+<p>This list is meant to help you understand how czz fits into the broader
+landscape, and figure out whether czz or one of these tools is more appropriate
+for your use. It is based on the author’s limited experience and understanding,
+and in no way meant to criticize the excellent work that has gone into the tools
+in the list.</p>
+<div class="section" id="afl-etc">
+<h3>AFL, etc.<a class="headerlink" href="#afl-etc" title="Permalink to this headline">#</a></h3>
+<p>There are many coverage-guided mutational fuzzers such as AFL, Honggfuzz, and
+libFuzzer. If these tools work for your program, you should absolutely use them.</p>
+<p>Advantages over czz: These tools are reliable and <em>actually find bugs in real
+programs</em>.</p>
+<p>Disadvantages vs. czz:</p>
+<ul class="simple">
+<li><p>Can’t handle effectful code well</p></li>
+<li><p>Generally handle a single programming language (or a few, via LLVM)</p></li>
+<li><p>Limited customizability</p></li>
+<li><p>AFL’s instrumentation <a class="reference external" href="https://ieeexplore.ieee.org/document/8418631">can record misleading coverage</a>, czz avoids this issue</p></li>
+</ul>
+</div>
+<div class="section" id="klee">
+<h3>KLEE<a class="headerlink" href="#klee" title="Permalink to this headline">#</a></h3>
+<p>czz is much akin to KLEE, they both analyze LLVM bitcode and provide models of
+library calls.</p>
+<p>Advantages over czz:</p>
+<ul class="simple">
+<li><p>Support for symbolic execution</p></li>
+<li><p>More developed, including probably more reliable</p></li>
+</ul>
+<p>Disadvantages vs. czz:</p>
+<ul class="simple">
+<li><p>Symbolic execution suffers from solver limitations and path explosion</p></li>
+<li><p>Only works on LLVM</p></li>
+<li><p>Limited customizability</p></li>
 </ul>
 </div>
 </div>
