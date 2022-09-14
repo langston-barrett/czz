@@ -73,6 +73,10 @@ instance Huskable Integer where
 instance {-# OVERLAPPABLE #-} To a => Huskable [a] where
 instance (Ord a , To a, To b) => Huskable (Map a b) where
 instance Huskable String where
+instance (To a, To b) => Huskable (a, b) where
+instance (To a, To b, To c) => Huskable (a, b, c) where
+instance (To a, To b, To c, To d) => Huskable (a, b, c, d) where
+instance (To a, To b, To c, To d, To e) => Huskable (a, b, c, d, e) where
 
 instance (FromIO a, Huskable b) => Huskable (a -> b) where
   evalHuskable f as =
