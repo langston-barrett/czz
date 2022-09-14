@@ -1,2 +1,3 @@
-<Haskell Maybe LispVal>
+<Haskell Dyn1 Maybe>
 0
+(5 "s")
