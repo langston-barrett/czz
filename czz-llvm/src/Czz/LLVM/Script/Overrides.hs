@@ -2,12 +2,13 @@
 {-# LANGUAGE ImplicitParams #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE TypeOperators #-}
 
 module Czz.LLVM.Script.Overrides
   ( extendEnv
   , SVal(..)
   , SMem(..)
-  , fromWhat4
+  , expr
   , SOverride(..)
   , registerSOverrides
   , override
@@ -22,14 +23,13 @@ import           Data.Type.Equality (testEquality, (:~:)(Refl))
 
 import qualified Text.LLVM.AST as L
 
-import           Data.Parameterized.Nonce (Nonce)
+import           Data.Parameterized.Nonce (GlobalNonceGenerator, Nonce)
 import qualified Data.Parameterized.Nonce as Nonce
 import           Data.Parameterized.TraversableFC (toListFC)
 
 -- crucible
 import           Lang.Crucible.Backend (IsSymInterface)
 import qualified Lang.Crucible.Simulator as C
-import qualified Lang.Crucible.Types as C
 
 -- crucible-llvm
 import           Lang.Crucible.LLVM.Extension (ArchWidth)
@@ -58,7 +58,7 @@ extendEnv pfx e = do
   Cust.extendEnv funcs pfx e
   where
     funcs =
-      [ fromWhat4
+      [ expr
       , override
       ]
 
@@ -127,18 +127,30 @@ data SVal where
     C.RegEntry sym tp ->
     SVal
 
-fromWhat4 :: CustFunc
-fromWhat4 =
+testSym ::
+  Nonce GlobalNonceGenerator sym ->
+  Nonce GlobalNonceGenerator sym' ->
+  IO (sym :~: sym')
+testSym nsym nsym' =
+  case testEquality nsym nsym' of
+    Nothing -> fail "Mismatched ExprBuilder"
+    Just Refl -> return Refl
+
+expr :: CustFunc
+expr =
   Cust.CustFunc
-  { Cust.custFuncName = "from-what4"
+  { Cust.custFuncName = "expr"
   , Cust.custFuncImpl = Cust.evalHuskable (Cust.auto impl)
   }
   where
-    impl :: SExpr -> LST.IOThrowsError SVal
-    impl =
+    impl :: SExprBuilder -> SExpr -> LST.IOThrowsError SVal
+    impl exprBuilder =
       \case
-        SWhat4.SBV nsym w bvExpr ->
-          return (SVal nsym (C.RegEntry (C.BVRepr w) bvExpr))
+        SWhat4.SBV nsym w bvExpr -> do
+          SWhat4.SExprBuilder sym nsym' <- return exprBuilder
+          Refl <- liftIO (testSym nsym nsym')
+          ptr <- liftIO (CLLVM.llvmPointer_bv sym bvExpr)
+          return (SVal nsym (C.RegEntry (CLLVM.LLVMPointerRepr w) ptr))
 
 
 override :: CustFunc
@@ -190,7 +202,13 @@ override =
                             Refl <-
                               case testEquality (C.regType ret) retTy of
                                 Just r -> return r
-                                Nothing -> fail "Bad return type"
+                                Nothing ->
+                                  fail $
+                                    unlines
+                                      [ "Bad return type"
+                                      , "Expected: " ++ show retTy
+                                      , "Found: " ++ show (C.regType ret)
+                                      ]
                             return (C.regValue ret, mem')
                 }
 
