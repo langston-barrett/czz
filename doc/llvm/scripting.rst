@@ -2,10 +2,13 @@
 Scripting
 =========
 
-czz-llvm can be scripted using `Scheme`_.
+czz-llvm can be scripted using `Scheme`_. The API is unstable, and not yet even
+particularly well-documented.
 
 Examples
 ========
+
+.. _checksum:
 
 Override a Checksum to Always Pass
 ----------------------------------
