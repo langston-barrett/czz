@@ -73,3 +73,19 @@ library
     husk-scheme,
     parameterized-utils,
     mtl
+
+test-suite husk-cust-func-test
+  import: common
+  type: exitcode-stdio-1.0
+  hs-source-dirs: test
+  main-is: Main.hs
+  other-modules:
+    Test
+  build-depends:
+    base,
+    husk-cust-func,
+    husk-scheme,
+    mtl,
+    parsec,
+    tasty >= 1.4 && < 2.0,
+    tasty-hunit >= 0.10 && < 1.0,
