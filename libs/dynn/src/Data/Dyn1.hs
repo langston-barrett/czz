@@ -42,5 +42,10 @@ from (Dyn1 i v) = Reflect.withTypeable i (toDyn <$> v)
 view :: (forall a. f a -> b) -> Dyn1 f -> b
 view k (Dyn1 _i v) = k v
 
-map :: forall f b. Typeable b => (forall a. f a -> f b) -> Dyn1 f -> Dyn1 f
-map f (Dyn1 _i v) = Dyn1 (Reflect.typeRep @b) (f v)
+map ::
+  forall f b.
+  Typeable b =>
+  (forall a. Typeable a => f a -> f b) ->
+  Dyn1 f ->
+  Dyn1 f
+map f (Dyn1 i v) = Dyn1 (Reflect.typeRep @b) (Reflect.withTypeable i (f v))
