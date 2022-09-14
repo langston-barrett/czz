@@ -61,6 +61,7 @@ library
 
   exposed-modules:
     Language.Scheme.CustFunc
+    Language.Scheme.Dyn1
     Language.Scheme.From
     Language.Scheme.Opaque
     Language.Scheme.To
@@ -70,4 +71,5 @@ library
     base >= 4.13 && < 4.17,
     containers,
     husk-scheme,
+    parameterized-utils,
     mtl

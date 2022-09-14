@@ -48,7 +48,7 @@ instance From LST.LispVal where
   {-# INLINABLE maybeFrom #-}
 
 instance Typeable a => From (Opaque a) where
-  name _proxy = show (Typ.typeRep (Proxy @a))
+  name _proxy = "<Haskell " ++ show (Typ.typeRep (Proxy @a)) ++ ">"
   maybeFrom =
     \case
       LST.Opaque o -> Opaque <$> Dyn.fromDynamic o
@@ -139,19 +139,25 @@ instance From String where
 
 class FromIO a where
   nameIO :: proxy a -> String
-  maybeFromIO :: LST.LispVal -> Maybe (LST.IOThrowsError a)
+  maybeFromIO :: LST.Env -> LST.LispVal -> Maybe (LST.IOThrowsError a)
 
   default nameIO :: From a => proxy a -> String
   nameIO = name
 
-  default maybeFromIO :: From a => LST.LispVal -> Maybe (LST.IOThrowsError a)
-  maybeFromIO = fmap return . maybeFrom
+  default maybeFromIO :: From a => LST.Env -> LST.LispVal -> Maybe (LST.IOThrowsError a)
+  maybeFromIO _env = fmap return . maybeFrom
+
+fromIO_ :: forall a. FromIO a => LST.Env -> LST.LispVal -> IO (Either LST.LispError a)
+fromIO_ env v = do
+  case maybeFromIO env v of
+    Nothing -> return (Left (LST.TypeMismatch (nameIO (Proxy @a)) v))
+    Just comp -> Exc.runExceptT comp
+{-# INLINABLE fromIO_ #-}
 
 fromIO :: forall a. FromIO a => LST.LispVal -> IO (Either LST.LispError a)
 fromIO v = do
-  case maybeFromIO v of
-    Nothing -> return (Left (LST.TypeMismatch (nameIO (Proxy @a)) v))
-    Just comp -> Exc.runExceptT comp
+  env <- liftIO LSC.r5rsEnv
+  fromIO_ env v
 {-# INLINABLE fromIO #-}
 
 instance FromIO LST.LispVal where
@@ -177,11 +183,10 @@ isFunc =
 
 instance (FromIO a, To a, FromIO b) => FromIO (a -> LST.IOThrowsError b) where
   nameIO _proxy = unwords [nameIO (Proxy @a), "->", nameIO (Proxy @b)]
-  maybeFromIO =
+  maybeFromIO env =
     \case
       f | isFunc f ->
        Just $ return $ \a -> do
-         env <- liftIO LSC.r5rsEnv
          lispVal <- LSC.evalLisp env (LST.List [f, to a])
-         Exc.ExceptT (fromIO lispVal)
+         Exc.ExceptT (fromIO_ env lispVal)
       _ -> Nothing

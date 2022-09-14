@@ -1,3 +1,5 @@
 (display (maybe-just 5))
 (newline)
-(display (maybe-maybe 0 (lambda (_) 1) (maybe-nothing)))
+(display (maybe-maybe 0 (lambda (x) 1) (maybe-nothing)))
+(newline)
+(display (maybe-cat (list (maybe-just 5) (maybe-nothing) (maybe-just "s"))))
