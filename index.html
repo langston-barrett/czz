@@ -357,18 +357,18 @@ title="Print to PDF"
 <h1>czz: Whole-Program Fuzzing<a class="headerlink" href="#czz-whole-program-fuzzing" title="Permalink to this headline">#</a></h1>
 <p>czz is a <em>whole-program</em>, <em>scriptable</em>, <em>multi-language</em>, coverage-guided
 fuzzer.</p>
-<p><strong>Whole-program</strong>: Instead of feeding input to the target program via a file or
+<p><em>Whole-program</em>: Instead of feeding input to the target program via a file or
 stdin, czz executes target from <code class="docutils literal notranslate"><span class="pre">main</span></code> and provides it with manufactured data
 by intercepting calls to library functions like <code class="docutils literal notranslate"><span class="pre">recv</span></code>, <code class="docutils literal notranslate"><span class="pre">fopen</span></code>, and
 <code class="docutils literal notranslate"><span class="pre">rand</span></code>. This approach does not require users to write a fuzzing harness and
 can exercise effectful, non-deterministic code that is not amenable to
 traditional fuzzing techniques.</p>
-<p><strong>Scriptable</strong>: czz can be scripted in Scheme. Capabilities include overriding
+<p><em>Scriptable</em>: czz can be scripted in Scheme. Capabilities include overriding
 the behavior of functions in the target program, e.g., to <a class="reference internal" href="llvm/scripting.html#checksum"><span class="std std-ref">make a checksum
 function always pass</span></a>. Use-cases that <a class="reference external" href="https://github.com/langston-barrett/czz/issues/124">we plan to support in the
 future</a> include writing
 custom power schedules and mutations.</p>
-<p><strong>Multi-language</strong>: czz currently targets languages that compile to LLVM (e.g.,
+<p><em>Multi-language</em>: czz currently targets languages that compile to LLVM (e.g.,
 C, C++, Rust, etc.), but is built on the language-agnostic <a class="reference external" href="https://github.com/GaloisInc/crucible">Crucible</a> library, and also includes a
 proof-of-concept fuzzer for JVM code. Webassembly support is <a class="reference external" href="https://github.com/langston-barrett/czz/issues/109">planned</a>.</p>
 <p>Read more at the <a class="reference internal" href="overview.html"><span class="doc">Overview</span></a>.</p>
