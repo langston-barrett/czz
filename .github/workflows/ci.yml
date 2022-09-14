@@ -82,13 +82,14 @@ jobs:
       run: |
         tar -cvf doc.tar.gz doc/build/html/*
 
-    - name: upload docs
-      uses: actions/upload-artifact@v3
-      if: github.repository == 'langston-barrett/czz'
-      with:
-        name: "${{ env.NAME }}-docs"
-        path: "*.tar.gz"
-        if-no-files-found: error
+    # TODO(lb): #121
+    # - name: upload docs
+    #   uses: actions/upload-artifact@v3
+    #   if: github.repository == 'langston-barrett/czz'
+    #   with:
+    #     name: "${{ env.NAME }}-docs"
+    #     path: "*.tar.gz"
+    #     if-no-files-found: error
 
   build:
     name: ${{ matrix.os }} GHC-${{ matrix.ghc }}
@@ -161,11 +162,12 @@ jobs:
       env:
         OS_TAG: ${{ matrix.os }}
 
-    - name: upload bdist
-      uses: actions/upload-artifact@v3
-      if: github.repository == 'langston-barrett/czz'
-      with:
-        name: "${{ env.NAME }}-bdist-${{ matrix.os }}"
-        path: "*.tar.gz"
-        if-no-files-found: error
+    # TODO(lb): #121
+    # - name: upload bdist
+    #   uses: actions/upload-artifact@v3
+    #   if: github.repository == 'langston-barrett/czz'
+    #   with:
+    #     name: "${{ env.NAME }}-bdist-${{ matrix.os }}"
+    #     path: "*.tar.gz"
+    #     if-no-files-found: error
 
