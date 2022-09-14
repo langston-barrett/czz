@@ -284,7 +284,9 @@ instance (FromIO a, To a, FromIO b) => FromIO (a -> LST.IOThrowsError b) where
   maybeFromIO env =
     \case
       f | isFunc f ->
-       Just $ return $ \a -> do
-         lispVal <- LSC.evalLisp env (LST.List [f, to a])
-         Exc.ExceptT (fromIO_ env lispVal)
+       Just $
+         return $
+           \a -> do
+             lispVal <- LSC.apply f f [to a]
+             Exc.ExceptT (fromIO_ env lispVal)
       _ -> Nothing
