@@ -24,7 +24,8 @@ lint:
 	  czz-jvm/{exe,src,test} \
 	  czz-llvm/{exe,src,test} \
 	  czz-llvm-tui/{exe,src} \
-	  husk/
+	  husk/ \
+	  libs/
 
 .PHONY: entr-lint
 entr-lint:

@@ -50,6 +50,7 @@ jobs:
         czz-llvm/{exe,src,test}
         czz-llvm-tui/{exe,src}/
         husk/
+        libs/
 
   doc:
     name: doc
