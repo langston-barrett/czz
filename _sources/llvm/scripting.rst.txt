@@ -15,7 +15,7 @@ API Reference
   LLVMConfig
 
 ``czz-llvm-from-what4``
-**********************
+***********************
 
 .. code-block:: haskell
 
