@@ -18,10 +18,11 @@ import qualified Data.Maybe as Maybe
 
 import qualified Language.Scheme.Types as LST
 
+import           Data.Dyn1 (Dyn1)
+import qualified Data.Dyn1 as Dyn1
+
 import           Language.Scheme.CustFunc (CustFunc)
 import qualified Language.Scheme.CustFunc as Cust
-import           Language.Scheme.Dyn1 (Dyn1)
-import qualified Language.Scheme.Dyn1 as Dyn1
 import           Language.Scheme.Opaque (Opaque(..))
 import           Language.Scheme.To ()
 
@@ -41,7 +42,7 @@ extendEnv' = extendEnv "maybe"
 -- | Helper, not exported
 fromDyn1 :: Dyn1 Maybe -> Maybe LST.LispVal
 fromDyn1 d =
-  case Dyn1.fromDyn1 d of
+  case Dyn1.from d of
     Nothing -> Nothing
     Just d' ->
       case Dyn.fromDynamic d' of
@@ -58,7 +59,7 @@ just =
   }
   where
     impl :: LST.LispVal -> Dyn1 Maybe
-    impl = Dyn1.toDyn1 . Just
+    impl = Dyn1.to . Just
 
 nothing :: CustFunc
 nothing =
@@ -68,7 +69,7 @@ nothing =
   }
   where
     impl :: Dyn1 Maybe
-    impl = Dyn1.toDyn1 (Nothing :: Maybe ())
+    impl = Dyn1.to (Nothing :: Maybe ())
 
 isJust :: CustFunc
 isJust =
@@ -78,7 +79,7 @@ isJust =
   }
   where
     impl :: Dyn1 Maybe -> Bool
-    impl = Dyn1.viewDyn1 Maybe.isJust
+    impl = Dyn1.view Maybe.isJust
 
 maybe_ :: CustFunc
 maybe_ =
