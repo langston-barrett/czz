@@ -245,8 +245,12 @@ type family Auto a where
   Auto Char = Char
   Auto Double = Double
   Auto Integer = Integer
-  Auto [a] = [a]
+  Auto [a] = [Auto a]
   Auto (Map a b) = Map a b
+  Auto (a, b) = (Auto a, Auto b)
+  Auto (a, b, c) = (Auto a, Auto b, Auto c)
+  Auto (a, b, c, d) = (Auto a, Auto b, Auto c, Auto d)
+  Auto (a, b, c, d, e) = (Auto a, Auto b, Auto c, Auto d, Auto e)
   Auto (a -> b) = Auto a -> Auto b
   Auto a = Opaque a
 
