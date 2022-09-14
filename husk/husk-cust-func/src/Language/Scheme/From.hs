@@ -267,6 +267,10 @@ instance FromIO Double where
 instance FromIO Integer where
 instance {-# OVERLAPPABLE #-} From a => FromIO [a] where
 instance (Ord a , From a, From b) => FromIO (Map a b) where
+instance (From a, From b) => FromIO (a, b) where
+instance (From a, From b, From c) => FromIO (a, b, c) where
+instance (From a, From b, From c, From d) => FromIO (a, b, c, d) where
+instance (From a, From b, From c, From d, From e) => FromIO (a, b, c, d, e) where
 instance FromIO String where
 
 isFunc :: LST.LispVal -> Bool
