@@ -2,7 +2,8 @@
 Scripting
 =========
 
-czz can be scripted using `Scheme`_.
+czz can be scripted using `Scheme`_. The API is unstable, and not yet even
+particularly well-documented.
 
 API Reference
 =============
