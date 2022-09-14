@@ -25,11 +25,29 @@ fromTests =
     "From"
     [ success "0" (0 :: Integer)
     , success "\"\"" ""
+    , success "(list 0)" [0 :: Integer]
+    , success "(list 0 1)" [0, 1 :: Integer]
+    , success "((lambda (x) (list 0)) 0)" [0 :: Integer]
     , TastyH.testCase "From (lambda (x) x)" $ do
         (f :: Integer -> LST.IOThrowsError Integer) <-
           fromIO' "(lambda (x) x)"
         app <- runIOThrows (f 0)
         0 TastyH.@=? app
+    , TastyH.testCase "From (lambda (x y) x)" $ do
+        (f :: Integer -> Integer -> LST.IOThrowsError Integer) <-
+          fromIO' "(lambda (x y) x)"
+        app <- runIOThrows (f 0 1)
+        0 TastyH.@=? app
+    , TastyH.testCase "From (lambda (x y) (list x y))" $ do
+        (f :: Bool -> Bool -> LST.IOThrowsError [Bool]) <-
+          fromIO' "(lambda (x y) (list x y))"
+        app <- runIOThrows (f True False)
+        [True, False] TastyH.@=? app
+    , TastyH.testCase "From (lambda (x y z) (+ x y z))" $ do
+        (f :: Integer -> Integer -> Integer -> LST.IOThrowsError Integer) <-
+          fromIO' "(lambda (x y z) (+ x y z))"
+        app <- runIOThrows (f 0 1 2)
+        3 TastyH.@=? app
     ]
   where
 
