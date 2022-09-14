@@ -38,6 +38,9 @@ import qualified Lang.Crucible.LLVM.Intrinsics as CLLVM
 import qualified Lang.Crucible.LLVM.MemModel as CLLVM
 import qualified Lang.Crucible.LLVM.Translation as CLLVM
 
+import           Data.Dyn1 (Dyn1)
+import qualified Data.Dyn1 as Dyn1
+
 import qualified Language.Scheme.Types as LST
 
 import           Language.Scheme.CustFunc (CustFunc)
@@ -148,9 +151,9 @@ override =
     impl ::
       Translation ->
       String ->
-      ((SExprBuilder, SMem, [SVal]) -> LST.IOThrowsError (SMem, SVal)) ->
-      Maybe SOverride
-    impl t name f = do
+      (SExprBuilder -> SMem -> [SVal] -> LST.IOThrowsError (SMem, SVal)) ->
+      Dyn1 Maybe
+    impl t name f = (Dyn1.to :: Maybe SOverride -> Dyn1 Maybe) $ do
       Trans.Translation trans _memVar _entry <- return t
       let llvmAst = trans Lens.^. CLLVM.modTransModule
       let decls = Map.fromList (map (\d -> (L.defName d, CLLVM.declareFromDefine d)) (L.modDefines llvmAst))
@@ -167,10 +170,11 @@ override =
                   CLLVM.llvmOverride_ret = retTy,
                   CLLVM.llvmOverride_def = \memVar _bak cArgs -> do
                     C.modifyGlobal memVar $ \mem -> do
+                      -- TODO(lb): fails should log an error
                       let ssym = SWhat4.SExprBuilder sym nsym
                       let smem = SMem nsym mem
                       let args = toListFC (SVal nsym) cArgs
-                      liftIO (Exc.runExceptT (f (ssym, smem, args))) >>=
+                      liftIO (Exc.runExceptT (f ssym smem args)) >>=
                         \case
                           Left err -> fail (show err)
                           Right (SMem nmem mem', SVal nsym' ret) -> do

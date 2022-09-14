@@ -115,6 +115,7 @@ library
     crucible-symio,
     czz,
     directory,
+    dynn,
     filepath >= 1.0,
     hashable,
     husk-cust-func,
