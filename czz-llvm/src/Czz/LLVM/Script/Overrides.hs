@@ -6,9 +6,7 @@
 
 module Czz.LLVM.Script.Overrides
   ( extendEnv
-  , SVal(..)
   , SMem(..)
-  , expr
   , SOverride(..)
   , registerSOverrides
   , override
@@ -23,7 +21,7 @@ import           Data.Type.Equality (testEquality, (:~:)(Refl))
 
 import qualified Text.LLVM.AST as L
 
-import           Data.Parameterized.Nonce (GlobalNonceGenerator, Nonce)
+import           Data.Parameterized.Nonce (Nonce)
 import qualified Data.Parameterized.Nonce as Nonce
 import           Data.Parameterized.TraversableFC (toListFC)
 
@@ -47,19 +45,20 @@ import           Language.Scheme.CustFunc (CustFunc)
 import qualified Language.Scheme.CustFunc as Cust
 import           Language.Scheme.Opaque (Opaque(..))  -- for auto
 
-import           Language.Scheme.What4 (SExpr, SExprBuilder)
+import           Language.Scheme.What4 (SExprBuilder)
 import qualified Language.Scheme.What4 as SWhat4
 
 import           Czz.LLVM.Translate (Translation)
 import qualified Czz.LLVM.Translate as Trans
+import           Czz.LLVM.Script.Val (SVal)
+import qualified Czz.LLVM.Script.Val as SVal
 
 extendEnv :: String -> LST.Env -> IO LST.Env
 extendEnv pfx e = do
   Cust.extendEnv funcs pfx e
   where
     funcs =
-      [ expr
-      , override
+      [ override
       ]
 
 -- | Helper, not exported
@@ -120,39 +119,6 @@ registerSOverrides sym nsym trans ovs = do
   CLLVM.register_llvm_overrides llvmAst (map get ovs) [] llvmCtx
   where get (SOverride s) = s trans sym nsym
 
-data SVal where
-  -- TODO(lb): also pointers
-  SVal ::
-    Nonce Nonce.GlobalNonceGenerator sym ->
-    C.RegEntry sym tp ->
-    SVal
-
-testSym ::
-  Nonce GlobalNonceGenerator sym ->
-  Nonce GlobalNonceGenerator sym' ->
-  IO (sym :~: sym')
-testSym nsym nsym' =
-  case testEquality nsym nsym' of
-    Nothing -> fail "Mismatched ExprBuilder"
-    Just Refl -> return Refl
-
-expr :: CustFunc
-expr =
-  Cust.CustFunc
-  { Cust.custFuncName = "expr"
-  , Cust.custFuncImpl = Cust.evalHuskable (Cust.auto impl)
-  }
-  where
-    impl :: SExprBuilder -> SExpr -> LST.IOThrowsError SVal
-    impl exprBuilder =
-      \case
-        SWhat4.SBV nsym w bvExpr -> do
-          SWhat4.SExprBuilder sym nsym' <- return exprBuilder
-          Refl <- liftIO (testSym nsym nsym')
-          ptr <- liftIO (CLLVM.llvmPointer_bv sym bvExpr)
-          return (SVal nsym (C.RegEntry (CLLVM.LLVMPointerRepr w) ptr))
-
-
 override :: CustFunc
 override =
   Cust.CustFunc
@@ -185,11 +151,11 @@ override =
                       -- TODO(lb): fails should log an error
                       let ssym = SWhat4.SExprBuilder sym nsym
                       let smem = SMem nsym mem
-                      let args = toListFC (SVal nsym) cArgs
+                      let args = toListFC (SVal.SVal nsym) cArgs
                       liftIO (Exc.runExceptT (f ssym smem args)) >>=
                         \case
                           Left err -> fail (show err)
-                          Right (SMem nmem mem', SVal nsym' ret) -> do
+                          Right (SMem nmem mem', SVal.SVal nsym' ret) -> do
                             Refl <-
                               case testEquality nsym nsym' of
                                 Just r -> return r

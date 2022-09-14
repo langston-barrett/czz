@@ -8,9 +8,11 @@ module Language.Scheme.Data.Maybe
   , isJust
   , maybe_
   , catMaybes
+  , toList
   )
 where
 
+import           Control.Monad.Except (ExceptT(..))  -- for auto
 import           Control.Monad.IO.Class (liftIO)
 import           Data.Coerce (coerce)
 import qualified Data.Dynamic as Dyn
@@ -34,6 +36,7 @@ extendEnv =
     , isJust
     , maybe_
     , catMaybes
+    , toList
     ]
 
 extendEnv' :: LST.Env -> IO LST.Env
@@ -106,6 +109,16 @@ catMaybes =
   { Cust.custFuncName = "cat"
   , Cust.custFuncImpl =
       Cust.evalHuskable
-        (coerce (lift1 (return . (Maybe.catMaybes @LST.LispVal . map fromDyn1))) ::
+        (coerce (lift1 (return . Maybe.catMaybes @LST.LispVal . map fromDyn1)) ::
           [Opaque (Dyn1 Maybe)] -> LST.IOThrowsError [LST.LispVal])
+  }
+
+toList :: CustFunc
+toList =
+  Cust.CustFunc
+  { Cust.custFuncName = "to-list"
+  , Cust.custFuncImpl =
+      Cust.evalHuskable
+        (coerce (lift1 (return . Maybe.maybeToList @LST.LispVal . fromDyn1)) ::
+          Opaque (Dyn1 Maybe) -> LST.IOThrowsError [Opaque LST.LispVal])
   }

@@ -12,6 +12,7 @@ import qualified Czz.LLVM.Script.Config as SConfig
 import qualified Czz.LLVM.Script.Fuzz as SFuzz
 import qualified Czz.LLVM.Script.Overrides as SOverrides
 import qualified Czz.LLVM.Script.Translate as STranslate
+import qualified Czz.LLVM.Script.Val as SVal
 
 extendEnv :: String -> LST.Env -> IO LST.Env
 extendEnv pfx e = do
@@ -24,6 +25,7 @@ extendEnv pfx e = do
         , SFuzz.extendEnv nllvm nenv neff nfb pfx
         , SOverrides.extendEnv pfx
         , STranslate.extendEnv pfx
+        , SVal.extendEnv pfx
         ]
   foldM (\env lib -> lib env) e libs
 

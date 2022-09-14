@@ -95,6 +95,7 @@ library
     Czz.LLVM.Script.Fuzz
     Czz.LLVM.Script.Overrides
     Czz.LLVM.Script.Translate
+    Czz.LLVM.Script.Val
     Czz.LLVM.Translate
     Czz.LLVM.Unimplemented
     Paths_czz_llvm

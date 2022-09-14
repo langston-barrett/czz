@@ -97,7 +97,7 @@ instance From Integer where
   {-# INLINABLE maybeFrom #-}
 
 instance {-# OVERLAPPABLE #-} From a => From [a] where
-  name _proxy = unwords ["list of" , name (Proxy @a)]
+  name _proxy = concat ["(" , name (Proxy @a), ")"]
   maybeFrom =
     \case
       LST.List l -> traverse maybeFrom l
