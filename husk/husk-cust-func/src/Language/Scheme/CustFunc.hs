@@ -1,4 +1,5 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DefaultSignatures #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -49,6 +50,13 @@ import           Language.Scheme.To (To(to))
 class Huskable a where
   evalHuskable :: a -> [LST.LispVal] -> LST.IOThrowsError LST.LispVal
 
+  default evalHuskable :: To a => a -> [LST.LispVal] -> LST.IOThrowsError LST.LispVal
+  evalHuskable x as =
+    if null as
+    then return (to x)
+    else Exc.throwError (LST.NumArgs Nothing as)
+  {-# INLINABLE evalHuskable #-}
+
 instance Huskable a => Huskable (LST.IOThrowsError a) where
   evalHuskable comp as = do
     x <- comp
@@ -56,56 +64,17 @@ instance Huskable a => Huskable (LST.IOThrowsError a) where
   {-# INLINABLE evalHuskable #-}
 
 instance Huskable LST.LispVal where
-  evalHuskable x as =
-    if null as
-    then return x
-    else Exc.throwError (LST.NumArgs Nothing as)
-  {-# INLINABLE evalHuskable #-}
-
 instance Typeable a => Huskable (Opaque a) where
-  evalHuskable x = evalHuskable (to x)
-  {-# INLINABLE evalHuskable #-}
-
 instance To a => Huskable (Array Int a) where
-  evalHuskable x = evalHuskable (to x)
-  {-# INLINABLE evalHuskable #-}
-
 instance Huskable Bool where
-  evalHuskable x = evalHuskable (to x)
-  {-# INLINABLE evalHuskable #-}
-
 instance Huskable Char where
-  evalHuskable x = evalHuskable (to x)
-  {-# INLINABLE evalHuskable #-}
-
 instance Huskable Double where
-  evalHuskable x = evalHuskable (to x)
-  {-# INLINABLE evalHuskable #-}
-
 instance Huskable Integer where
-  evalHuskable x = evalHuskable (to x)
-  {-# INLINABLE evalHuskable #-}
-
 instance {-# OVERLAPPABLE #-} To a => Huskable [a] where
-  evalHuskable x = evalHuskable (to x)
-  {-# INLINABLE evalHuskable #-}
-
-instance
-  ( Ord a
-  , To a
-  , To b
-  ) => Huskable (Map a b) where
-  evalHuskable x = evalHuskable (to x)
-  {-# INLINABLE evalHuskable #-}
-
+instance (Ord a , To a, To b) => Huskable (Map a b) where
 instance Huskable String where
-  evalHuskable x = evalHuskable (to x)
-  {-# INLINABLE evalHuskable #-}
 
-instance
-  ( FromIO a
-  , Huskable b
-  ) => Huskable (a -> b) where
+instance (FromIO a, Huskable b) => Huskable (a -> b) where
   evalHuskable f as =
     case as of
       [] -> Exc.throwError (LST.NumArgs Nothing as)
