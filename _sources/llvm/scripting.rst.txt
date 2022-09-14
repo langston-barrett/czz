@@ -35,7 +35,7 @@ API Reference
 
   Translation ->
   String ->
-  ((ExprBuilder, Mem, [Val]) -> (Mem, Val)) ->
+  (ExprBuilder -> Mem -> [Val] -> (Mem, Val)) ->
   Maybe Override
 
 ``czz-llvm-translate``

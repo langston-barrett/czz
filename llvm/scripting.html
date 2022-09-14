@@ -461,7 +461,7 @@ title="Print to PDF"
 <h3><code class="docutils literal notranslate"><span class="pre">czz-llvm-override</span></code><a class="headerlink" href="#czz-llvm-override" title="Permalink to this headline">#</a></h3>
 <div class="highlight-haskell notranslate"><div class="highlight"><pre><span></span><span class="kt">Translation</span> <span class="ow">-&gt;</span>
 <span class="kt">String</span> <span class="ow">-&gt;</span>
-<span class="p">((</span><span class="kt">ExprBuilder</span><span class="p">,</span> <span class="kt">Mem</span><span class="p">,</span> <span class="p">[</span><span class="kt">Val</span><span class="p">])</span> <span class="ow">-&gt;</span> <span class="p">(</span><span class="kt">Mem</span><span class="p">,</span> <span class="kt">Val</span><span class="p">))</span> <span class="ow">-&gt;</span>
+<span class="p">(</span><span class="kt">ExprBuilder</span> <span class="ow">-&gt;</span> <span class="kt">Mem</span> <span class="ow">-&gt;</span> <span class="p">[</span><span class="kt">Val</span><span class="p">]</span> <span class="ow">-&gt;</span> <span class="p">(</span><span class="kt">Mem</span><span class="p">,</span> <span class="kt">Val</span><span class="p">))</span> <span class="ow">-&gt;</span>
 <span class="kt">Maybe</span> <span class="kt">Override</span>
 </pre></div>
 </div>
