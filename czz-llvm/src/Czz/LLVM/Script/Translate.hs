@@ -9,9 +9,11 @@ import           Control.Monad.IO.Class (liftIO)
 
 import qualified Language.Scheme.Types as LST
 
-import           Language.Scheme.CustFunc (CustFunc)
-import qualified Language.Scheme.CustFunc as Cust
-import           Language.Scheme.Opaque (Opaque(..))  -- for auto
+import qualified Language.Scheme.Interop.To.Func.Auto as IAuto
+import qualified Language.Scheme.Interop.To.Func as ToFunc
+import           Language.Scheme.Interop.CustFunc (CustFunc)
+import qualified Language.Scheme.Interop.CustFunc as Cust
+import           Language.Scheme.Interop.Opaque (Opaque(..))  -- for auto
 
 import qualified Czz.LLVM.Translate as Trans
 
@@ -36,5 +38,5 @@ translate :: CustFunc
 translate =
   Cust.CustFunc
   { Cust.custFuncName = "translate"
-  , Cust.custFuncImpl = Cust.evalHuskable (Cust.auto (lift1 Trans.translate))
+  , Cust.custFuncImpl = ToFunc.toSchemeFunc (IAuto.auto (lift1 Trans.translate))
   }

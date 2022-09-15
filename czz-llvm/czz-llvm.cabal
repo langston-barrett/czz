@@ -119,7 +119,7 @@ library
     dynn,
     filepath >= 1.0,
     hashable,
-    husk-cust-func,
+    husk-interop,
     husk-scheme,
     husk-what4,
     lens,

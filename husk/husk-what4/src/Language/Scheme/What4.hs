@@ -26,9 +26,11 @@ import qualified What4.Interface as What4
 
 import qualified Language.Scheme.Types as LST
 
-import           Language.Scheme.CustFunc (CustFunc)
-import qualified Language.Scheme.CustFunc as Cust
-import           Language.Scheme.Opaque (Opaque(..))  -- for auto
+import qualified Language.Scheme.Interop.To.Func.Auto as IAuto
+import qualified Language.Scheme.Interop.To.Func as ToFunc
+import           Language.Scheme.Interop.CustFunc (CustFunc)
+import qualified Language.Scheme.Interop.CustFunc as Cust
+import           Language.Scheme.Interop.Opaque (Opaque(..))  -- for auto
 
 extendEnv :: String -> LST.Env -> IO LST.Env
 extendEnv pfx e = Cust.extendEnv funcs pfx e
@@ -63,7 +65,7 @@ bvLit :: CustFunc
 bvLit =
   Cust.CustFunc
   { Cust.custFuncName = "bv-lit"
-  , Cust.custFuncImpl = Cust.evalHuskable (Cust.auto impl)
+  , Cust.custFuncImpl = ToFunc.toSchemeFunc (IAuto.auto impl)
   }
   where
     impl :: SExprBuilder -> Integer -> Integer -> LST.IOThrowsError SExpr

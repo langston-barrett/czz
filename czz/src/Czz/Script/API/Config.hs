@@ -6,9 +6,11 @@ where
 
 import qualified Language.Scheme.Types as LST
 
-import           Language.Scheme.CustFunc (CustFunc)
-import qualified Language.Scheme.CustFunc as Cust
-import           Language.Scheme.Opaque (Opaque(..))  -- for auto
+import qualified Language.Scheme.Interop.To.Func.Auto as IAuto
+import qualified Language.Scheme.Interop.To.Func as ToFunc
+import           Language.Scheme.Interop.CustFunc (CustFunc)
+import qualified Language.Scheme.Interop.CustFunc as Cust
+import           Language.Scheme.Interop.Opaque (Opaque(..))  -- for auto
 
 import           Czz.Coverage.Bucket.Bucketing (BucketingName(ZeroOneMany))
 import qualified Czz.Config.Type as Conf
@@ -24,7 +26,7 @@ defaultFuzzConfig :: CustFunc
 defaultFuzzConfig =
   Cust.CustFunc
   { Cust.custFuncName = "default-fuzz-config"
-  , Cust.custFuncImpl = Cust.evalHuskable (Cust.auto conf)
+  , Cust.custFuncImpl = ToFunc.toSchemeFunc (IAuto.auto1 conf)
   }
   where
     conf =

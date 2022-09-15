@@ -1,5 +1,5 @@
 cabal-version: 2.2
-name: husk-cust-func
+name: husk-interop
 version: 0.1
 author: Langston Barrett
 maintainer: Langston Barrett
@@ -8,8 +8,8 @@ license: MIT
 license-file: LICENSE
 build-type: Simple
 category: Language
-description: Classes for exposing Haskell functions to Husk Scheme
-synopsis: Classes for exposing Haskell functions to Husk Scheme
+description: Seamless interoperability between Haskell and embedded Husk Scheme
+synopsis: Seamless interoperability between Haskell and embedded Husk Scheme
 -- extra-source-files: README.md
 
 common common
@@ -60,21 +60,25 @@ library
   hs-source-dirs: src
 
   exposed-modules:
-    Language.Scheme.CustFunc
-    Language.Scheme.From
-    Language.Scheme.Opaque
-    Language.Scheme.To
+    Language.Scheme.Interop.CustFunc
+    Language.Scheme.Interop.Dynamic
+    Language.Scheme.Interop.Opaque
+    Language.Scheme.Interop.From
+    Language.Scheme.Interop.Poly
+    Language.Scheme.Interop.To.Func.Auto
+    Language.Scheme.Interop.To.Func
+    Language.Scheme.Interop.To.Val
+    Language.Scheme.Interop.TypeName
 
   build-depends:
     array,
     base >= 4.13 && < 4.17,
     containers,
-    dynn,
     husk-scheme,
-    parameterized-utils,
-    mtl
+    mtl,
+    parameterized-utils
 
-test-suite husk-cust-func-test
+test-suite husk-interop-test
   import: common
   type: exitcode-stdio-1.0
   hs-source-dirs: test
@@ -83,9 +87,9 @@ test-suite husk-cust-func-test
     Test
   build-depends:
     base,
-    husk-cust-func,
+    husk-interop,
     husk-scheme,
     mtl,
     parsec,
     tasty >= 1.4 && < 2.0,
-    tasty-hunit >= 0.10 && < 1.0,
+    tasty-hunit >= 0.10 && < 1.0

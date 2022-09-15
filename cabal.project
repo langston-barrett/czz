@@ -5,7 +5,7 @@ packages:
   czz-llvm-tui
   husk/husk-base
   husk/husk-bytestring
-  husk/husk-cust-func
+  husk/husk-interop
   husk/husk-what4
   libs/dynn
 

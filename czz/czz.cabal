@@ -118,7 +118,7 @@ library
     hashable,
     husk-base,
     husk-bytestring,
-    husk-cust-func,
+    husk-interop,
     husk-scheme,
     husk-what4,
     optparse-applicative,

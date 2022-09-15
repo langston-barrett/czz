@@ -35,9 +35,11 @@ import qualified Lang.Crucible.LLVM.MemModel as CLLVM
 
 import qualified Language.Scheme.Types as LST
 
-import           Language.Scheme.CustFunc (CustFunc)
-import qualified Language.Scheme.CustFunc as Cust
-import           Language.Scheme.Opaque (Opaque(..))  -- for auto
+import qualified Language.Scheme.Interop.To.Func.Auto as IAuto
+import qualified Language.Scheme.Interop.To.Func as ToFunc
+import           Language.Scheme.Interop.CustFunc (CustFunc)
+import qualified Language.Scheme.Interop.CustFunc as Cust
+import           Language.Scheme.Interop.Opaque (Opaque(..))  -- for auto
 
 import           Language.Scheme.What4 (SExpr, SExprBuilder)
 import qualified Language.Scheme.What4 as SWhat4
@@ -76,7 +78,7 @@ bool :: CustFunc
 bool =
   Cust.CustFunc
   { Cust.custFuncName = "bool"
-  , Cust.custFuncImpl = Cust.evalHuskable (Cust.auto impl)
+  , Cust.custFuncImpl = ToFunc.toSchemeFunc (IAuto.auto impl)
   }
   where
     impl :: SExprBuilder -> Bool -> LST.IOThrowsError SVal
@@ -91,7 +93,7 @@ intLit :: (1 <= n) => NatRepr n -> CustFunc
 intLit n =
   Cust.CustFunc
   { Cust.custFuncName = "i" ++ show (NatRepr.natValue n)
-  , Cust.custFuncImpl = Cust.evalHuskable (Cust.auto impl)
+  , Cust.custFuncImpl = ToFunc.toSchemeFunc (IAuto.auto impl)
   }
   where
     impl :: SExprBuilder -> Integer -> LST.IOThrowsError SVal
@@ -120,7 +122,7 @@ expr :: CustFunc
 expr =
   Cust.CustFunc
   { Cust.custFuncName = "expr"
-  , Cust.custFuncImpl = Cust.evalHuskable (Cust.auto impl)
+  , Cust.custFuncImpl = ToFunc.toSchemeFunc (IAuto.auto impl)
   }
   where
     impl :: SExprBuilder -> SExpr -> LST.IOThrowsError SVal
