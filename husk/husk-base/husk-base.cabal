@@ -66,9 +66,26 @@ library
   build-depends:
     base >= 4.13 && < 4.17,
     dynn,
-    husk-cust-func,
+    husk-interop,
     husk-scheme,
     mtl
+
+executable husk-base
+  import: common
+  hs-source-dirs: exe
+  main-is: Main.hs
+
+  build-depends:
+    base >= 4.8 && < 4.17,
+    husk-base,
+    husk-interop,
+    husk-scheme,
+    mtl
+
+  ghc-options:
+    -threaded
+    -rtsopts
+    "-with-rtsopts=-N"
 
 test-suite husk-base-test
   import: common

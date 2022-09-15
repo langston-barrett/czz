@@ -65,5 +65,5 @@ library
   build-depends:
     base >= 4.13 && < 4.17,
     bytestring,
-    husk-cust-func,
+    husk-interop,
     husk-scheme,

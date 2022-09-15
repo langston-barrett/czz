@@ -13,6 +13,7 @@
   - {name: [Data.List], as: List}
   - {name: [Data.Map, Data.Map.Strict], as: Map}
   - {name: [Data.Maybe], as: Maybe}
+  - {name: [Data.Reflection], as: Reflect}
   - {name: [Data.Sequence], as: Seq}
   - {name: [Data.Set, Data.HashSet], as: Set}
   - {name: [Data.Text], as: Text}
@@ -144,6 +145,7 @@
       - "Czz.LLVM.TUI"
       # For now:
       - "Czz.Script"
+      - "Main"
       - "Test"
 - ignore:
     within: ["Czz.LLVM.QQ"]

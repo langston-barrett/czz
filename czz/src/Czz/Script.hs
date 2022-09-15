@@ -16,8 +16,7 @@ import qualified Language.Scheme.Core as LSC
 import qualified Language.Scheme.Types as LST
 import qualified Language.Scheme.Variables as LSV
 
-import           Language.Scheme.CustFunc (evalHuskable)
-import           Language.Scheme.From ()
+import qualified Language.Scheme.Interop.To.Func as ToFunc
 
 import qualified Language.Scheme.Data.Maybe as SMaybe
 import qualified Language.Scheme.Data.Word as SWord
@@ -37,7 +36,7 @@ globalEnv :: [((Char, String), LST.LispVal)]
 globalEnv =
   [((LSV.varNamespace, "hello"), hello)]
   where
-    hello = LST.CustFunc (evalHuskable helloImpl)
+    hello = LST.CustFunc (ToFunc.toSchemeFunc helloImpl)
     helloImpl :: String -> LST.IOThrowsError LST.LispVal
     helloImpl s = do
       liftIO (putStrLn ("Hello, " ++ s))

@@ -18,9 +18,10 @@ import qualified Lang.Crucible.LLVM.Translation as CLLVM
 
 import qualified Language.Scheme.Types as LST
 
-import           Language.Scheme.CustFunc (CustFunc)
-import qualified Language.Scheme.CustFunc as Cust
-import           Language.Scheme.Opaque (Opaque(..))  -- for auto
+import qualified Language.Scheme.Interop.To.Func as ToFunc
+import           Language.Scheme.Interop.CustFunc (CustFunc)
+import qualified Language.Scheme.Interop.CustFunc as Cust
+import           Language.Scheme.Interop.Opaque (Opaque(..))  -- for auto
 
 import qualified Czz.KLimited as KLimit
 
@@ -78,7 +79,7 @@ fuzzer nllvm nenv neff nfb =
   Cust.CustFunc
   { Cust.custFuncName = "fuzzer"
   , Cust.custFuncImpl =
-    Cust.evalHuskable
+    ToFunc.toSchemeFunc
       (coerce (lift4 impl) ::
         Integer ->
         Opaque Conf.LLVMConfig ->

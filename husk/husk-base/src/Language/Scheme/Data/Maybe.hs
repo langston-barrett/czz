@@ -1,5 +1,6 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE TypeApplications #-}
+
 module Language.Scheme.Data.Maybe
   ( extendEnv
   , extendEnv'
@@ -23,10 +24,13 @@ import qualified Language.Scheme.Types as LST
 import           Data.Dyn1 (Dyn1)
 import qualified Data.Dyn1 as Dyn1
 
-import           Language.Scheme.CustFunc (CustFunc)
-import qualified Language.Scheme.CustFunc as Cust
-import           Language.Scheme.Opaque (Opaque(..))
-import           Language.Scheme.To ()
+
+import qualified Language.Scheme.Interop.To.Func.Auto as IAuto
+import           Language.Scheme.Interop.To.Func (Ret(..))  -- for auto
+import qualified Language.Scheme.Interop.To.Func as ToFunc
+import           Language.Scheme.Interop.CustFunc (CustFunc)
+import qualified Language.Scheme.Interop.CustFunc as Cust
+import           Language.Scheme.Interop.Opaque (Opaque(..))  -- for auto
 
 extendEnv :: String -> LST.Env -> IO LST.Env
 extendEnv =
@@ -58,7 +62,7 @@ just :: CustFunc
 just =
   Cust.CustFunc
   { Cust.custFuncName = "just"
-  , Cust.custFuncImpl = Cust.evalHuskable (Cust.auto impl)
+  , Cust.custFuncImpl = ToFunc.toSchemeFunc (IAuto.auto impl)
   }
   where
     impl :: LST.LispVal -> Dyn1 Maybe
@@ -68,7 +72,7 @@ nothing :: CustFunc
 nothing =
   Cust.CustFunc
   { Cust.custFuncName = "nothing"
-  , Cust.custFuncImpl = Cust.evalHuskable (Cust.auto impl)
+  , Cust.custFuncImpl = ToFunc.toSchemeFunc (IAuto.auto1 impl)
   }
   where
     impl :: Dyn1 Maybe
@@ -78,7 +82,7 @@ isJust :: CustFunc
 isJust =
   Cust.CustFunc
   { Cust.custFuncName = "is-just"
-  , Cust.custFuncImpl = Cust.evalHuskable (Cust.auto impl)
+  , Cust.custFuncImpl = ToFunc.toSchemeFunc (IAuto.auto impl)
   }
   where
     impl :: Dyn1 Maybe -> Bool
@@ -88,7 +92,7 @@ maybe_ :: CustFunc
 maybe_ =
   Cust.CustFunc
   { Cust.custFuncName = "maybe"
-  , Cust.custFuncImpl = Cust.evalHuskable (Cust.auto maybeM)
+  , Cust.custFuncImpl = ToFunc.toSchemeFunc (IAuto.auto maybeM)
   }
   where
     maybeM ::
@@ -108,7 +112,7 @@ catMaybes =
   Cust.CustFunc
   { Cust.custFuncName = "cat"
   , Cust.custFuncImpl =
-      Cust.evalHuskable
+      ToFunc.toSchemeFunc
         (coerce (lift1 (return . Maybe.catMaybes @LST.LispVal . map fromDyn1)) ::
           [Opaque (Dyn1 Maybe)] -> LST.IOThrowsError [LST.LispVal])
   }
@@ -118,7 +122,7 @@ toList =
   Cust.CustFunc
   { Cust.custFuncName = "to-list"
   , Cust.custFuncImpl =
-      Cust.evalHuskable
+      ToFunc.toSchemeFunc
         (coerce (lift1 (return . Maybe.maybeToList @LST.LispVal . fromDyn1)) ::
           Opaque (Dyn1 Maybe) -> LST.IOThrowsError [Opaque LST.LispVal])
   }
