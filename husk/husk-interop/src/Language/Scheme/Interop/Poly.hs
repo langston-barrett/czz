@@ -2,6 +2,7 @@
 {-# LANGUAGE DefaultSignatures #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE RankNTypes #-}
@@ -10,9 +11,7 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeFamilyDependencies #-}
 {-# LANGUAGE TypeOperators #-}
-{-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE ViewPatterns #-}
 
 -- | Problem: can't store polymorphic values in 'Dynamic'
 --
@@ -79,62 +78,38 @@ module Language.Scheme.Interop.Poly
 
 import           Data.Kind (Type)
 import           Data.Functor.Identity (Identity)
-import           Data.Proxy (Proxy(Proxy))
+import           Data.Proxy (Proxy)
 import           Data.Type.Equality (TestEquality(testEquality), (:~:)(Refl))
 import qualified Type.Reflection as Reflect
 
 --------------------------------------------------------------------------------
 -- Kinds
 
-data Kind
-  = KType  -- could maybe support DataKinds by making this KType Type?
-  | Kind :=> Kind
+-- These are just to make it clear when we're talking about kinds (types of
+-- types), rather than just types.
 
-infixr :=>
+-- | As we all know, since @-XTypeInType@ kinds /are/ types.
+type Kind = Type
 
-type family EnKind (t :: l) = (k :: Kind) | k -> t where
-  EnKind (a -> b) = EnKind a ':=> EnKind b
-  EnKind Type = 'KType
+newtype KindRep k = KindRep { getKindRep :: Reflect.TypeRep k }
+  deriving (TestEquality)
 
--- | Needs UndecidableInstances, but should be safe since it has an inverse in
--- the form of 'EnKind'.
-type family DeKind (k :: Kind) = (t :: Type) | t -> k where
-  DeKind 'KType = Type
-  DeKind (k ':=> l) = DeKind k -> DeKind l
+kTypeRep :: KindRep Type
+kTypeRep = KindRep (Reflect.typeRep @Type)
 
-data KindRep (k :: Kind) where
-  KTypeRep :: KindRep 'KType
-  (:==>) :: KindRep k -> KindRep l -> KindRep (k ':=> l)
-
--- | Just a little sanity check.
-_enDeKind :: forall k. KindRep k -> EnKind (DeKind k) :~: k
-_enDeKind =
+kDomain :: KindRep (k -> l) -> KindRep k
+kDomain =
+  -- The pattern matches are redundant, but GHC doesn't know that since they're
+  -- pattern synonyms.
   \case
-    KTypeRep -> Refl
-    (k :==> l) ->
-      case (_enDeKind k, _enDeKind l) of
-        (Refl, Refl) -> Refl
+    KindRep (Reflect.App (Reflect.App (Reflect.Con _) k) _) -> KindRep k
+    KindRep (Reflect.Fun k _) -> KindRep k
 
-infixr :==>
-
-instance TestEquality KindRep where
-  testEquality k l =
-    case (k, l) of
-      (KTypeRep, KTypeRep) -> Just Refl
-      (k' :==> l', k'' :==> l'') -> do
-        Refl <- testEquality k' k''
-        Refl <- testEquality l' l''
-        return Refl
-      (_, _) -> Nothing
-
-class Kindable k where
-  kindRep :: proxy k -> KindRep (EnKind k)
-
-instance Kindable Type where
-  kindRep _proxy = KTypeRep
-
-instance (Kindable a, Kindable b) => Kindable (a -> b) where
-  kindRep _proxy = kindRep (Proxy @a) :==> kindRep (Proxy @b)
+kRange :: KindRep (k -> l) -> KindRep l
+kRange =
+  \case
+    KindRep (Reflect.App (Reflect.App (Reflect.Con _) _) l) -> KindRep l
+    KindRep (Reflect.Fun _ l) -> KindRep l
 
 --------------------------------------------------------------------------------
 -- Contexts
@@ -168,13 +143,13 @@ instance TestEquality CtxRep where
 --
 -- TODO(lb): rename 'code'?
 data U (ctx :: Ctx) (uk :: Kind) where
-  App :: U ctx (k ':=> uk) -> U ctx k -> U ctx uk
-  Const :: DeKind k -> U 'Empty k
+  App :: U ctx (k -> uk) -> U ctx k -> U ctx uk
+  Const :: k -> U 'Empty k
   Var :: U (ctx :> uk) uk
   Weak :: U ctx uk -> U (ctx :> k) uk
 
 data URep (ctx :: Ctx) (uk :: Kind) (u :: U ctx uk) :: Type where
-  AppRep :: URep ctx (k ':=> l) f -> URep ctx k u -> URep ctx l ('App f u)
+  AppRep :: URep ctx (k -> l) f -> URep ctx k u -> URep ctx l ('App f u)
   ConstRep :: KindRep uk -> Reflect.TypeRep f -> URep 'Empty uk ('Const f)
   VarRep :: KindRep uk -> CtxRep ctx -> URep (ctx :> uk) uk 'Var
   WeakRep :: KindRep k -> URep ctx uk u -> URep (ctx :> k) uk ('Weak u)
@@ -190,7 +165,7 @@ uCtx =
 uKind :: URep ctx k u -> KindRep k
 uKind =
   \case
-    AppRep (uKind -> _k :==> l) _a -> l
+    AppRep f _a -> kRange (uKind f)
     ConstRep k _ -> k
     VarRep k _ -> k
     WeakRep _ u -> uKind u
@@ -218,23 +193,17 @@ instance TestEquality (URep ctx k) where
       (_, _) -> Nothing
 
 --------------------------------------------------------------------------------
--- DeCoderetation
+-- Decoding
 
-type family EnCode0 (a :: k) :: U 'Empty (EnKind k) where
+type family EnCode0 (a :: k) :: U 'Empty k where
   EnCode0 (f a) = 'App (EnCode0 f) (EnCode0 a)
-  -- :-(
-  --
-  -- • Couldn't match kind ‘k’ with ‘EnKind (DeKind k)’
-  --   Expected kind ‘U 'Empty (EnKind (DeKind k))’,
-  --     but ‘'Const a’ has kind ‘U 'Empty k’
-  --
   EnCode0 a = 'Const a
 
-type family DeCode0 (u :: U 'Empty uk) :: DeKind uk where
+type family DeCode0 (u :: U 'Empty uk) :: uk where
   DeCode0 ('App f x) = (DeCode0 f) (DeCode0 x)
   DeCode0 ('Const t) = t
 
-type family DeCode1 (u :: U ('Empty :> k) uk) (a :: DeKind k) :: DeKind uk where
+type family DeCode1 (u :: U ('Empty :> k) uk) (a :: k) :: uk where
   DeCode1 ('App f x) a = (DeCode1 f a) (DeCode1 x a)
   DeCode1 'Var a = a
   DeCode1 ('Weak u) a = DeCode0 u
@@ -242,24 +211,24 @@ type family DeCode1 (u :: U ('Empty :> k) uk) (a :: DeKind k) :: DeKind uk where
 type family
   DeCode2
     (u :: U ('Empty :> k :> l) uk)
-    (a :: DeKind k)
-    (b :: DeKind l)
-    :: DeKind uk where
+    (a :: k)
+    (b :: l)
+    :: uk where
   DeCode2 ('App f x) a b = (DeCode2 f a b) (DeCode2 x a b)
   DeCode2 ('Weak u) a _ = DeCode1 u a
   DeCode2 'Var _ b = b
 
 data DeCode1'
-  (f :: DeKind uk -> Type)
+  (f :: uk -> Type)
   (u :: U ('Empty :> k) uk)
-  (a :: DeKind k)
+  (a :: k)
   = DeCode1' (f (DeCode1 u a))
 
 data DeCode2'
-  (f :: DeKind uk -> Type)
+  (f :: uk -> Type)
   (u :: U ('Empty :> k :> l) uk)
-  (a :: DeKind k)
-  (b :: DeKind l)
+  (a :: k)
+  (b :: l)
   = DeCode2' (f (DeCode2 u a b))
 
 data All1 (f :: k -> Type) = All1 (forall (a :: k). f a)
@@ -267,7 +236,7 @@ data All2 (f :: k -> l -> Type) = All2 (forall (a :: k) (b :: l). f a b)
 
 -- TODO(lb): currying...?
 
-type family DeCode (ctx :: Ctx) (u :: U ctx uk) (f :: DeKind uk -> Type) :: Type where
+type family DeCode (ctx :: Ctx) (u :: U ctx uk) (f :: uk -> Type) :: Type where
   DeCode 'Empty u f = f (DeCode0 u)
   DeCode ('Empty :> _) u f = All1 (DeCode1' f u)
   DeCode ('Empty :> _ :> _) u f = All2 (DeCode2' f u)
@@ -299,7 +268,7 @@ instance TestEquality TypeRep where
     Refl <- testEquality u v
     return Refl
 
-class Kindable k => Typeable (a :: k) where
+class Reflect.Typeable k => Typeable (a :: k) where
   typeRep :: TypeRep a
 
   -- default typeRep :: Reflect.Typeable a => TypeRep a
@@ -328,7 +297,7 @@ type family
   Inst
     (ctx :: Ctx)
     (u :: U (ctx :> k) uk)
-    (a :: DeKind k)
+    (a :: k)
     :: U ctx uk where
   Inst ctx ('App f x) a = 'App (Inst ctx f a) (Inst ctx x a)
   Inst ctx 'Var a = WeakBy ctx ('Const a)
@@ -360,7 +329,7 @@ inst rep =
 -- appMono ::
 --   DeCodereted 'Empty u ->
 --   DeCode 'Empty u Identity ->
---   URep 'Empty 'KType v ->
+--   URep 'Empty Type v ->
 --   DeCode 'Empty v Identity ->
 
 --------------------------------------------------------------------------------
@@ -369,14 +338,14 @@ inst rep =
 -- | 'PolyFun' is the goal: A monomorphic type that captures the polymorphism of
 -- the contained function.
 data PolyFun where
-  PolyFun :: URep ctx 'KType u -> DeCode ctx u Identity -> PolyFun
+  PolyFun :: URep ctx Type u -> DeCode ctx u Identity -> PolyFun
 
 --------------------------------------------------------------------------------
 -- Examples
 
 type Ctx0 = 'Empty
-type Ctx1 = 'Empty :> 'KType
-type Ctx2 = 'Empty :> 'KType :> 'KType
+type Ctx1 = 'Empty :> Type
+type Ctx2 = 'Empty :> Type :> Type
 -- type a --> b = 'App ('App ('Const (->)) a) b
 type a ---> b = 'App ('App ('Weak ('Const (->))) a) b
 -- type a ----> b = 'App ('App ('Weak ('Weak ('Const (->)))) a) b
@@ -385,43 +354,43 @@ ctx0 :: CtxRep Ctx0
 ctx0 = EmptyRep
 
 ctx1 :: CtxRep Ctx1
-ctx1 = ctx0 ::> KTypeRep
+ctx1 = ctx0 ::> kTypeRep
 
-_var_1_1 :: URep Ctx1 'KType 'Var
-_var_1_1 = VarRep KTypeRep ctx0
+_var_1_1 :: URep Ctx1 Type 'Var
+_var_1_1 = VarRep kTypeRep ctx0
 
-_var_2_1 :: URep Ctx2 'KType ('Weak 'Var)
-_var_2_1 = WeakRep KTypeRep (VarRep KTypeRep ctx0)
+_var_2_1 :: URep Ctx2 Type ('Weak 'Var)
+_var_2_1 = WeakRep kTypeRep (VarRep kTypeRep ctx0)
 
-_var_2_2 :: URep Ctx2 'KType 'Var
-_var_2_2 = VarRep KTypeRep ctx1
+_var_2_2 :: URep Ctx2 Type 'Var
+_var_2_2 = VarRep kTypeRep ctx1
 
 type IdType1 = 'Var ---> 'Var
 
-type ArrKind = 'KType ':=> 'KType ':=> 'KType
+type ArrKind = Type -> Type -> Type
 
-arrKindRep :: KindRep ArrKind
-arrKindRep = KTypeRep :==> KTypeRep :==> KTypeRep
+-- arrKindRep :: KindRep ArrKind
+-- arrKindRep = kTypeRep :==> kTypeRep :==> kTypeRep
 
-arrRep1 :: URep Ctx1 ArrKind ('Weak ('Const (->)))
-arrRep1 = WeakRep KTypeRep (ConstRep arrKindRep (Reflect.typeRep @(->)))
+-- arrRep1 :: URep Ctx1 ArrKind ('Weak ('Const (->)))
+-- arrRep1 = WeakRep kTypeRep (ConstRep arrKindRep (Reflect.typeRep @(->)))
 
-_idRep :: URep Ctx1 'KType IdType1
-_idRep = AppRep (AppRep arrRep1 (VarRep KTypeRep ctx0)) (VarRep KTypeRep ctx0)
+-- _idRep :: URep Ctx1 Type IdType1
+-- _idRep = AppRep (AppRep arrRep1 (VarRep kTypeRep ctx0)) (VarRep kTypeRep ctx0)
 
--- _idRepWeak :: URep Ctx2 'KType ('Weak IdType1)
+-- _idRepWeak :: URep Ctx2 Type ('Weak IdType1)
 -- _idRepWeak = WeakRep (VarRep rep0 :---> VarRep rep0)
 
--- _idRepWeak' :: URep Ctx2 'KType ('Weak 'Var ----> 'Weak 'Var)
+-- _idRepWeak' :: URep Ctx2 Type ('Weak 'Var ----> 'Weak 'Var)
 -- _idRepWeak' = WeakRep var_1_1 :---> WeakRep var_1_1
 
--- _idInst :: URep Ctx0 'KType (Inst Ctx0 IdType1 Bool)
+-- _idInst :: URep Ctx0 Type (Inst Ctx0 IdType1 Bool)
 -- _idInst = WeakRep (ConstRep (Proxy @Bool)) :---> WeakRep (ConstRep (Proxy @Bool))
 
 -- _idP :: PolyFun
 -- _idP = PolyFun idRep (All1 (DeCode1' id))
 
--- constRep :: URep Ctx2 'KType ('Weak 'Var --> 'Var --> 'Weak 'Var)
+-- constRep :: URep Ctx2 Type ('Weak 'Var --> 'Var --> 'Weak 'Var)
 -- constRep = var_2_1 :---> var_2_2 :---> var_2_1
 
 -- _constP :: PolyFun
