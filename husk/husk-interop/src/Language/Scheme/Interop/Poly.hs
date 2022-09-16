@@ -69,7 +69,7 @@ import           Data.Proxy (Proxy(Proxy))
 -- Kinds
 
 data Kind
-  = KType
+  = KType  -- could maybe support DataKinds by making this KType Type?
   | Kind :=> Kind
 
 infixr :=>
@@ -138,11 +138,12 @@ uKind =
 --------------------------------------------------------------------------------
 -- Interpretation
 
--- TODO(lb): con
 type family Interp0 (u :: U 'Empty uk) :: InterpKind uk where
+  Interp0 ('App f x) = (Interp0 f) (Interp0 x)
   Interp0 ('Const t) = t
 
 type family Interp1 (u :: U ('Empty :> k) uk) (a :: InterpKind k) :: InterpKind uk where
+  Interp1 ('App f x) a = (Interp1 f a) (Interp1 x a)
   Interp1 'Var a = a
   Interp1 ('Weak u) a = Interp0 u
 
@@ -152,6 +153,7 @@ type family
     (a :: InterpKind k)
     (b :: InterpKind l)
     :: InterpKind uk where
+  Interp2 ('App f x) a b = (Interp2 f a b) (Interp2 x a b)
   Interp2 ('Weak u) a _ = Interp1 u a
   Interp2 'Var _ b = b
 
@@ -236,6 +238,11 @@ inst proxy =
 --   case uCtx uRep of
 --     ERep -> InstFail
 --     XRep ctx -> InstSucceed (inst proxy uRep)
+
+--------------------------------------------------------------------------------
+-- Application
+
+-- TODO(lb)
 
 --------------------------------------------------------------------------------
 -- Dynamic
