@@ -5,7 +5,9 @@
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeFamilyDependencies #-}
 {-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 -- | Problem: can't store polymorphic values in 'Dynamic'
 --
@@ -59,17 +61,15 @@ data KindRep (k :: Kind) where
 
 infixr :==>
 
-type family InterpKind (k :: Kind) :: Type where
+-- TODO(lb): needs UndecidableInstances... safe? I think so?
+type family InterpKind (k :: Kind) = (t :: Type) | t -> k where
   InterpKind 'KType = Type
   InterpKind (k ':=> l) = InterpKind k -> InterpKind l
-
--- data KProxy (k :: Kind) (t :: InterpKind k) where
---   KProxy :: Proxy t -> KProxy k t
 
 --------------------------------------------------------------------------------
 -- Contexts
 
--- | Context of unnamed type variables
+-- | Context of type variables
 data Ctx
   = Empty
   | Extend Ctx Kind
@@ -87,14 +87,13 @@ data CtxRep ctx where
 -- | The universe of types that mention variables in @ctx@
 data U (ctx :: Ctx) (uk :: Kind) where
   App :: U ctx (k ':=> uk) -> U ctx k -> U ctx uk
-  Const :: Type -> U 'Empty 'KType
+  Const :: InterpKind k -> U 'Empty k
   Var :: U (ctx :> uk) uk
   Weak :: U ctx uk -> U (ctx :> k) uk
 
 data URep (ctx :: Ctx) (k :: Kind) (u :: U ctx uk) :: Type where
   AppRep :: URep ctx (k ':=> l) f -> URep ctx k u -> URep ctx l ('App f u)
-  -- | TODO(lb): not a real singleton. need TypeRep?
-  ConstRep :: Proxy t -> URep 'Empty 'KType ('Const t)
+  ConstRep :: KindRep uk -> Proxy f -> URep 'Empty uk ('Const f)
   VarRep :: KindRep uk -> CtxRep ctx -> URep (ctx :> uk) uk 'Var
   WeakRep :: KindRep k -> URep ctx uk u -> URep (ctx :> k) uk ('Weak u)
 
@@ -112,15 +111,15 @@ uKind =
     AppRep f _a ->
       case uKind f of
         _k :==> l -> l
-    ConstRep {} -> KTypeRep
-    VarRep k ctxRep -> k
-    WeakRep k u -> uKind u
+    ConstRep k _ -> k
+    VarRep k _ -> k
+    WeakRep _ u -> uKind u
 
 --------------------------------------------------------------------------------
 -- Interpretation
 
 -- TODO(lb): con
-type family Interp0 (u :: U 'Empty k) :: InterpKind k where
+type family Interp0 (u :: U 'Empty uk) :: InterpKind uk where
   Interp0 ('Const t) = t
 
 type family Interp1 (u :: U ('Empty :> k) uk) (a :: InterpKind k) :: InterpKind uk where
