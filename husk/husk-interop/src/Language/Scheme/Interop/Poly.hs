@@ -85,6 +85,7 @@ import           Data.Functor.Identity (Identity)
 import           Data.Proxy (Proxy)
 import           Data.Type.Equality (TestEquality(testEquality), (:~:)(Refl))
 import qualified Type.Reflection as Reflect
+import           Unsafe.Coerce (unsafeCoerce)
 
 --------------------------------------------------------------------------------
 -- Kinds
@@ -146,9 +147,8 @@ instance TestEquality CtxRep where
 --------------------------------------------------------------------------------
 -- Codeniverse
 
--- | The universe of types of kind @uk@ that mention variables in @ctx@
---
--- TODO(lb): rename 'code'?
+-- | Descriptions of the universe of types of kind @uk@ that mention variables
+-- in @ctx@.
 data Code (ctx :: Ctx) (uk :: Kind) where
   App :: Code ctx (k -> uk) -> Code ctx k -> Code ctx uk
   Const :: k -> Code 'Empty k
@@ -207,6 +207,30 @@ type family EnCode (ctx :: Ctx) (a :: k) = (u :: Code ctx k) where
   EnCode 'Empty a = 'Const a
   EnCode (ctx :> _) a = 'Weak (EnCode ctx a)
 
+data EnCoded a where
+  EnCodedApp ::
+    (a ~ f b) =>
+    Reflect.TypeRep f ->
+    Reflect.TypeRep b ->
+    (forall ctx. EnCode ctx a :~: 'App (EnCode ctx f) (EnCode ctx b)) ->
+    EnCoded a
+  EnCodedCon ::
+    (EnCode 'Empty a ~ 'Const a) =>
+    (forall ctx k.
+     KindRep k ->
+     CtxRep (ctx :> k) ->
+     EnCode (ctx :> k) a :~: 'Weak (EnCode ctx a)) ->
+    EnCoded a
+
+enCoded :: forall a. Reflect.TypeRep a -> EnCoded a
+enCoded =
+  \case
+    Reflect.Con _ ->
+      -- TODO(lb): Justify!
+      case unsafeCoerce Refl :: EnCode 'Empty a :~: 'Const a of
+        Refl -> EnCodedCon (\_k _c -> (unsafeCoerce Refl :: EnCode (ctx :> k) a :~: 'Weak (EnCode ctx a)))
+    Reflect.App f x -> EnCodedApp f x Refl
+
 appInj1 :: 'App f a :~: 'App g b -> f :~: g
 appInj1 Refl = Refl
 
@@ -215,43 +239,52 @@ appInj2 Refl = Refl
 
 enCodeInjApp1 ::
   forall f a g b ctx.
+  CtxRep ctx ->
   Reflect.TypeRep f ->
   Reflect.TypeRep a ->
   Reflect.TypeRep g ->
   Reflect.TypeRep b ->
   EnCode ctx (f a) :~: EnCode ctx (g b) ->
   f :~: g
-enCodeInjApp1 f a g b Refl = enCodeInj f g (appInj1 r)
+enCodeInjApp1 ctx f a g b Refl = enCodeInj ctx f g (appInj1 r)
   where
     r :: 'App (EnCode ctx g) (EnCode ctx b) :~: 'App (EnCode ctx f) (EnCode ctx a)
     r = Refl
 
 enCodeInjApp2 ::
   forall f a g b ctx.
+  CtxRep ctx ->
   Reflect.TypeRep f ->
   Reflect.TypeRep a ->
   Reflect.TypeRep g ->
   Reflect.TypeRep b ->
   EnCode ctx (f a) :~: EnCode ctx (g b) ->
   a :~: b
-enCodeInjApp2 f a g b Refl = enCodeInj a b (appInj2 r)
+enCodeInjApp2 ctx f a g b Refl = enCodeInj ctx a b (appInj2 r)
   where
     r :: 'App (EnCode ctx g) (EnCode ctx b) :~: 'App (EnCode ctx f) (EnCode ctx a)
     r = Refl
 
 enCodeInj ::
   forall a b ctx.
+  CtxRep ctx ->
   Reflect.TypeRep a ->
   Reflect.TypeRep b ->
   EnCode ctx a :~: EnCode ctx b ->
   a :~: b
-enCodeInj a b r@Refl =
-  case (a, b) of
-    (Reflect.App f a', Reflect.App g b') ->
-      case (enCodeInjApp1 f a' g b' r, enCodeInjApp2 f a' g b' r) of
+enCodeInj ctx a b r@Refl =
+  case (enCoded a, enCoded b) of
+    (EnCodedApp f a' Refl, EnCodedApp g b' Refl) ->
+      case (enCodeInjApp1 ctx f a' g b' r, enCodeInjApp2 ctx f a' g b' r) of
         (Refl, Refl) ->
-          case (enCodeInj f g Refl, enCodeInj a' b' Refl) of
+          case (enCodeInj ctx f g Refl, enCodeInj ctx a' b' Refl) of
             (Refl, Refl) -> Refl
+    (EnCodedCon f, EnCodedCon g) ->
+      case ctx of
+        EmptyRep -> Refl
+        c@(ctx' ::> k) ->
+          case (f k c, g k c) of
+            (Refl, Refl) -> enCodeInj ctx' a b Refl
 
 --------------------------------------------------------------------------------
 -- Decoding
@@ -401,8 +434,8 @@ data PolyFun where
 --------------------------------------------------------------------------------
 -- Examples
 
-enCoded :: CodeRep 'Empty Type (EnCode 'Empty ())
-enCoded = ConstRep kindRep (Reflect.typeRep @())
+enCodedUnit :: CodeRep 'Empty Type (EnCode 'Empty ())
+enCodedUnit = ConstRep kindRep (Reflect.typeRep @())
 
 type Ctx0 = 'Empty
 type Ctx1 = 'Empty :> Type
