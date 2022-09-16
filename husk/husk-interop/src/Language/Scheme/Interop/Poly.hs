@@ -43,10 +43,25 @@ module Language.Scheme.Interop.Poly
   , type Ctx(..)
   , CtxRep(..)
   , type U(..)
+  , URep(..)
+  , uCtx
+  , uKind
+  -- * Interpretation
+  , Interp
+  , Interp1'(..)
+  , Interp2'(..)
+  , All1(..)
+  , All2(..)
+  -- * Weakening
+  , WeakBy
+  , weakBy
+  -- * Instantiation
+  , inst
   ) where
 
 import           Data.Kind (Type)
-import           Data.Proxy (Proxy(Proxy))
+import           Data.Functor.Identity (Identity)
+import           Data.Proxy (Proxy)
 
 --------------------------------------------------------------------------------
 -- Kinds
@@ -61,7 +76,8 @@ data KindRep (k :: Kind) where
 
 infixr :==>
 
--- TODO(lb): needs UndecidableInstances... safe? I think so?
+-- Needs UndecidableInstances... I believe this is safe, since given any RHS you
+-- can deduce the RHS by looking at arrows and parens...
 type family InterpKind (k :: Kind) = (t :: Type) | t -> k where
   InterpKind 'KType = Type
   InterpKind (k ':=> l) = InterpKind k -> InterpKind l
@@ -102,7 +118,7 @@ uCtx =
   \case
     AppRep f _ -> uCtx f
     ConstRep {} -> EmptyRep
-    VarRep k ctxRep -> ctxRep ::> k
+    VarRep k ctx -> ctx ::> k
     WeakRep k u -> uCtx u ::> k
 
 uKind :: URep ctx k u -> KindRep k
@@ -171,97 +187,109 @@ type family Interp (ctx :: Ctx) (u :: U ctx uk) (f :: InterpKind uk -> Type) :: 
 --   AllLNil :: Instantiate 'EmptyCtx u '[] -> AllL u '[]
 --   AllLCons :: (forall a. Instantiate (ctx :> ()) u (a ': l)) -> AllL u l
 
--- --------------------------------------------------------------------------------
--- -- Weakening
+--------------------------------------------------------------------------------
+-- Weakening
 
--- type family WeakBy (ctx :: Ctx) (u :: U Ctx0) :: U ctx where
---   WeakBy Ctx0 u = u
---   WeakBy (ctx :> ()) u = 'Weak (WeakBy ctx u)
+type family WeakBy (ctx :: Ctx) (u :: U 'Empty k) :: U ctx k where
+  WeakBy 'Empty u = u
+  WeakBy (ctx :> _) u = 'Weak (WeakBy ctx u)
 
--- weakBy :: CtxRep ctx -> URep Ctx0 u -> URep ctx (WeakBy ctx u)
--- weakBy ctxRep u =
---   case (ctxRep, u) of
---     (ERep, _) -> u
---     (XRep ctxRep', arr@(_ :---> _)) -> WeakRep (weakBy ctxRep' arr)
---     (XRep ctxRep', cst@(ConstRep {})) -> WeakRep (weakBy ctxRep' cst)
+weakBy :: CtxRep ctx -> URep 'Empty k u -> URep ctx k (WeakBy ctx u)
+weakBy ctx u =
+  case (ctx, u) of
+    (EmptyRep, _) -> u
+    (ctx' ::> k, a@(AppRep {})) -> WeakRep k (weakBy ctx' a)
+    (ctx' ::> k, c@(ConstRep {})) -> WeakRep k (weakBy ctx' c)
 
--- --------------------------------------------------------------------------------
--- -- Instantiation
+--------------------------------------------------------------------------------
+-- Instantiation
 
--- type family Inst (ctx :: Ctx) (u :: U (ctx :> ())) (a :: Type) :: U ctx where
---   Inst ctx (u ':--> v) a = Inst ctx u a ':--> Inst ctx v a
---   Inst ctx ('Weak u) _ = u
---   Inst ctx 'Var a = WeakBy ctx ('Const a)
+type family
+  Inst
+    (ctx :: Ctx)
+    (u :: U (ctx :> k) uk)
+    (a :: InterpKind k)
+    :: U ctx uk where
+  Inst ctx ('App f x) a = 'App (Inst ctx f a) (Inst ctx x a)
+  Inst ctx 'Var a = WeakBy ctx ('Const a)
+  Inst ctx ('Weak u) _ = u
 
--- inst :: Proxy a -> URep (ctx :> ()) u -> URep ctx (Inst ctx u a)
--- inst proxy =
---   \case
---     u :---> v -> inst proxy u :---> inst proxy v
---     VarRep ctxRep -> weakBy ctxRep (ConstRep proxy)
---     WeakRep u -> u
+inst :: Proxy a -> URep (ctx :> k) uk u -> URep ctx uk (Inst ctx u a)
+inst proxy =
+  \case
+    AppRep f a -> AppRep (inst proxy f) (inst proxy a)
+    VarRep k ctx -> weakBy ctx (ConstRep k proxy)
+    WeakRep _kRep u -> u
 
--- -- TODO(lb): ???
--- -- data TryInst (ctx :: Ctx) (u :: U ctx) a where
--- --   InstFail :: TryInst Ctx0 u a
--- --   InstSucceed ::
--- --     URep ctx (Inst ctx u a) -> TryInst (ctx :> ()) u a
+-- TODO(lb): ???
+-- data TryInst (ctx :: Ctx) (u :: U ctx) a where
+--   InstFail :: TryInst Ctx0 u a
+--   InstSucceed ::
+--     URep ctx (Inst ctx u a) -> TryInst (ctx :> ()) u a
 
--- -- tryInst :: Proxy a -> URep ctx u -> TryInst ctx u a
--- -- tryInst proxy uRep =
--- --   case uCtx uRep of
--- --     ERep -> InstFail
--- --     XRep ctxRep -> InstSucceed (inst proxy uRep)
+-- tryInst :: Proxy a -> URep ctx u -> TryInst ctx u a
+-- tryInst proxy uRep =
+--   case uCtx uRep of
+--     ERep -> InstFail
+--     XRep ctx -> InstSucceed (inst proxy uRep)
 
--- --------------------------------------------------------------------------------
--- -- Dynamic
+--------------------------------------------------------------------------------
+-- Dynamic
 
--- -- | 'PolyFun' is the goal: A monomorphic type that captures the polymorphism of
--- -- the contained function.
--- data PolyFun where
---   PolyFun :: URep ctx u -> Interp ctx u -> PolyFun
+-- | 'PolyFun' is the goal: A monomorphic type that captures the polymorphism of
+-- the contained function.
+data PolyFun where
+  PolyFun :: URep ctx 'KType u -> Interp ctx u Identity -> PolyFun
 
--- --------------------------------------------------------------------------------
--- -- Examples
+--------------------------------------------------------------------------------
+-- Examples
 
--- rep0 :: CtxRep Ctx0
--- rep0 = ERep
+type Ctx0 = 'Empty
+type Ctx1 = 'Empty :> 'KType
+type Ctx2 = 'Empty :> 'KType :> 'KType
+type a --> b = 'App ('App ('Const (->)) a) b
+type a ---> b = 'App ('App ('Weak ('Const (->))) a) b
+type a ----> b = 'App ('App ('Weak ('Weak ('Const (->)))) a) b
 
--- rep1 :: CtxRep Ctx1
--- rep1 = XRep ERep
+rep0 :: CtxRep Ctx0
+rep0 = ERep
 
--- var_1_1 :: URep Ctx1 'Var
--- var_1_1 = VarRep rep0
+rep1 :: CtxRep Ctx1
+rep1 = XRep ERep
 
--- var_2_1 :: URep Ctx2 ('Weak 'Var)
--- var_2_1 = WeakRep (VarRep rep0)
+var_1_1 :: URep Ctx1 'KType 'Var
+var_1_1 = VarRep rep0
 
--- var_2_2 :: URep Ctx2 'Var
--- var_2_2 = VarRep rep1
+var_2_1 :: URep Ctx2 'KType ('Weak 'Var)
+var_2_1 = WeakRep (VarRep rep0)
 
--- type IdType = 'Var ':--> 'Var
+var_2_2 :: URep Ctx2 KType 'Var
+var_2_2 = VarRep rep1
 
--- idRep :: URep Ctx1 IdType
--- idRep = var_1_1 :---> var_1_1
+type IdType1 = 'Var ---> 'Var
 
--- _idRepWeak :: URep ('ExtendCtx Ctx1) ('Weak IdType)
--- _idRepWeak = WeakRep (VarRep rep0 :---> VarRep rep0)
+idRep :: URep Ctx1 'KType IdType1
+idRep = var_1_1 :---> var_1_1
 
--- _idRepWeak' :: URep ('ExtendCtx Ctx1) ('Weak 'Var ':--> 'Weak 'Var)
--- _idRepWeak' = WeakRep var_1_1 :---> WeakRep var_1_1
+_idRepWeak :: URep Ctx2 'KType ('Weak IdType1)
+_idRepWeak = WeakRep (VarRep rep0 :---> VarRep rep0)
 
--- _idInst :: URep Ctx1 (Inst Ctx1 IdType Bool)
--- _idInst = WeakRep (ConstRep (Proxy @Bool)) :---> WeakRep (ConstRep (Proxy @Bool))
+_idRepWeak' :: URep Ctx2 'KType ('Weak 'Var ----> 'Weak 'Var)
+_idRepWeak' = WeakRep var_1_1 :---> WeakRep var_1_1
+
+_idInst :: URep Ctx1 'KType (Inst Ctx1 IdType1 Bool)
+_idInst = WeakRep (ConstRep (Proxy @Bool)) :---> WeakRep (ConstRep (Proxy @Bool))
 
 -- _idP :: PolyFun
 -- _idP = PolyFun idRep (All1 (Interp1' id))
 
--- constRep :: URep Ctx2 ('Weak 'Var ':--> 'Var ':--> 'Weak 'Var)
+-- constRep :: URep Ctx2 'KType ('Weak 'Var --> 'Var --> 'Weak 'Var)
 -- constRep = var_2_1 :---> var_2_2 :---> var_2_1
 
 -- _constP :: PolyFun
 -- _constP = PolyFun constRep (All2 (Interp2' const))
 
 -- _getConst ::
---   All2 (Interp2' ('Weak 'Var ':--> 'Var ':--> 'Weak 'Var)) ->
+--   All2 (Interp2' ('Weak 'Var --> 'Var --> 'Weak 'Var)) ->
 --   (forall a b. a -> b -> a)
 -- _getConst (All2 (Interp2' const_)) = const_
