@@ -35,7 +35,23 @@
 -- What if we could just have one monomorphic (existential) type that pairs a
 -- function with a representative of its type scheme?
 
-module Language.Scheme.Interop.Poly where
+module Language.Scheme.Interop.Poly
+  ( type Ctx(..)
+  , CtxRep(..)
+  , Interp
+  , type U(..)
+  , URep(..)
+  , uCtx
+  , Interp1'(..)
+  , Interp2'(..)
+  , All1(..)
+  , All2(..)
+  , WeakBy
+  , weakBy
+  , Inst
+  , inst
+  , PolyFun(..)
+  ) where
 
 import           Data.Kind (Type)
 import           Data.Proxy (Proxy(Proxy))
@@ -188,9 +204,6 @@ rep0 = ERep
 rep1 :: CtxRep Ctx1
 rep1 = XRep ERep
 
-rep2 :: CtxRep Ctx2
-rep2 = XRep (XRep ERep)
-
 var_1_1 :: URep Ctx1 'Var
 var_1_1 = VarRep rep0
 
@@ -205,25 +218,25 @@ type IdType = 'Var ':--> 'Var
 idRep :: URep Ctx1 IdType
 idRep = var_1_1 :---> var_1_1
 
-idRepWeak :: URep ('ExtendCtx Ctx1) ('Weak IdType)
-idRepWeak = WeakRep (VarRep rep0 :---> VarRep rep0)
+_idRepWeak :: URep ('ExtendCtx Ctx1) ('Weak IdType)
+_idRepWeak = WeakRep (VarRep rep0 :---> VarRep rep0)
 
-idRepWeak' :: URep ('ExtendCtx Ctx1) ('Weak 'Var ':--> 'Weak 'Var)
-idRepWeak' = WeakRep var_1_1 :---> WeakRep var_1_1
+_idRepWeak' :: URep ('ExtendCtx Ctx1) ('Weak 'Var ':--> 'Weak 'Var)
+_idRepWeak' = WeakRep var_1_1 :---> WeakRep var_1_1
 
-idInst :: URep Ctx1 (Inst Ctx1 IdType Bool)
-idInst = WeakRep (ConstRep (Proxy @Bool)) :---> WeakRep (ConstRep (Proxy @Bool))
+_idInst :: URep Ctx1 (Inst Ctx1 IdType Bool)
+_idInst = WeakRep (ConstRep (Proxy @Bool)) :---> WeakRep (ConstRep (Proxy @Bool))
 
-idP :: PolyFun
-idP = PolyFun idRep (All1 (Interp1' id))
+_idP :: PolyFun
+_idP = PolyFun idRep (All1 (Interp1' id))
 
 constRep :: URep Ctx2 ('Weak 'Var ':--> 'Var ':--> 'Weak 'Var)
 constRep = var_2_1 :---> var_2_2 :---> var_2_1
 
-constP :: PolyFun
-constP = PolyFun constRep (All2 (Interp2' const))
+_constP :: PolyFun
+_constP = PolyFun constRep (All2 (Interp2' const))
 
-getConst ::
+_getConst ::
   All2 (Interp2' ('Weak 'Var ':--> 'Var ':--> 'Weak 'Var)) ->
   (forall a b. a -> b -> a)
-getConst (All2 (Interp2' const_)) = const_
+_getConst (All2 (Interp2' const_)) = const_
