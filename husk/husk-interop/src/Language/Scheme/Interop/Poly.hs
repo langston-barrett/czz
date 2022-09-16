@@ -1,8 +1,8 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE GADTs #-}
-{-# LANGUAGE ImpredicativeTypes #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE PolyKinds #-}
+{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeFamilyDependencies #-}
@@ -57,11 +57,13 @@ module Language.Scheme.Interop.Poly
   , weakBy
   -- * Instantiation
   , inst
+  -- * PolyFun
+  , PolyFun(..)
   ) where
 
 import           Data.Kind (Type)
 import           Data.Functor.Identity (Identity)
-import           Data.Proxy (Proxy)
+import           Data.Proxy (Proxy(Proxy))
 
 --------------------------------------------------------------------------------
 -- Kinds
@@ -69,6 +71,8 @@ import           Data.Proxy (Proxy)
 data Kind
   = KType
   | Kind :=> Kind
+
+infixr :=>
 
 data KindRep (k :: Kind) where
   KTypeRep :: KindRep 'KType
@@ -247,38 +251,46 @@ data PolyFun where
 type Ctx0 = 'Empty
 type Ctx1 = 'Empty :> 'KType
 type Ctx2 = 'Empty :> 'KType :> 'KType
-type a --> b = 'App ('App ('Const (->)) a) b
+-- type a --> b = 'App ('App ('Const (->)) a) b
 type a ---> b = 'App ('App ('Weak ('Const (->))) a) b
-type a ----> b = 'App ('App ('Weak ('Weak ('Const (->)))) a) b
+-- type a ----> b = 'App ('App ('Weak ('Weak ('Const (->)))) a) b
 
-rep0 :: CtxRep Ctx0
-rep0 = ERep
+ctx0 :: CtxRep Ctx0
+ctx0 = EmptyRep
 
-rep1 :: CtxRep Ctx1
-rep1 = XRep ERep
+ctx1 :: CtxRep Ctx1
+ctx1 = ctx0 ::> KTypeRep
 
-var_1_1 :: URep Ctx1 'KType 'Var
-var_1_1 = VarRep rep0
+_var_1_1 :: URep Ctx1 'KType 'Var
+_var_1_1 = VarRep KTypeRep ctx0
 
-var_2_1 :: URep Ctx2 'KType ('Weak 'Var)
-var_2_1 = WeakRep (VarRep rep0)
+_var_2_1 :: URep Ctx2 'KType ('Weak 'Var)
+_var_2_1 = WeakRep KTypeRep (VarRep KTypeRep ctx0)
 
-var_2_2 :: URep Ctx2 KType 'Var
-var_2_2 = VarRep rep1
+_var_2_2 :: URep Ctx2 'KType 'Var
+_var_2_2 = VarRep KTypeRep ctx1
 
 type IdType1 = 'Var ---> 'Var
 
-idRep :: URep Ctx1 'KType IdType1
-idRep = var_1_1 :---> var_1_1
+type ArrKind = 'KType ':=> 'KType ':=> 'KType
 
-_idRepWeak :: URep Ctx2 'KType ('Weak IdType1)
-_idRepWeak = WeakRep (VarRep rep0 :---> VarRep rep0)
+arrKindRep :: KindRep ArrKind
+arrKindRep = KTypeRep :==> KTypeRep :==> KTypeRep
 
-_idRepWeak' :: URep Ctx2 'KType ('Weak 'Var ----> 'Weak 'Var)
-_idRepWeak' = WeakRep var_1_1 :---> WeakRep var_1_1
+arrRep1 :: URep Ctx1 ArrKind ('Weak ('Const (->)))
+arrRep1 = WeakRep KTypeRep (ConstRep arrKindRep (Proxy @(->)))
 
-_idInst :: URep Ctx1 'KType (Inst Ctx1 IdType1 Bool)
-_idInst = WeakRep (ConstRep (Proxy @Bool)) :---> WeakRep (ConstRep (Proxy @Bool))
+_idRep :: URep Ctx1 'KType IdType1
+_idRep = AppRep (AppRep arrRep1 (VarRep KTypeRep ctx0)) (VarRep KTypeRep ctx0)
+
+-- _idRepWeak :: URep Ctx2 'KType ('Weak IdType1)
+-- _idRepWeak = WeakRep (VarRep rep0 :---> VarRep rep0)
+
+-- _idRepWeak' :: URep Ctx2 'KType ('Weak 'Var ----> 'Weak 'Var)
+-- _idRepWeak' = WeakRep var_1_1 :---> WeakRep var_1_1
+
+-- _idInst :: URep Ctx0 'KType (Inst Ctx0 IdType1 Bool)
+-- _idInst = WeakRep (ConstRep (Proxy @Bool)) :---> WeakRep (ConstRep (Proxy @Bool))
 
 -- _idP :: PolyFun
 -- _idP = PolyFun idRep (All1 (Interp1' id))
