@@ -80,6 +80,7 @@ module Language.Scheme.Interop.Poly
   ) where
 
 import           Data.Kind (Type)
+import           Data.Proxy (Proxy(Proxy))
 import           Data.Functor.Identity (Identity)
 import           Data.Type.Equality (TestEquality(testEquality), (:~:)(Refl))
 import qualified Type.Reflection as Reflect
@@ -144,6 +145,31 @@ instance TestEquality CtxRep where
         Refl <- testEquality k k'
         return Refl
       (_, _) -> Nothing
+
+data Assign (ctx :: Ctx) where
+  AssignEmpty :: Assign 'Empty
+  (:::>) ::
+    forall ctx k a.
+    Assign ctx ->
+    k ->
+    Assign (ctx :> k)
+
+data AssignRep (as :: Assign ctx) where
+  AnEmptyRep :: AssignRep 'AssignEmpty
+  AnExtendRep ::
+    AssignRep as ->
+    Reflect.TypeRep (a :: k) ->
+    AssignRep (as ':::> a)
+
+-- instance TestEquality AssignRep where
+--   testEquality x y =
+--     case (x, y) of
+--       (AnEmptyRep, AnEmptyRep) -> Just Refl
+--       (AnExtendRep x' t, AnExtendRep y' u) -> do
+--         Refl <- testEquality x' y'
+--         Refl <- testEquality (typeRepKind t) (typeRepKind u)
+--         Refl <- testEquality t u
+--         return _
 
 --------------------------------------------------------------------------------
 -- Codeniverse
@@ -288,6 +314,12 @@ enCodeInj ctx a b r@Refl =
 
 --------------------------------------------------------------------------------
 -- Decoding
+
+type family DeCoder (ctx :: Ctx) (as :: Assign ctx) (u :: Code ctx uk) :: uk where
+  DeCoder ctx as ('App f x) = (DeCoder ctx as f) (DeCoder ctx as x)
+  DeCoder 'Empty 'AssignEmpty ('Const t) = t
+  DeCoder (_ :> _) (_ :::> a) 'Var = a
+  DeCoder (ctx :> _) (as :::> _) ('Weak u) = DeCoder ctx as u
 
 type family DeCode0 (u :: Code 'Empty uk) :: uk where
   DeCode0 ('App f x) = (DeCode0 f) (DeCode0 x)
