@@ -63,6 +63,7 @@ module Language.Scheme.Interop.Poly
     -- * Environments
   , type Env(..)
   , EnvRep(..)
+  , envCtx
     -- * Universe
   , type U(..)
   , URep(..)
@@ -72,7 +73,14 @@ module Language.Scheme.Interop.Poly
   , Encode
   , encodeMonoInj
   -- * Decoding
+  , Decode0
   , Decode
+  , DecodeV(..)
+  , DecodeV0
+  -- * PolytypeRep
+  , PolytypeRep
+  , Polytypeable
+  , polytypeRep
   -- * Weakening
   , WeakBy
   , weakBy
@@ -133,7 +141,7 @@ kRange =
 --------------------------------------------------------------------------------
 -- Contexts
 
--- | Context of type variables
+-- | Context of (mono)type variables
 data Ctx
   = Empty
   -- | We think of contexts as being extended "on the right"
@@ -156,7 +164,7 @@ instance TestEquality CtxRep where
 --------------------------------------------------------------------------------
 -- Environments
 
--- | A list of types with kinds specified by @ctx@
+-- | A list of (mono)types with kinds specified by @ctx@
 data Env (ctx :: Ctx) where
   EEmpty :: Env 'Empty
   (:&) ::
@@ -165,32 +173,30 @@ data Env (ctx :: Ctx) where
     k ->
     Env (ctx ':> k)
 
-data EnvRep (env :: Env ctx) where
-  EEmptyRep :: EnvRep 'EEmpty
+data EnvRep (ctx :: Ctx) (env :: Env ctx) where
+  EEmptyRep :: EnvRep 'Empty 'EEmpty
   (::&) ::
-    EnvRep env ->
+    EnvRep ctx env ->
     MonotypeRep (a :: k) ->
-    EnvRep (env ':& a)
+    EnvRep (ctx ':> k) (env ':& a)
 
-assignCtx ::
+envCtx ::
   forall (ctx :: Ctx) (env :: Env ctx).
-  EnvRep env ->
+  EnvRep ctx env ->
   CtxRep ctx
-assignCtx =
+envCtx =
   \case
     EEmptyRep -> EmptyRep
-    r ::& t -> assignCtx r ::> typeRepKind t
+    r ::& t -> envCtx r ::> typeRepKind t
 
--- instance TestEquality EnvRep where
---   testEquality x y =
---     case (x, y) of
---       (AnEmptyRep, AnEmptyRep) -> Just Refl
---       (x' ::& t, y' ::& u) -> do
---         Refl <- testEquality (typeRepKind t) (typeRepKind u)
---         Refl <- testEquality t u
---         Refl <- testEquality x' y'
---         -- Refl <- testEquality (assignCtx x) (assignCtx y)
---         return Refl
+instance TestEquality (EnvRep ctx) where
+  testEquality x y =
+    case (x, y) of
+      (EEmptyRep, EEmptyRep) -> Just Refl
+      (x' ::& t, y' ::& u) -> do
+        Refl <- testEquality x' y'
+        Refl <- testEquality t u
+        return Refl
 
 --------------------------------------------------------------------------------
 -- Universe
@@ -206,10 +212,6 @@ data U (ctx :: Ctx) (uk :: Kind) where
   Const :: k -> U 'Empty k
   Var :: U (ctx ':> uk) uk
   Weak :: U ctx uk -> U (ctx ':> k) uk
-
-data V (ctx :: Ctx) (uk :: Kind) where
-  Base :: U ctx uk -> V ctx uk
-  Forall :: KindRep k -> U (ctx ':> k) uk -> V ctx uk
 
 data URep (ctx :: Ctx) (uk :: Kind) (u :: U ctx uk) :: Type where
   AppRep :: URep ctx (k -> l) f -> URep ctx k u -> URep ctx l ('App f u)
@@ -233,7 +235,7 @@ uKind =
     VarRep k _ -> k
     WeakRep _ u -> uKind u
 
-instance TestEquality (URep ctx u) where
+instance TestEquality (URep ctx uk) where
   testEquality u v =
     case (u, v) of
       (AppRep ku lu, AppRep kv lv) -> do
@@ -254,13 +256,45 @@ instance TestEquality (URep ctx u) where
         return Refl
       (_, _) -> Nothing
 
+-- V is currently not used...
+
+data V (ctx :: Ctx) (uk :: Kind) where
+  Base :: U ctx uk -> V ctx uk
+  Forall :: Kind -> V (ctx ':> k) uk -> V ctx uk
+
+data VRep (ctx :: Ctx) (uk :: Kind) (v :: V ctx uk) where
+  BaseRep :: URep ctx uk u -> VRep ctx uk ('Base u)
+  ForallRep :: KindRep k -> VRep (ctx ':> k) uk v -> VRep ctx uk ('Forall k v)
+
+instance TestEquality (VRep ctx uk) where
+  testEquality x y =
+    case (x, y) of
+      (BaseRep x', BaseRep y') -> do
+        Refl <- testEquality x' y'
+        return Refl
+      (ForallRep k x', ForallRep l y') -> do
+        Refl <- testEquality k l
+        Refl <- testEquality x' y'
+        return Refl
+      (_, _) -> Nothing
+
 --------------------------------------------------------------------------------
 -- Encoding
 
+-- Needs UndecidableInstances
 type family Encode (ctx :: Ctx) (a :: k) = (u :: U ctx k) where
   Encode ctx (f a) = 'App (Encode ctx f) (Encode ctx a)
   Encode 'Empty a = 'Const a
   Encode (ctx ':> _) a = 'Weak (Encode ctx a)
+
+-- Later, we'll need proofs that Encode is injective. The following proofs use
+-- a hopefully-unobjectionable axiom to show this for the case of monotypes, and
+-- then postulate it for the case of polytypes. Alternatively, we can just add
+-- an injectivity annotation to 'Encode' and use 'UndecidableInstances'... but
+-- I'm not sure how safe that is. Are we just at risk of type-checking
+-- non-termination?
+--
+-- TODO(lb): ask in Mattermost Haskell channel about this
 
 data Encoded a where
   EncodedApp ::
@@ -284,6 +318,7 @@ encoded =
       case unsafeEqualityAxiom :: Encode 'Empty a :~: 'Const a of
         Refl -> EncodedCon (\_k _c -> (unsafeEqualityAxiom :: Encode (ctx ':> k) a :~: 'Weak (Encode ctx a)))
     R.App f x -> EncodedApp f x (const Refl)
+    -- Not sure why GHC can't see this, since we have {-# COMPLETE App, Con #-}
     R.Fun {} -> error "Impossible"
 
 appInj1 :: 'App f a :~: 'App g b -> f :~: g
@@ -301,7 +336,7 @@ encodeMonoInjAppOuter ::
   MonotypeRep b ->
   Encode ctx (f a) :~: Encode ctx (g b) ->
   f :~: g
-encodeMonoInjAppOuter ctx f a g b Refl = encodeMonoInj ctx f g (appInj1 r)
+encodeMonoInjAppOuter ctx f _a g _b Refl = encodeMonoInj ctx f g (appInj1 r)
   where
     r :: 'App (Encode ctx g) (Encode ctx b) :~: 'App (Encode ctx f) (Encode ctx a)
     r = Refl
@@ -315,7 +350,7 @@ encodeMonoInjAppInner ::
   MonotypeRep b ->
   Encode ctx (f a) :~: Encode ctx (g b) ->
   a :~: b
-encodeMonoInjAppInner ctx f a g b Refl = encodeMonoInj ctx a b (appInj2 r)
+encodeMonoInjAppInner ctx _f a _g b Refl = encodeMonoInj ctx a b (appInj2 r)
   where
     r :: 'App (Encode ctx g) (Encode ctx b) :~: 'App (Encode ctx f) (Encode ctx a)
     r = Refl
@@ -354,24 +389,48 @@ encodeMonoInj ctx a b r@Refl =
     --   case (p ctx, ctx) of
     --     (Refl, ctx' ::> k) ->
     --       case g @Maybe @Maybe (Just k) (Just ctx') of {}
-
-encodePolyInj ::
+unsafeEncodePolyInj ::
   forall k a b ctx.
   CtxRep ctx ->
   URep ctx k (Encode ctx a) ->
   URep ctx k (Encode ctx b) ->
   Encode ctx a :~: Encode ctx b ->
   a :~: b
-encodePolyInj _ctx _u _v Refl = unsafeEqualityAxiom
+unsafeEncodePolyInj _ctx _u _v Refl = unsafeEqualityAxiom
 
 --------------------------------------------------------------------------------
 -- Decoding
 
+-- | Called @elU0@ in van Noort and Sweirstra
+type family Decode0 (u :: U 'Empty uk) :: uk where
+  Decode0 ('App f x) = (Decode0 f) (Decode0 x)
+  Decode0 ('Const t) = t
+
+-- | Called @elU@ in van Noort and Sweirstra
 type family Decode (ctx :: Ctx) (env :: Env ctx) (u :: U ctx uk) :: uk where
+  Decode 'Empty 'EEmpty a = Decode0 a
   Decode ctx env ('App f x) = (Decode ctx env f) (Decode ctx env x)
-  Decode 'Empty 'EEmpty ('Const t) = t
   Decode (_ ':> _) (_ ':& a) 'Var = a
   Decode (ctx ':> _) (env ':& _) ('Weak u) = Decode ctx env u
+
+-- type family DecodeV (ctx :: Ctx) (env :: Env ctx) (v :: V ctx Type) :: Type where
+--   DecodeV ctx env ('Base u) = Decode ctx env u
+--   -- • Illegal polymorphic type: forall (a :: k). DecodeV (ctx ':> k) (env ':& a) v
+--   DecodeV ctx env ('Forall k v) = forall (a :: k). DecodeV (ctx :> k) (env :& a) v
+
+-- | Called @elV@ in van Noort and Sweirstra
+data DecodeV (ctx :: Ctx) (env :: Env ctx) (v :: V ctx Type) where
+  DecodeBase :: Decode ctx env u -> DecodeV ctx env ('Base u)
+  DecodeForall ::
+    (forall (a :: k). DecodeV (ctx ':> k) (env ':& a) v) ->
+    DecodeV ctx env ('Forall k v)
+
+type family DecodeV0 (v :: V 'Empty Type) where
+  DecodeV0 ('Base u) = Decode0 u
+  DecodeV0 ('Forall k v) = DecodeV 'Empty 'EEmpty ('Forall k v)
+
+--------------------------------------------------------------------------------
+-- PolytypeRep
 
 -- | Like 'Type.Reflection.TypeRep, but can create representatives of
 -- polymorphic types.
@@ -381,7 +440,12 @@ data PolytypeRep (a :: k) where
     CtxRep ctx ->
     URep ctx k (Encode ctx a) ->
     PolytypeRep a
-  -- PolytypeRep :: CtxRep ctx -> URep ctx k u -> PolytypeRep (Decode ctx as u)
+  --
+  -- This makes PolytypeRep non-poly-kinded, since DecodeV0 requires kind Type.
+  --
+  -- PolytypeRep ::
+  --   VRep 'Empty Type v ->
+  --   PolytypeRep (DecodeV0 v)
 
 -- | Helper for default signature for 'Typeable', not exported.
 defPolytypeRep ::
@@ -393,11 +457,11 @@ defPolytypeRep a =
     EncodedApp f x _ -> AppRep (defPolytypeRep f) (defPolytypeRep x)
     EncodedCon {} -> ConstRep a
 
-class Monotypeable k => Typeable (a :: k) where
-  typeRep :: PolytypeRep a
+class Monotypeable k => Polytypeable (a :: k) where
+  polytypeRep :: PolytypeRep a
 
-  default typeRep :: Monotypeable a => PolytypeRep a
-  typeRep = PolytypeRep (Proxy @a) EmptyRep (defPolytypeRep (R.typeRep @a))
+  default polytypeRep :: Monotypeable a => PolytypeRep a
+  polytypeRep = PolytypeRep (Proxy @a) EmptyRep (defPolytypeRep (R.typeRep @a))
 
 instance TestEquality PolytypeRep where
   testEquality
@@ -407,7 +471,7 @@ instance TestEquality PolytypeRep where
     Refl <- testEquality ctx ctx'
     Refl <- testEquality (uKind u) (uKind v)
     Refl <- testEquality u v
-    Refl <- return (encodePolyInj @k @a @b ctx u v Refl)
+    Refl <- return (unsafeEncodePolyInj @k @a @b ctx u v Refl)
     return Refl
 
 --------------------------------------------------------------------------------
@@ -441,8 +505,8 @@ inst :: MonotypeRep a -> URep (ctx ':> k) uk u -> URep ctx uk (Inst ctx u a)
 inst rep =
   \case
     AppRep f a -> AppRep (inst rep f) (inst rep a)
-    VarRep k ctx -> weakBy ctx (ConstRep rep)
-    WeakRep _kRep u -> u
+    VarRep _k ctx -> weakBy ctx (ConstRep rep)
+    WeakRep _k u -> u
 
 -- TODO(lb): ???
 -- data TryInst (ctx :: Ctx) (u :: U ctx) a where
