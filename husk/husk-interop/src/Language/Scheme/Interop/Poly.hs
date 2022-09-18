@@ -604,8 +604,11 @@ data PolytypeRep' (a :: Type) where
   -- This makes 'PolytypeRep' non-poly-kinded, since @DecodeV0@ requires kind
   -- 'Type'... Should be fine for use with 'Dynamic'.
   PolytypeRep' ::
-    VRep' 'Empty Type v ->
-    PolytypeRep' (DecodeV' 'Empty v)
+    VRep' ctx Type v ->
+    PolytypeRep' (DecodeV' ctx v)
+
+polytypeRepCtx :: PolytypeRep' (DecodeV' ctx v) -> CtxRep ctx
+polytypeRepCtx (PolytypeRep' (ForallRep' ctx _)) = ctx
 
 {-
 
@@ -635,7 +638,8 @@ monoToPoly' proxy v = error "TODO(lb)"
 -}
 
 instance TestEquality PolytypeRep' where
-  testEquality (PolytypeRep' v) (PolytypeRep' w) = do
+  testEquality v@(PolytypeRep' {}) w@(PolytypeRep' {}) = do
+    Refl <- testEquality (polytypeRepCtx v) (polytypeRepCtx w)
     Refl <- testEquality v w
     return Refl
 
