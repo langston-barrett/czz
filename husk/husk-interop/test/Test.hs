@@ -21,9 +21,11 @@ import           Language.Scheme.Interop.Opaque (Opaque(..))
 import           Language.Scheme.Interop.To.Func (Ret(..))  -- for coerce
 import qualified Language.Scheme.Interop.To.Func as To
 
+import qualified TestPoly
+
 tests :: IO Tasty.TestTree
 tests =
-  return $ Tasty.testGroup "Tests" [fromTests, toTests]
+  return $ Tasty.testGroup "Tests" [fromTests, toTests, TestPoly.tests]
 
 runIOThrows :: LST.IOThrowsError a -> IO a
 runIOThrows c = do

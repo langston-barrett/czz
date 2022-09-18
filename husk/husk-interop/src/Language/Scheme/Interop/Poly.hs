@@ -56,7 +56,13 @@
 
 module Language.Scheme.Interop.Poly
   ( -- * Kinds
-    KindRep(..)
+    Kind
+  , KindRep
+  , kindRep
+  , typeRepKind
+  , kTypeRep
+  , kDomain
+  , kRange
     -- * Contexts
   , type Ctx(..)
   , CtxRep(..)
@@ -81,11 +87,18 @@ module Language.Scheme.Interop.Poly
   , PolytypeRep
   , Polytypeable
   , polytypeRep
+  -- * Dynamic
+  , Dynamic
+  , toDyn
+  , fromDyn
   -- * Weakening
   , WeakBy
   , weakBy
   -- * Instantiation
+  , Inst
   , inst
+  , TryInst(..)
+  , tryInst
   ) where
 
 import           Data.Kind (Type)
@@ -124,8 +137,8 @@ typeRepKind a = KindRep (R.typeRepKind a)
 kTypeRep :: KindRep Type
 kTypeRep = KindRep (R.typeRep @Type)
 
-_kDomain :: KindRep (k -> l) -> KindRep k
-_kDomain =
+kDomain :: KindRep (k -> l) -> KindRep k
+kDomain =
   -- The pattern matches are redundant, but GHC doesn't know that since they're
   -- pattern synonyms.
   \case
@@ -458,10 +471,11 @@ defPolytypeRep a =
     EncodedCon {} -> ConstRep a
 
 class Monotypeable k => Polytypeable (a :: k) where
-  polytypeRep :: PolytypeRep a
+  -- For some reason, GHC is a lot happier if we make this take a 'Proxy'...
+  polytypeRep :: Proxy a -> PolytypeRep a
 
-  default polytypeRep :: Monotypeable a => PolytypeRep a
-  polytypeRep = PolytypeRep (Proxy @a) EmptyRep (defPolytypeRep (R.typeRep @a))
+  default polytypeRep :: Monotypeable a => Proxy a -> PolytypeRep a
+  polytypeRep proxy = PolytypeRep proxy EmptyRep (defPolytypeRep (R.typeRep @a))
 
 instance TestEquality PolytypeRep where
   testEquality
@@ -475,13 +489,28 @@ instance TestEquality PolytypeRep where
     return Refl
 
 --------------------------------------------------------------------------------
+-- Dynamic
+
+data Dynamic where
+  Dynamic :: PolytypeRep a -> a -> Dynamic
+
+toDyn :: PolytypeRep a -> a -> Dynamic
+toDyn a = Dynamic a
+
+fromDyn :: PolytypeRep a -> Dynamic -> Maybe a
+fromDyn rep (Dynamic rep' a) =
+  case testEquality rep rep' of
+    Just Refl -> Just a
+    Nothing -> Nothing
+
+--------------------------------------------------------------------------------
 -- Weakening
 
-type family WeakBy (ctx :: Ctx) (u :: U 'Empty k) :: U ctx k where
+type family WeakBy (ctx :: Ctx) (u :: U 'Empty uk) :: U ctx uk where
   WeakBy 'Empty u = u
   WeakBy (ctx ':> _) u = 'Weak (WeakBy ctx u)
 
-weakBy :: CtxRep ctx -> URep 'Empty k u -> URep ctx k (WeakBy ctx u)
+weakBy :: CtxRep ctx -> URep 'Empty uk u -> URep ctx uk (WeakBy ctx u)
 weakBy ctx u =
   case (ctx, u) of
     (EmptyRep, _) -> u
@@ -493,98 +522,39 @@ weakBy ctx u =
 
 type family
   Inst
+    (a :: k)
     (ctx :: Ctx)
     (u :: U (ctx ':> k) uk)
-    (a :: k)
     :: U ctx uk where
-  Inst ctx ('App f x) a = 'App (Inst ctx f a) (Inst ctx x a)
-  Inst ctx 'Var a = WeakBy ctx ('Const a)
-  Inst ctx ('Weak u) _ = u
+  Inst a ctx ('App f x) = 'App (Inst a ctx f) (Inst a ctx x)
+  Inst a ctx 'Var = WeakBy ctx ('Const a)
+  Inst _ _ ('Weak u) = u
 
-inst :: MonotypeRep a -> URep (ctx ':> k) uk u -> URep ctx uk (Inst ctx u a)
-inst rep =
+inst ::
+  MonotypeRep a ->
+  URep (ctx ':> k) uk u ->
+  URep ctx uk (Inst a ctx u)
+inst a =
   \case
-    AppRep f a -> AppRep (inst rep f) (inst rep a)
-    VarRep _k ctx -> weakBy ctx (ConstRep rep)
+    AppRep f x -> AppRep (inst a f) (inst a x)
+    VarRep _k ctx -> weakBy ctx (ConstRep a)
     WeakRep _k u -> u
 
--- TODO(lb): ???
--- data TryInst (ctx :: Ctx) (u :: U ctx) a where
---   InstFail :: TryInst Ctx0 u a
---   InstSucceed ::
---     URep ctx (Inst ctx u a) -> TryInst (ctx :> ()) u a
+data TryInst (a :: k) (ctx :: Ctx) (u :: U ctx uk)  where
+  InstFailVar :: TryInst a 'Empty u
+  InstFailKind :: TryInst a ctx u
+  InstSucceed :: URep ctx uk (Inst a ctx u) -> TryInst a (ctx ':> k) u
 
--- tryInst :: Proxy a -> URep ctx u -> TryInst ctx u a
--- tryInst proxy uRep =
---   case uCtx uRep of
---     ERep -> InstFail
---     XRep ctx -> InstSucceed (inst proxy uRep)
+tryInst :: MonotypeRep a -> URep ctx uk u -> TryInst a ctx u
+tryInst a u =
+  case uCtx u of
+    EmptyRep -> InstFailVar
+    _ctx ::> k ->
+      case testEquality k (typeRepKind a) of
+        Nothing -> InstFailKind
+        Just Refl -> InstSucceed (inst a u)
 
 --------------------------------------------------------------------------------
 -- Substitutions
 
 -- TODO(lb): See Swierstra
-
---------------------------------------------------------------------------------
--- Examples
-
-encodedUnit :: URep 'Empty Type (Encode 'Empty ())
-encodedUnit = ConstRep (R.typeRep @())
-
-type Ctx0 = 'Empty
-type Ctx1 = 'Empty ':> Type
-type Ctx2 = 'Empty ':> Type ':> Type
--- type a --> b = 'App ('App ('Const (->)) a) b
-type a ---> b = 'App ('App ('Weak ('Const (->))) a) b
--- type a ----> b = 'App ('App ('Weak ('Weak ('Const (->)))) a) b
-
-ctx0 :: CtxRep Ctx0
-ctx0 = EmptyRep
-
-ctx1 :: CtxRep Ctx1
-ctx1 = ctx0 ::> kTypeRep
-
-_var_1_1 :: URep Ctx1 Type 'Var
-_var_1_1 = VarRep kTypeRep ctx0
-
-_var_2_1 :: URep Ctx2 Type ('Weak 'Var)
-_var_2_1 = WeakRep kTypeRep (VarRep kTypeRep ctx0)
-
-_var_2_2 :: URep Ctx2 Type 'Var
-_var_2_2 = VarRep kTypeRep ctx1
-
-type IdType1 = 'Var ---> 'Var
-
-type ArrKind = Type -> Type -> Type
-
--- arrKindRep :: KindRep ArrKind
--- arrKindRep = kTypeRep :==> kTypeRep :==> kTypeRep
-
--- arrRep1 :: URep Ctx1 ArrKind ('Weak ('Const (->)))
--- arrRep1 = WeakRep kTypeRep (ConstRep arrKindRep (R.typeRep @(->)))
-
--- _idRep :: URep Ctx1 Type IdType1
--- _idRep = AppRep (AppRep arrRep1 (VarRep kTypeRep ctx0)) (VarRep kTypeRep ctx0)
-
--- _idRepWeak :: URep Ctx2 Type ('Weak IdType1)
--- _idRepWeak = WeakRep (VarRep rep0 :---> VarRep rep0)
-
--- _idRepWeak' :: URep Ctx2 Type ('Weak 'Var ----> 'Weak 'Var)
--- _idRepWeak' = WeakRep var_1_1 :---> WeakRep var_1_1
-
--- _idInst :: URep Ctx0 Type (Inst Ctx0 IdType1 Bool)
--- _idInst = WeakRep (ConstRep (Proxy @Bool)) :---> WeakRep (ConstRep (Proxy @Bool))
-
--- _idP :: PolyFun
--- _idP = PolyFun idRep (All1 (DeU1' id))
-
--- constRep :: URep Ctx2 Type ('Weak 'Var --> 'Var --> 'Weak 'Var)
--- constRep = var_2_1 :---> var_2_2 :---> var_2_1
-
--- _constP :: PolyFun
--- _constP = PolyFun constRep (All2 (DeU2' const))
-
--- _getConst ::
---   All2 (DeU2' ('Weak 'Var --> 'Var --> 'Weak 'Var)) ->
---   (forall a b. a -> b -> a)
--- _getConst (All2 (DeU2' const_)) = const_
