@@ -311,13 +311,14 @@ instance TestEquality (VRep ctx uk) where
         return Refl
       (_, _) -> Nothing
 
-data V' (uk :: Kind) where
-  Forall' :: U ctx uk -> V' uk
+-- TODO(lb): maybe this still needs a ctx parameter
+data V' (ctx :: Ctx) (uk :: Kind) where
+  Forall' :: U ctx uk -> V' ctx uk
 
-data VRep' (uk :: Kind) (v :: V' uk) where
-  ForallRep' :: CtxRep ctx -> URep ctx uk u -> VRep' uk ('Forall' u)
+data VRep' (ctx :: Ctx) (uk :: Kind) (v :: V' ctx uk) where
+  ForallRep' :: CtxRep ctx -> URep ctx uk u -> VRep' ctx uk ('Forall' u)
 
-instance TestEquality (VRep' uk) where
+instance TestEquality (VRep' ctx uk) where
   testEquality x y =
     case (x, y) of
       (ForallRep' ctx x', ForallRep' ctx' y') -> do
@@ -489,12 +490,13 @@ type family DecodeV0 (v :: V 'Empty Type) where
   DecodeV0 ('Base u) = Decode0 u
   DecodeV0 ('Forall k v) = DecodeV 'Empty 'EEmpty ('Forall k v)
 
-data DecodeV' (v :: V' Type) where
+data DecodeV' (ctx :: Ctx) (v :: V' ctx Type) where
   DecodeV' ::
     forall ctx u.
-    -- TODO(lb): maybe need a CtxRep? Is a full EnvRep needed?
+    -- TODO(lb): maybe need a CtxRep? Is a full EnvRep really needed?
+    -- Inspectability?
     (forall env. EnvRep ctx env -> Decode ctx env u) ->
-    DecodeV' ('Forall' u)
+    DecodeV' ctx ('Forall' u)
 
 --------------------------------------------------------------------------------
 -- PolytypeRepU
@@ -602,8 +604,8 @@ data PolytypeRep' (a :: Type) where
   -- This makes 'PolytypeRep' non-poly-kinded, since @DecodeV0@ requires kind
   -- 'Type'... Should be fine for use with 'Dynamic'.
   PolytypeRep' ::
-    VRep' Type v ->
-    PolytypeRep' (DecodeV' v)
+    VRep' 'Empty Type v ->
+    PolytypeRep' (DecodeV' 'Empty v)
 
 {-
 
