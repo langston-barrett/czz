@@ -84,7 +84,7 @@ module Language.Scheme.Interop.Poly
   , DecodeV(..)
   , DecodeV0
   -- * PolytypeRep
-  , PolytypeRep
+  , PolytypeRep(..)
   , Polytypeable
   , polytypeRep
   -- * Dynamic
@@ -220,7 +220,7 @@ instance TestEquality (EnvRep ctx) where
 -- Other possible names: @Desc@, @Code@.
 data U (ctx :: Ctx) (uk :: Kind) where
   -- TODO(lb): Try adding this for non-prenex polymorphism:
-  -- All :: k -> U (ctx ':> k) -> U ctx
+  All :: k -> U (ctx ':> k) (k -> uk) -> U ctx uk
   App :: U ctx (k -> uk) -> U ctx k -> U ctx uk
   Const :: k -> U 'Empty k
   Var :: U (ctx ':> uk) uk
@@ -291,12 +291,14 @@ instance TestEquality (VRep ctx uk) where
         return Refl
       (_, _) -> Nothing
 
+
 --------------------------------------------------------------------------------
 -- Encoding
 
 -- Needs UndecidableInstances
-type family Encode (ctx :: Ctx) (a :: k) = (u :: U ctx k) where
+type family Encode (ctx :: Ctx) (a :: uk) = (u :: U ctx uk) where
   Encode ctx (f a) = 'App (Encode ctx f) (Encode ctx a)
+  -- NB: With -XImpredicativeTypes, this case also catches polytypes.
   Encode 'Empty a = 'Const a
   Encode (ctx ':> _) a = 'Weak (Encode ctx a)
 
@@ -317,7 +319,8 @@ data Encoded a where
     (forall proxy ctx. proxy ctx -> Encode ctx a :~: 'App (Encode ctx f) (Encode ctx b)) ->
     Encoded a
   EncodedCon ::
-    (Encode 'Empty a ~ 'Const a) =>
+    ( Encode 'Empty a ~ 'Const a
+    ) =>
     (forall proxy proxy' k ctx.
      proxy k ->
      proxy' ctx ->
@@ -443,39 +446,94 @@ type family DecodeV0 (v :: V 'Empty Type) where
   DecodeV0 ('Forall k v) = DecodeV 'Empty 'EEmpty ('Forall k v)
 
 --------------------------------------------------------------------------------
+-- PolytypeRepU
+
+-- Problem with this approach: when writing
+--
+-- idRep :: PolytypeRep (forall a. a -> a)
+--
+-- get
+--
+-- • Couldn't match type: 'App ('App ('Weak ('Const (->))) 'Var) 'Var
+--                  with: 'Weak ('Const (forall a. a -> a))
+--
+-- and type families can't mention quantification, so this can't be fixed.
+
+-- | Like 'Type.Reflection.TypeRep, but can create representatives of
+-- polymorphic types.
+data PolytypeRepU (a :: k) where
+  PolytypeRepU ::
+    Proxy a ->
+    CtxRep ctx ->
+    URep ctx k (Encode ctx a) ->
+    PolytypeRepU a
+
+defPolytypeRepU ::
+  forall k (a :: k).
+  MonotypeRep a ->
+  URep 'Empty k (Encode 'Empty a)
+defPolytypeRepU a =
+  case encoded a of
+    EncodedApp f x _ -> AppRep (defPolytypeRepU f) (defPolytypeRepU x)
+    EncodedCon {} -> ConstRep a
+
+instance TestEquality PolytypeRepU where
+  testEquality
+    (PolytypeRepU (Proxy :: Proxy a) ctx (u :: URep ctx k (Encode ctx a)))
+    (PolytypeRepU (Proxy :: Proxy b) ctx' v) = do
+
+    Refl <- testEquality ctx ctx'
+    Refl <- testEquality (uKind u) (uKind v)
+    Refl <- testEquality u v
+    Refl <- return (unsafeEncodePolyInj @k @a @b ctx u v Refl)
+    return Refl
+
+--------------------------------------------------------------------------------
 -- PolytypeRep
 
 -- | Like 'Type.Reflection.TypeRep, but can create representatives of
 -- polymorphic types.
 data PolytypeRep (a :: k) where
-  PolytypeRep ::
-    Proxy a ->
-    CtxRep ctx ->
-    URep ctx k (Encode ctx a) ->
-    PolytypeRep a
+  -- PolytypeRep ::
+  --   Proxy a ->
+  --   CtxRep ctx ->
+  --   URep ctx k (Encode ctx a) ->
+  --   PolytypeRep a
   --
   -- This makes PolytypeRep non-poly-kinded, since DecodeV0 requires kind Type.
   --
-  -- PolytypeRep ::
-  --   VRep 'Empty Type v ->
-  --   PolytypeRep (DecodeV0 v)
+  PolytypeRep ::
+    VRep 'Empty Type v ->
+    PolytypeRep (DecodeV0 v)
 
--- | Helper for default signature for 'Typeable', not exported.
-defPolytypeRep ::
-  forall k (a :: k).
+data IsBase v where
+  IsBase :: IsBase ('Base ('Const u))
+
+decodeV0App ::
+  forall v f b.
+  (DecodeV0 v ~ f b) =>
+  v :~: 'Base ('App (Encode 'Empty f) (Encode 'Empty b))
+decodeV0App = undefined
+
+decodeV0Con ::
+  forall v a.
+  (DecodeV0 v ~ a) =>
   MonotypeRep a ->
-  URep 'Empty k (Encode 'Empty a)
+  IsBase v
+decodeV0Con = undefined
+
+defPolytypeRep ::
+  forall v.
+  MonotypeRep (DecodeV0 v) ->
+  VRep 'Empty Type v
 defPolytypeRep a =
   case encoded a of
-    EncodedApp f x _ -> AppRep (defPolytypeRep f) (defPolytypeRep x)
-    EncodedCon {} -> ConstRep a
-
-class Monotypeable k => Polytypeable (a :: k) where
-  -- For some reason, GHC is a lot happier if we make this take a 'Proxy'...
-  polytypeRep :: Proxy a -> PolytypeRep a
-
-  default polytypeRep :: Monotypeable a => Proxy a -> PolytypeRep a
-  polytypeRep proxy = PolytypeRep proxy EmptyRep (defPolytypeRep (R.typeRep @a))
+    EncodedApp (f :: MonotypeRep f) (b :: MonotypeRep b) _ ->
+      case decodeV0App @v @f @b of
+        Refl -> BaseRep (AppRep (defPolytypeRepU f) (defPolytypeRepU b))
+    EncodedCon {} ->
+      case decodeV0Con @v a of
+        IsBase -> BaseRep (ConstRep a)
 
 instance TestEquality PolytypeRep where
   testEquality
