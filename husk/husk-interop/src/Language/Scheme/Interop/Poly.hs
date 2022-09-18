@@ -1,3 +1,4 @@
+{-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DefaultSignatures #-}
 {-# LANGUAGE FlexibleInstances #-}
@@ -58,33 +59,28 @@ module Language.Scheme.Interop.Poly
     -- * Contexts
   , type Ctx(..)
   , CtxRep(..)
-  , type Code(..)
-  , CodeRep(..)
+  , type U(..)
+  , URep(..)
   , codeCtx
   , codeKind
   -- * Encoding
-  , EnCode
-  , enCodeInj
+  , Encode
+  , encodeInj
   -- * Decoding
-  , DeCode
-  , DeCode1'(..)
-  , DeCode2'(..)
-  , All(..)
+  , Decode
   -- * Weakening
   , WeakBy
   , weakBy
   -- * Instantiation
   , inst
-  -- * PolyFun
-  , PolyFun(..)
   ) where
 
 import           Data.Kind (Type)
-import           Data.Proxy (Proxy(Proxy))
-import           Data.Functor.Identity (Identity)
 import           Data.Type.Equality (TestEquality(testEquality), (:~:)(Refl))
-import qualified Type.Reflection as Reflect
+import qualified Type.Reflection as R
 import           Unsafe.Coerce (unsafeCoerce)
+
+type Monotypeable = R.Typeable
 
 --------------------------------------------------------------------------------
 -- Kinds
@@ -95,31 +91,31 @@ import           Unsafe.Coerce (unsafeCoerce)
 -- | As we all know, since @-XTypeInType@ kinds /are/ types.
 type Kind = Type
 
-newtype KindRep k = KindRep { _getKindRep :: Reflect.TypeRep k }
+newtype KindRep k = KindRep { _getKindRep :: R.TypeRep k }
   deriving (TestEquality)
 
-kindRep :: forall a. Reflect.Typeable a => KindRep a
-kindRep = KindRep (Reflect.typeRep @a)
+kindRep :: forall a. Monotypeable a => KindRep a
+kindRep = KindRep (R.typeRep @a)
 
-typeRepKind :: forall k (a :: k). Reflect.TypeRep a -> KindRep k
-typeRepKind a = KindRep (Reflect.typeRepKind a)
+typeRepKind :: forall k (a :: k). R.TypeRep a -> KindRep k
+typeRepKind a = KindRep (R.typeRepKind a)
 
 kTypeRep :: KindRep Type
-kTypeRep = KindRep (Reflect.typeRep @Type)
+kTypeRep = KindRep (R.typeRep @Type)
 
 _kDomain :: KindRep (k -> l) -> KindRep k
 _kDomain =
   -- The pattern matches are redundant, but GHC doesn't know that since they're
   -- pattern synonyms.
   \case
-    KindRep (Reflect.App (Reflect.App (Reflect.Con _) k) _) -> KindRep k
-    KindRep (Reflect.Fun k _) -> KindRep k
+    KindRep (R.App (R.App (R.Con _) k) _) -> KindRep k
+    KindRep (R.Fun k _) -> KindRep k
 
 kRange :: KindRep (k -> l) -> KindRep l
 kRange =
   \case
-    KindRep (Reflect.App (Reflect.App (Reflect.Con _) _) l) -> KindRep l
-    KindRep (Reflect.Fun _ l) -> KindRep l
+    KindRep (R.App (R.App (R.Con _) _) l) -> KindRep l
+    KindRep (R.Fun _ l) -> KindRep l
 
 --------------------------------------------------------------------------------
 -- Contexts
@@ -127,14 +123,12 @@ kRange =
 -- | Context of type variables
 data Ctx
   = Empty
-  | Extend Ctx Kind
-
--- | We think of contexts as being extended "on the right"
-type ctx :> k = 'Extend ctx k
+  -- | We think of contexts as being extended "on the right"
+  | Ctx :> Kind
 
 data CtxRep ctx where
   EmptyRep :: CtxRep 'Empty
-  (::>) :: CtxRep ctx -> KindRep k -> CtxRep (ctx :> k)
+  (::>) :: CtxRep ctx -> KindRep k -> CtxRep (ctx ':> k)
 
 instance TestEquality CtxRep where
   testEquality c d =
@@ -146,49 +140,64 @@ instance TestEquality CtxRep where
         return Refl
       (_, _) -> Nothing
 
+-- | A list of types with kinds specified by @ctx@
 data Assign (ctx :: Ctx) where
-  AssignEmpty :: Assign 'Empty
-  (:::>) ::
+  AnEmpty :: Assign 'Empty
+  (:&) ::
     forall ctx k a.
     Assign ctx ->
     k ->
-    Assign (ctx :> k)
+    Assign (ctx ':> k)
 
 data AssignRep (as :: Assign ctx) where
-  AnEmptyRep :: AssignRep 'AssignEmpty
-  AnExtendRep ::
+  AnEmptyRep :: AssignRep 'AnEmpty
+  (::&) ::
     AssignRep as ->
-    Reflect.TypeRep (a :: k) ->
-    AssignRep (as ':::> a)
+    R.TypeRep (a :: k) ->
+    AssignRep (as ':& a)
+
+assignCtx ::
+  forall (ctx :: Ctx) (as :: Assign ctx).
+  AssignRep as ->
+  CtxRep ctx
+assignCtx =
+  \case
+    AnEmptyRep -> EmptyRep
+    r ::& t -> assignCtx r ::> typeRepKind t
 
 -- instance TestEquality AssignRep where
 --   testEquality x y =
 --     case (x, y) of
 --       (AnEmptyRep, AnEmptyRep) -> Just Refl
---       (AnExtendRep x' t, AnExtendRep y' u) -> do
---         Refl <- testEquality x' y'
+--       (x' ::& t, y' ::& u) -> do
 --         Refl <- testEquality (typeRepKind t) (typeRepKind u)
 --         Refl <- testEquality t u
---         return _
+--         Refl <- testEquality x' y'
+--         -- Refl <- testEquality (assignCtx x) (assignCtx y)
+--         return Refl
 
 --------------------------------------------------------------------------------
--- Codeniverse
+-- Universe
 
 -- | Descriptions of the universe of types of kind @uk@ that mention variables
 -- in @ctx@.
-data Code (ctx :: Ctx) (uk :: Kind) where
-  App :: Code ctx (k -> uk) -> Code ctx k -> Code ctx uk
-  Const :: k -> Code 'Empty k
-  Var :: Code (ctx :> uk) uk
-  Weak :: Code ctx uk -> Code (ctx :> k) uk
+--
+-- Other possible names: @Desc@, @Code@.
+data U (ctx :: Ctx) (uk :: Kind) where
+  -- TODO(lb): Try adding this for non-prenex polymorphism:
+  -- All :: k -> U (ctx ':> k) -> U ctx
+  App :: U ctx (k -> uk) -> U ctx k -> U ctx uk
+  Const :: k -> U 'Empty k
+  Var :: U (ctx ':> uk) uk
+  Weak :: U ctx uk -> U (ctx ':> k) uk
 
-data CodeRep (ctx :: Ctx) (uk :: Kind) (u :: Code ctx uk) :: Type where
-  AppRep :: CodeRep ctx (k -> l) f -> CodeRep ctx k u -> CodeRep ctx l ('App f u)
-  ConstRep :: Reflect.TypeRep c -> CodeRep 'Empty uk ('Const c)
-  VarRep :: KindRep uk -> CtxRep ctx -> CodeRep (ctx :> uk) uk 'Var
-  WeakRep :: KindRep k -> CodeRep ctx uk u -> CodeRep (ctx :> k) uk ('Weak u)
+data URep (ctx :: Ctx) (uk :: Kind) (u :: U ctx uk) :: Type where
+  AppRep :: URep ctx (k -> l) f -> URep ctx k u -> URep ctx l ('App f u)
+  ConstRep :: R.TypeRep c -> URep 'Empty uk ('Const c)
+  VarRep :: KindRep uk -> CtxRep ctx -> URep (ctx ':> uk) uk 'Var
+  WeakRep :: KindRep k -> URep ctx uk u -> URep (ctx ':> k) uk ('Weak u)
 
-codeCtx :: CodeRep ctx k u -> CtxRep ctx
+codeCtx :: URep ctx k u -> CtxRep ctx
 codeCtx =
   \case
     AppRep f _ -> codeCtx f
@@ -196,7 +205,7 @@ codeCtx =
     VarRep k ctx -> ctx ::> k
     WeakRep k u -> codeCtx u ::> k
 
-codeKind :: CodeRep ctx k u -> KindRep k
+codeKind :: URep ctx k u -> KindRep k
 codeKind =
   \case
     AppRep f _a -> kRange (codeKind f)
@@ -204,7 +213,7 @@ codeKind =
     VarRep k _ -> k
     WeakRep _ u -> codeKind u
 
-instance TestEquality (CodeRep ctx u) where
+instance TestEquality (URep ctx u) where
   testEquality u v =
     case (u, v) of
       (AppRep ku lu, AppRep kv lv) -> do
@@ -228,34 +237,35 @@ instance TestEquality (CodeRep ctx u) where
 --------------------------------------------------------------------------------
 -- Encoding
 
-type family EnCode (ctx :: Ctx) (a :: k) = (u :: Code ctx k) where
-  EnCode ctx (f a) = 'App (EnCode ctx f) (EnCode ctx a)
-  EnCode 'Empty a = 'Const a
-  EnCode (ctx :> _) a = 'Weak (EnCode ctx a)
+type family Encode (ctx :: Ctx) (a :: k) = (u :: U ctx k) where
+  Encode ctx (f a) = 'App (Encode ctx f) (Encode ctx a)
+  Encode 'Empty a = 'Const a
+  Encode (ctx ':> _) a = 'Weak (Encode ctx a)
 
-data EnCoded a where
-  EnCodedApp ::
+data Encoded a where
+  EncodedApp ::
     (a ~ f b) =>
-    Reflect.TypeRep f ->
-    Reflect.TypeRep b ->
-    (forall ctx. EnCode ctx a :~: 'App (EnCode ctx f) (EnCode ctx b)) ->
-    EnCoded a
-  EnCodedCon ::
-    (EnCode 'Empty a ~ 'Const a) =>
-    (forall ctx k.
-     KindRep k ->
-     CtxRep (ctx :> k) ->
-     EnCode (ctx :> k) a :~: 'Weak (EnCode ctx a)) ->
-    EnCoded a
+    R.TypeRep f ->
+    R.TypeRep b ->
+    (forall ctx. Encode ctx a :~: 'App (Encode ctx f) (Encode ctx b)) ->
+    Encoded a
+  EncodedCon ::
+    (Encode 'Empty a ~ 'Const a) =>
+    (forall proxy proxy' k ctx.
+     proxy k ->
+     proxy' ctx ->
+     Encode (ctx ':> k) a :~: 'Weak (Encode ctx a)) ->
+    Encoded a
 
-enCoded :: forall a. Reflect.TypeRep a -> EnCoded a
-enCoded =
+encoded :: forall a. R.TypeRep a -> Encoded a
+encoded =
   \case
-    Reflect.Con _ ->
+    R.Con _ ->
       -- TODO(lb): Justify!
-      case unsafeCoerce Refl :: EnCode 'Empty a :~: 'Const a of
-        Refl -> EnCodedCon (\_k _c -> (unsafeCoerce Refl :: EnCode (ctx :> k) a :~: 'Weak (EnCode ctx a)))
-    Reflect.App f x -> EnCodedApp f x Refl
+      case unsafeCoerce Refl :: Encode 'Empty a :~: 'Const a of
+        Refl -> EncodedCon (\_k _c -> (unsafeCoerce Refl :: Encode (ctx ':> k) a :~: 'Weak (Encode ctx a)))
+    R.App f x -> EncodedApp f x Refl
+    R.Fun {} -> error "Impossible"
 
 appInj1 :: 'App f a :~: 'App g b -> f :~: g
 appInj1 Refl = Refl
@@ -263,151 +273,103 @@ appInj1 Refl = Refl
 appInj2 :: 'App f a :~: 'App g b -> a :~: b
 appInj2 Refl = Refl
 
-enCodeInjAppOuter ::
+encodeInjAppOuter ::
   forall f a g b ctx.
   CtxRep ctx ->
-  Reflect.TypeRep f ->
-  Reflect.TypeRep a ->
-  Reflect.TypeRep g ->
-  Reflect.TypeRep b ->
-  EnCode ctx (f a) :~: EnCode ctx (g b) ->
+  R.TypeRep f ->
+  R.TypeRep a ->
+  R.TypeRep g ->
+  R.TypeRep b ->
+  Encode ctx (f a) :~: Encode ctx (g b) ->
   f :~: g
-enCodeInjAppOuter ctx f a g b Refl = enCodeInj ctx f g (appInj1 r)
+encodeInjAppOuter ctx f a g b Refl = encodeInj ctx f g (appInj1 r)
   where
-    r :: 'App (EnCode ctx g) (EnCode ctx b) :~: 'App (EnCode ctx f) (EnCode ctx a)
+    r :: 'App (Encode ctx g) (Encode ctx b) :~: 'App (Encode ctx f) (Encode ctx a)
     r = Refl
 
-enCodeInjAppInner ::
+encodeInjAppInner ::
   forall f a g b ctx.
   CtxRep ctx ->
-  Reflect.TypeRep f ->
-  Reflect.TypeRep a ->
-  Reflect.TypeRep g ->
-  Reflect.TypeRep b ->
-  EnCode ctx (f a) :~: EnCode ctx (g b) ->
+  R.TypeRep f ->
+  R.TypeRep a ->
+  R.TypeRep g ->
+  R.TypeRep b ->
+  Encode ctx (f a) :~: Encode ctx (g b) ->
   a :~: b
-enCodeInjAppInner ctx f a g b Refl = enCodeInj ctx a b (appInj2 r)
+encodeInjAppInner ctx f a g b Refl = encodeInj ctx a b (appInj2 r)
   where
-    r :: 'App (EnCode ctx g) (EnCode ctx b) :~: 'App (EnCode ctx f) (EnCode ctx a)
+    r :: 'App (Encode ctx g) (Encode ctx b) :~: 'App (Encode ctx f) (Encode ctx a)
     r = Refl
 
-enCodeInj ::
+encodeInj ::
   forall a b ctx.
   CtxRep ctx ->
-  Reflect.TypeRep a ->
-  Reflect.TypeRep b ->
-  EnCode ctx a :~: EnCode ctx b ->
+  R.TypeRep a ->
+  R.TypeRep b ->
+  Encode ctx a :~: Encode ctx b ->
   a :~: b
-enCodeInj ctx a b r@Refl =
-  case (enCoded a, enCoded b) of
-    (EnCodedApp f a' Refl, EnCodedApp g b' Refl) ->
-      case (enCodeInjAppOuter ctx f a' g b' r, enCodeInjAppInner ctx f a' g b' r) of
+encodeInj ctx a b r@Refl =
+  case (encoded a, encoded b) of
+    (EncodedApp f a' Refl, EncodedApp g b' Refl) ->
+      case (encodeInjAppOuter ctx f a' g b' r, encodeInjAppInner ctx f a' g b' r) of
         (Refl, Refl) ->
-          case (enCodeInj ctx f g Refl, enCodeInj ctx a' b' Refl) of
+          case (encodeInj ctx f g Refl, encodeInj ctx a' b' Refl) of
             (Refl, Refl) -> Refl
-    (EnCodedCon f, EnCodedCon g) ->
+    (EncodedCon f, EncodedCon g) ->
       case ctx of
         EmptyRep -> Refl
-        c@(ctx' ::> k) ->
-          case (f k c, g k c) of
-            (Refl, Refl) -> enCodeInj ctx' a b Refl
+        ctx' ::> k ->
+          case (f k ctx', g k ctx') of
+            (Refl, Refl) -> encodeInj ctx' a b Refl
+    -- (EncodedApp f a' Refl, EncodedCon g) -> _
 
 --------------------------------------------------------------------------------
 -- Decoding
 
-type family DeCoder (ctx :: Ctx) (as :: Assign ctx) (u :: Code ctx uk) :: uk where
-  DeCoder ctx as ('App f x) = (DeCoder ctx as f) (DeCoder ctx as x)
-  DeCoder 'Empty 'AssignEmpty ('Const t) = t
-  DeCoder (_ :> _) (_ :::> a) 'Var = a
-  DeCoder (ctx :> _) (as :::> _) ('Weak u) = DeCoder ctx as u
+type family Decode (ctx :: Ctx) (as :: Assign ctx) (u :: U ctx uk) :: uk where
+  Decode ctx as ('App f x) = (Decode ctx as f) (Decode ctx as x)
+  Decode 'Empty 'AnEmpty ('Const t) = t
+  Decode (_ ':> _) (_ ':& a) 'Var = a
+  Decode (ctx ':> _) (as ':& _) ('Weak u) = Decode ctx as u
 
-type family DeCode0 (u :: Code 'Empty uk) :: uk where
-  DeCode0 ('App f x) = (DeCode0 f) (DeCode0 x)
-  DeCode0 ('Const t) = t
-
-type family DeCode1 (u :: Code ('Empty :> k) uk) (a :: k) :: uk where
-  DeCode1 ('App f x) a = (DeCode1 f a) (DeCode1 x a)
-  DeCode1 'Var a = a
-  DeCode1 ('Weak u) a = DeCode0 u
-
-type family
-  DeCode2
-    (u :: Code ('Empty :> k :> l) uk)
-    (a :: k)
-    (b :: l)
-    :: uk where
-  DeCode2 ('App f x) a b = (DeCode2 f a b) (DeCode2 x a b)
-  DeCode2 ('Weak u) a _ = DeCode1 u a
-  DeCode2 'Var _ b = b
-
-data DeCode1'
-  (f :: uk -> Type)
-  (u :: Code ('Empty :> k) uk)
-  (a :: k)
-  = DeCode1' (f (DeCode1 u a))
-
-data DeCode2'
-  (f :: uk -> Type)
-  (u :: Code ('Empty :> k :> l) uk)
-  (a :: k)
-  (b :: l)
-  = DeCode2' (f (DeCode2 u a b))
-
-data Dec
-  (f :: uk -> Type)
-  (ctx :: Ctx)
-  (u :: Code ctx uk)
-  where
-  Dec0 :: f (DeCode0 u) -> Dec f 'Empty u
-  Dec1 :: All (DeCode1' f u) -> Dec f ('Empty :> ()) u
-
-data All (f :: k) where
-  All0 :: f -> All f
-  AllS :: (forall a. All (f a)) -> All f
-
-type family DeCode (ctx :: Ctx) (u :: Code ctx uk) (f :: uk -> Type) :: Type where
-  DeCode 'Empty u f = f (DeCode0 u)
-  DeCode ('Empty :> _) u f = All (DeCode1' f u)
-  DeCode ('Empty :> _ :> _) u f = All (DeCode2' f u)
-
--- | Like 'Type.Reflection.TypeRep, but can create representatives of
+-- | Like 'Type.Rion.TypeRep, but can create representatives of
 -- polymorphic types.
 data TypeRep (a :: k) where
-  TypeRep :: CtxRep ctx -> CodeRep ctx k (EnCode ctx a) -> TypeRep a
-  -- TypeRep :: CodeRep ctx k u -> TypeRep (DeCode ctx u Proxy)
+  TypeRep :: CtxRep ctx -> URep ctx k (Encode ctx a) -> TypeRep a
+  -- TypeRep :: URep ctx k u -> TypeRep (DeU ctx u Proxy)
 
 -- | Helper for default signature for 'Typeable', not exported.
 defTypeRep ::
   forall k (a :: k).
-  Reflect.TypeRep a ->
-  CodeRep 'Empty k (EnCode 'Empty a)
+  R.TypeRep a ->
+  URep 'Empty k (Encode 'Empty a)
 defTypeRep a =
-  case enCoded a of
-    EnCodedApp f x Refl -> AppRep (defTypeRep f) (defTypeRep x)
-    EnCodedCon {} -> ConstRep a
+  case encoded a of
+    EncodedApp f x Refl -> AppRep (defTypeRep f) (defTypeRep x)
+    EncodedCon {} -> ConstRep a
 
-class Reflect.Typeable k => Typeable (a :: k) where
+class Monotypeable k => Typeable (a :: k) where
   typeRep :: TypeRep a
 
-  default typeRep :: Reflect.Typeable a => TypeRep a
-  typeRep = TypeRep EmptyRep (defTypeRep (Reflect.typeRep @a))
+  default typeRep :: Monotypeable a => TypeRep a
+  typeRep = TypeRep EmptyRep (defTypeRep (R.typeRep @a))
 
 -- instance TestEquality TypeRep where
 --   testEquality (TypeRep ctx u) (TypeRep ctx' v) = do
 --     Refl <- testEquality ctx ctx'
 --     Refl <- testEquality (codeKind u) (codeKind v)
 --     Refl <- testEquality u v
---     -- Refl <- return (enCodeInj ctx _ _ Refl)
+--     -- Refl <- return (encodeInj ctx _ _ Refl)
 --     return Refl
 
 --------------------------------------------------------------------------------
 -- Weakening
 
-type family WeakBy (ctx :: Ctx) (u :: Code 'Empty k) :: Code ctx k where
+type family WeakBy (ctx :: Ctx) (u :: U 'Empty k) :: U ctx k where
   WeakBy 'Empty u = u
-  WeakBy (ctx :> _) u = 'Weak (WeakBy ctx u)
+  WeakBy (ctx ':> _) u = 'Weak (WeakBy ctx u)
 
-weakBy :: CtxRep ctx -> CodeRep 'Empty k u -> CodeRep ctx k (WeakBy ctx u)
+weakBy :: CtxRep ctx -> URep 'Empty k u -> URep ctx k (WeakBy ctx u)
 weakBy ctx u =
   case (ctx, u) of
     (EmptyRep, _) -> u
@@ -420,14 +382,14 @@ weakBy ctx u =
 type family
   Inst
     (ctx :: Ctx)
-    (u :: Code (ctx :> k) uk)
+    (u :: U (ctx ':> k) uk)
     (a :: k)
-    :: Code ctx uk where
+    :: U ctx uk where
   Inst ctx ('App f x) a = 'App (Inst ctx f a) (Inst ctx x a)
   Inst ctx 'Var a = WeakBy ctx ('Const a)
   Inst ctx ('Weak u) _ = u
 
-inst :: Reflect.TypeRep a -> CodeRep (ctx :> k) uk u -> CodeRep ctx uk (Inst ctx u a)
+inst :: R.TypeRep a -> URep (ctx ':> k) uk u -> URep ctx uk (Inst ctx u a)
 inst rep =
   \case
     AppRep f a -> AppRep (inst rep f) (inst rep a)
@@ -435,44 +397,31 @@ inst rep =
     WeakRep _kRep u -> u
 
 -- TODO(lb): ???
--- data TryInst (ctx :: Ctx) (u :: Code ctx) a where
+-- data TryInst (ctx :: Ctx) (u :: U ctx) a where
 --   InstFail :: TryInst Ctx0 u a
 --   InstSucceed ::
---     CodeRep ctx (Inst ctx u a) -> TryInst (ctx :> ()) u a
+--     URep ctx (Inst ctx u a) -> TryInst (ctx :> ()) u a
 
--- tryInst :: Proxy a -> CodeRep ctx u -> TryInst ctx u a
+-- tryInst :: Proxy a -> URep ctx u -> TryInst ctx u a
 -- tryInst proxy uRep =
 --   case codeCtx uRep of
 --     ERep -> InstFail
 --     XRep ctx -> InstSucceed (inst proxy uRep)
 
 --------------------------------------------------------------------------------
--- Application
+-- Substitutions
 
--- -- TODO(lb)
--- appMono ::
---   DeCodereted 'Empty u ->
---   DeCode 'Empty u Identity ->
---   CodeRep 'Empty Type v ->
---   DeCode 'Empty v Identity ->
-
---------------------------------------------------------------------------------
--- Dynamic
-
--- | 'PolyFun' is the goal: A monomorphic type that captures the polymorphism of
--- the contained function.
-data PolyFun where
-  PolyFun :: CodeRep ctx Type u -> DeCode ctx u Identity -> PolyFun
+-- TODO(lb): See Swierstra
 
 --------------------------------------------------------------------------------
 -- Examples
 
-enCodedUnit :: CodeRep 'Empty Type (EnCode 'Empty ())
-enCodedUnit = ConstRep (Reflect.typeRep @())
+encodedUnit :: URep 'Empty Type (Encode 'Empty ())
+encodedUnit = ConstRep (R.typeRep @())
 
 type Ctx0 = 'Empty
-type Ctx1 = 'Empty :> Type
-type Ctx2 = 'Empty :> Type :> Type
+type Ctx1 = 'Empty ':> Type
+type Ctx2 = 'Empty ':> Type ':> Type
 -- type a --> b = 'App ('App ('Const (->)) a) b
 type a ---> b = 'App ('App ('Weak ('Const (->))) a) b
 -- type a ----> b = 'App ('App ('Weak ('Weak ('Const (->)))) a) b
@@ -483,13 +432,13 @@ ctx0 = EmptyRep
 ctx1 :: CtxRep Ctx1
 ctx1 = ctx0 ::> kTypeRep
 
-_var_1_1 :: CodeRep Ctx1 Type 'Var
+_var_1_1 :: URep Ctx1 Type 'Var
 _var_1_1 = VarRep kTypeRep ctx0
 
-_var_2_1 :: CodeRep Ctx2 Type ('Weak 'Var)
+_var_2_1 :: URep Ctx2 Type ('Weak 'Var)
 _var_2_1 = WeakRep kTypeRep (VarRep kTypeRep ctx0)
 
-_var_2_2 :: CodeRep Ctx2 Type 'Var
+_var_2_2 :: URep Ctx2 Type 'Var
 _var_2_2 = VarRep kTypeRep ctx1
 
 type IdType1 = 'Var ---> 'Var
@@ -499,31 +448,31 @@ type ArrKind = Type -> Type -> Type
 -- arrKindRep :: KindRep ArrKind
 -- arrKindRep = kTypeRep :==> kTypeRep :==> kTypeRep
 
--- arrRep1 :: CodeRep Ctx1 ArrKind ('Weak ('Const (->)))
--- arrRep1 = WeakRep kTypeRep (ConstRep arrKindRep (Reflect.typeRep @(->)))
+-- arrRep1 :: URep Ctx1 ArrKind ('Weak ('Const (->)))
+-- arrRep1 = WeakRep kTypeRep (ConstRep arrKindRep (R.typeRep @(->)))
 
--- _idRep :: CodeRep Ctx1 Type IdType1
+-- _idRep :: URep Ctx1 Type IdType1
 -- _idRep = AppRep (AppRep arrRep1 (VarRep kTypeRep ctx0)) (VarRep kTypeRep ctx0)
 
--- _idRepWeak :: CodeRep Ctx2 Type ('Weak IdType1)
+-- _idRepWeak :: URep Ctx2 Type ('Weak IdType1)
 -- _idRepWeak = WeakRep (VarRep rep0 :---> VarRep rep0)
 
--- _idRepWeak' :: CodeRep Ctx2 Type ('Weak 'Var ----> 'Weak 'Var)
+-- _idRepWeak' :: URep Ctx2 Type ('Weak 'Var ----> 'Weak 'Var)
 -- _idRepWeak' = WeakRep var_1_1 :---> WeakRep var_1_1
 
--- _idInst :: CodeRep Ctx0 Type (Inst Ctx0 IdType1 Bool)
+-- _idInst :: URep Ctx0 Type (Inst Ctx0 IdType1 Bool)
 -- _idInst = WeakRep (ConstRep (Proxy @Bool)) :---> WeakRep (ConstRep (Proxy @Bool))
 
 -- _idP :: PolyFun
--- _idP = PolyFun idRep (All1 (DeCode1' id))
+-- _idP = PolyFun idRep (All1 (DeU1' id))
 
--- constRep :: CodeRep Ctx2 Type ('Weak 'Var --> 'Var --> 'Weak 'Var)
+-- constRep :: URep Ctx2 Type ('Weak 'Var --> 'Var --> 'Weak 'Var)
 -- constRep = var_2_1 :---> var_2_2 :---> var_2_1
 
 -- _constP :: PolyFun
--- _constP = PolyFun constRep (All2 (DeCode2' const))
+-- _constP = PolyFun constRep (All2 (DeU2' const))
 
 -- _getConst ::
---   All2 (DeCode2' ('Weak 'Var --> 'Var --> 'Weak 'Var)) ->
+--   All2 (DeU2' ('Weak 'Var --> 'Var --> 'Weak 'Var)) ->
 --   (forall a b. a -> b -> a)
--- _getConst (All2 (DeCode2' const_)) = const_
+-- _getConst (All2 (DeU2' const_)) = const_
