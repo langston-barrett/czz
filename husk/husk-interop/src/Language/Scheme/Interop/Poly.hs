@@ -1,6 +1,7 @@
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DefaultSignatures #-}
+{-# LANGUAGE EmptyCase #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
@@ -59,13 +60,17 @@ module Language.Scheme.Interop.Poly
     -- * Contexts
   , type Ctx(..)
   , CtxRep(..)
+    -- * Environments
+  , type Env(..)
+  , EnvRep(..)
+    -- * Universe
   , type U(..)
   , URep(..)
-  , codeCtx
-  , codeKind
+  , uCtx
+  , uKind
   -- * Encoding
   , Encode
-  , encodeInj
+  , encodeMonoInj
   -- * Decoding
   , Decode
   -- * Weakening
@@ -76,11 +81,19 @@ module Language.Scheme.Interop.Poly
   ) where
 
 import           Data.Kind (Type)
+import           Data.Proxy (Proxy(Proxy))
 import           Data.Type.Equality (TestEquality(testEquality), (:~:)(Refl))
 import qualified Type.Reflection as R
 import           Unsafe.Coerce (unsafeCoerce)
 
+unsafeEqualityAxiom :: a :~: b
+unsafeEqualityAxiom = unsafeCoerce Refl
+
+--------------------------------------------------------------------------------
+-- Monotypeable
+
 type Monotypeable = R.Typeable
+type MonotypeRep = R.TypeRep
 
 --------------------------------------------------------------------------------
 -- Kinds
@@ -91,13 +104,13 @@ type Monotypeable = R.Typeable
 -- | As we all know, since @-XTypeInType@ kinds /are/ types.
 type Kind = Type
 
-newtype KindRep k = KindRep { _getKindRep :: R.TypeRep k }
+newtype KindRep k = KindRep { _getKindRep :: MonotypeRep k }
   deriving (TestEquality)
 
 kindRep :: forall a. Monotypeable a => KindRep a
 kindRep = KindRep (R.typeRep @a)
 
-typeRepKind :: forall k (a :: k). R.TypeRep a -> KindRep k
+typeRepKind :: forall k (a :: k). MonotypeRep a -> KindRep k
 typeRepKind a = KindRep (R.typeRepKind a)
 
 kTypeRep :: KindRep Type
@@ -140,32 +153,35 @@ instance TestEquality CtxRep where
         return Refl
       (_, _) -> Nothing
 
--- | A list of types with kinds specified by @ctx@
-data Assign (ctx :: Ctx) where
-  AnEmpty :: Assign 'Empty
-  (:&) ::
-    forall ctx k a.
-    Assign ctx ->
-    k ->
-    Assign (ctx ':> k)
+--------------------------------------------------------------------------------
+-- Environments
 
-data AssignRep (as :: Assign ctx) where
-  AnEmptyRep :: AssignRep 'AnEmpty
+-- | A list of types with kinds specified by @ctx@
+data Env (ctx :: Ctx) where
+  EEmpty :: Env 'Empty
+  (:&) ::
+    forall ctx k.
+    Env ctx ->
+    k ->
+    Env (ctx ':> k)
+
+data EnvRep (env :: Env ctx) where
+  EEmptyRep :: EnvRep 'EEmpty
   (::&) ::
-    AssignRep as ->
-    R.TypeRep (a :: k) ->
-    AssignRep (as ':& a)
+    EnvRep env ->
+    MonotypeRep (a :: k) ->
+    EnvRep (env ':& a)
 
 assignCtx ::
-  forall (ctx :: Ctx) (as :: Assign ctx).
-  AssignRep as ->
+  forall (ctx :: Ctx) (env :: Env ctx).
+  EnvRep env ->
   CtxRep ctx
 assignCtx =
   \case
-    AnEmptyRep -> EmptyRep
+    EEmptyRep -> EmptyRep
     r ::& t -> assignCtx r ::> typeRepKind t
 
--- instance TestEquality AssignRep where
+-- instance TestEquality EnvRep where
 --   testEquality x y =
 --     case (x, y) of
 --       (AnEmptyRep, AnEmptyRep) -> Just Refl
@@ -191,33 +207,37 @@ data U (ctx :: Ctx) (uk :: Kind) where
   Var :: U (ctx ':> uk) uk
   Weak :: U ctx uk -> U (ctx ':> k) uk
 
+data V (ctx :: Ctx) (uk :: Kind) where
+  Base :: U ctx uk -> V ctx uk
+  Forall :: KindRep k -> U (ctx ':> k) uk -> V ctx uk
+
 data URep (ctx :: Ctx) (uk :: Kind) (u :: U ctx uk) :: Type where
   AppRep :: URep ctx (k -> l) f -> URep ctx k u -> URep ctx l ('App f u)
-  ConstRep :: R.TypeRep c -> URep 'Empty uk ('Const c)
+  ConstRep :: MonotypeRep c -> URep 'Empty uk ('Const c)
   VarRep :: KindRep uk -> CtxRep ctx -> URep (ctx ':> uk) uk 'Var
   WeakRep :: KindRep k -> URep ctx uk u -> URep (ctx ':> k) uk ('Weak u)
 
-codeCtx :: URep ctx k u -> CtxRep ctx
-codeCtx =
+uCtx :: URep ctx k u -> CtxRep ctx
+uCtx =
   \case
-    AppRep f _ -> codeCtx f
+    AppRep f _ -> uCtx f
     ConstRep {} -> EmptyRep
     VarRep k ctx -> ctx ::> k
-    WeakRep k u -> codeCtx u ::> k
+    WeakRep k u -> uCtx u ::> k
 
-codeKind :: URep ctx k u -> KindRep k
-codeKind =
+uKind :: URep ctx k u -> KindRep k
+uKind =
   \case
-    AppRep f _a -> kRange (codeKind f)
+    AppRep f _a -> kRange (uKind f)
     ConstRep t -> typeRepKind t
     VarRep k _ -> k
-    WeakRep _ u -> codeKind u
+    WeakRep _ u -> uKind u
 
 instance TestEquality (URep ctx u) where
   testEquality u v =
     case (u, v) of
       (AppRep ku lu, AppRep kv lv) -> do
-        Refl <- testEquality (codeKind ku) (codeKind kv)
+        Refl <- testEquality (uKind ku) (uKind kv)
         Refl <- testEquality ku kv
         Refl <- testEquality lu lv
         return Refl
@@ -245,9 +265,9 @@ type family Encode (ctx :: Ctx) (a :: k) = (u :: U ctx k) where
 data Encoded a where
   EncodedApp ::
     (a ~ f b) =>
-    R.TypeRep f ->
-    R.TypeRep b ->
-    (forall ctx. Encode ctx a :~: 'App (Encode ctx f) (Encode ctx b)) ->
+    MonotypeRep f ->
+    MonotypeRep b ->
+    (forall proxy ctx. proxy ctx -> Encode ctx a :~: 'App (Encode ctx f) (Encode ctx b)) ->
     Encoded a
   EncodedCon ::
     (Encode 'Empty a ~ 'Const a) =>
@@ -257,14 +277,13 @@ data Encoded a where
      Encode (ctx ':> k) a :~: 'Weak (Encode ctx a)) ->
     Encoded a
 
-encoded :: forall a. R.TypeRep a -> Encoded a
+encoded :: forall a. MonotypeRep a -> Encoded a
 encoded =
   \case
     R.Con _ ->
-      -- TODO(lb): Justify!
-      case unsafeCoerce Refl :: Encode 'Empty a :~: 'Const a of
-        Refl -> EncodedCon (\_k _c -> (unsafeCoerce Refl :: Encode (ctx ':> k) a :~: 'Weak (Encode ctx a)))
-    R.App f x -> EncodedApp f x Refl
+      case unsafeEqualityAxiom :: Encode 'Empty a :~: 'Const a of
+        Refl -> EncodedCon (\_k _c -> (unsafeEqualityAxiom :: Encode (ctx ':> k) a :~: 'Weak (Encode ctx a)))
+    R.App f x -> EncodedApp f x (const Refl)
     R.Fun {} -> error "Impossible"
 
 appInj1 :: 'App f a :~: 'App g b -> f :~: g
@@ -273,94 +292,123 @@ appInj1 Refl = Refl
 appInj2 :: 'App f a :~: 'App g b -> a :~: b
 appInj2 Refl = Refl
 
-encodeInjAppOuter ::
+encodeMonoInjAppOuter ::
   forall f a g b ctx.
   CtxRep ctx ->
-  R.TypeRep f ->
-  R.TypeRep a ->
-  R.TypeRep g ->
-  R.TypeRep b ->
+  MonotypeRep f ->
+  MonotypeRep a ->
+  MonotypeRep g ->
+  MonotypeRep b ->
   Encode ctx (f a) :~: Encode ctx (g b) ->
   f :~: g
-encodeInjAppOuter ctx f a g b Refl = encodeInj ctx f g (appInj1 r)
+encodeMonoInjAppOuter ctx f a g b Refl = encodeMonoInj ctx f g (appInj1 r)
   where
     r :: 'App (Encode ctx g) (Encode ctx b) :~: 'App (Encode ctx f) (Encode ctx a)
     r = Refl
 
-encodeInjAppInner ::
+encodeMonoInjAppInner ::
   forall f a g b ctx.
   CtxRep ctx ->
-  R.TypeRep f ->
-  R.TypeRep a ->
-  R.TypeRep g ->
-  R.TypeRep b ->
+  MonotypeRep f ->
+  MonotypeRep a ->
+  MonotypeRep g ->
+  MonotypeRep b ->
   Encode ctx (f a) :~: Encode ctx (g b) ->
   a :~: b
-encodeInjAppInner ctx f a g b Refl = encodeInj ctx a b (appInj2 r)
+encodeMonoInjAppInner ctx f a g b Refl = encodeMonoInj ctx a b (appInj2 r)
   where
     r :: 'App (Encode ctx g) (Encode ctx b) :~: 'App (Encode ctx f) (Encode ctx a)
     r = Refl
 
-encodeInj ::
+encodeMonoInj ::
   forall a b ctx.
   CtxRep ctx ->
-  R.TypeRep a ->
-  R.TypeRep b ->
+  MonotypeRep a ->
+  MonotypeRep b ->
   Encode ctx a :~: Encode ctx b ->
   a :~: b
-encodeInj ctx a b r@Refl =
+encodeMonoInj ctx a b r@Refl =
   case (encoded a, encoded b) of
-    (EncodedApp f a' Refl, EncodedApp g b' Refl) ->
-      case (encodeInjAppOuter ctx f a' g b' r, encodeInjAppInner ctx f a' g b' r) of
+    (EncodedApp f a' _p1, EncodedApp g b' _p2) ->
+      case ( encodeMonoInjAppOuter ctx f a' g b' r
+           , encodeMonoInjAppInner ctx f a' g b' r
+           ) of
         (Refl, Refl) ->
-          case (encodeInj ctx f g Refl, encodeInj ctx a' b' Refl) of
+          case (encodeMonoInj ctx f g Refl, encodeMonoInj ctx a' b' Refl) of
             (Refl, Refl) -> Refl
     (EncodedCon f, EncodedCon g) ->
       case ctx of
         EmptyRep -> Refl
         ctx' ::> k ->
           case (f k ctx', g k ctx') of
-            (Refl, Refl) -> encodeInj ctx' a b Refl
-    -- (EncodedApp f a' Refl, EncodedCon g) -> _
+            (Refl, Refl) -> encodeMonoInj ctx' a b Refl
+    _ -> error "Impossible"
+    -- TODO(lb): when uncommenting these proofs, the above cases start failing to
+    -- typecheck...?
+    --
+    -- (EncodedApp f a' p, EncodedCon g) ->
+    --   case (p ctx, ctx) of
+    --     (Refl, ctx' ::> k) ->
+    --       case g @Maybe @Maybe (Just k) (Just ctx') of {}
+    -- (EncodedCon g, EncodedApp f a' p) ->
+    --   case (p ctx, ctx) of
+    --     (Refl, ctx' ::> k) ->
+    --       case g @Maybe @Maybe (Just k) (Just ctx') of {}
+
+encodePolyInj ::
+  forall k a b ctx.
+  CtxRep ctx ->
+  URep ctx k (Encode ctx a) ->
+  URep ctx k (Encode ctx b) ->
+  Encode ctx a :~: Encode ctx b ->
+  a :~: b
+encodePolyInj _ctx _u _v Refl = unsafeEqualityAxiom
 
 --------------------------------------------------------------------------------
 -- Decoding
 
-type family Decode (ctx :: Ctx) (as :: Assign ctx) (u :: U ctx uk) :: uk where
-  Decode ctx as ('App f x) = (Decode ctx as f) (Decode ctx as x)
-  Decode 'Empty 'AnEmpty ('Const t) = t
+type family Decode (ctx :: Ctx) (env :: Env ctx) (u :: U ctx uk) :: uk where
+  Decode ctx env ('App f x) = (Decode ctx env f) (Decode ctx env x)
+  Decode 'Empty 'EEmpty ('Const t) = t
   Decode (_ ':> _) (_ ':& a) 'Var = a
-  Decode (ctx ':> _) (as ':& _) ('Weak u) = Decode ctx as u
+  Decode (ctx ':> _) (env ':& _) ('Weak u) = Decode ctx env u
 
--- | Like 'Type.Rion.TypeRep, but can create representatives of
+-- | Like 'Type.Reflection.TypeRep, but can create representatives of
 -- polymorphic types.
-data TypeRep (a :: k) where
-  TypeRep :: CtxRep ctx -> URep ctx k (Encode ctx a) -> TypeRep a
-  -- TypeRep :: URep ctx k u -> TypeRep (DeU ctx u Proxy)
+data PolytypeRep (a :: k) where
+  PolytypeRep ::
+    Proxy a ->
+    CtxRep ctx ->
+    URep ctx k (Encode ctx a) ->
+    PolytypeRep a
+  -- PolytypeRep :: CtxRep ctx -> URep ctx k u -> PolytypeRep (Decode ctx as u)
 
 -- | Helper for default signature for 'Typeable', not exported.
-defTypeRep ::
+defPolytypeRep ::
   forall k (a :: k).
-  R.TypeRep a ->
+  MonotypeRep a ->
   URep 'Empty k (Encode 'Empty a)
-defTypeRep a =
+defPolytypeRep a =
   case encoded a of
-    EncodedApp f x Refl -> AppRep (defTypeRep f) (defTypeRep x)
+    EncodedApp f x _ -> AppRep (defPolytypeRep f) (defPolytypeRep x)
     EncodedCon {} -> ConstRep a
 
 class Monotypeable k => Typeable (a :: k) where
-  typeRep :: TypeRep a
+  typeRep :: PolytypeRep a
 
-  default typeRep :: Monotypeable a => TypeRep a
-  typeRep = TypeRep EmptyRep (defTypeRep (R.typeRep @a))
+  default typeRep :: Monotypeable a => PolytypeRep a
+  typeRep = PolytypeRep (Proxy @a) EmptyRep (defPolytypeRep (R.typeRep @a))
 
--- instance TestEquality TypeRep where
---   testEquality (TypeRep ctx u) (TypeRep ctx' v) = do
---     Refl <- testEquality ctx ctx'
---     Refl <- testEquality (codeKind u) (codeKind v)
---     Refl <- testEquality u v
---     -- Refl <- return (encodeInj ctx _ _ Refl)
---     return Refl
+instance TestEquality PolytypeRep where
+  testEquality
+    (PolytypeRep (Proxy :: Proxy a) ctx (u :: URep ctx k (Encode ctx a)))
+    (PolytypeRep (Proxy :: Proxy b) ctx' v) = do
+
+    Refl <- testEquality ctx ctx'
+    Refl <- testEquality (uKind u) (uKind v)
+    Refl <- testEquality u v
+    Refl <- return (encodePolyInj @k @a @b ctx u v Refl)
+    return Refl
 
 --------------------------------------------------------------------------------
 -- Weakening
@@ -389,7 +437,7 @@ type family
   Inst ctx 'Var a = WeakBy ctx ('Const a)
   Inst ctx ('Weak u) _ = u
 
-inst :: R.TypeRep a -> URep (ctx ':> k) uk u -> URep ctx uk (Inst ctx u a)
+inst :: MonotypeRep a -> URep (ctx ':> k) uk u -> URep ctx uk (Inst ctx u a)
 inst rep =
   \case
     AppRep f a -> AppRep (inst rep f) (inst rep a)
@@ -404,7 +452,7 @@ inst rep =
 
 -- tryInst :: Proxy a -> URep ctx u -> TryInst ctx u a
 -- tryInst proxy uRep =
---   case codeCtx uRep of
+--   case uCtx uRep of
 --     ERep -> InstFail
 --     XRep ctx -> InstSucceed (inst proxy uRep)
 
