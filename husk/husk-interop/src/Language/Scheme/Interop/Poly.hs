@@ -53,6 +53,14 @@
 -- But then we need to try all the different type schemes to apply the function.
 -- What if we could just have one monomorphic (existential) type that pairs a
 -- function with a representative of its type scheme?
+--
+-- See:
+--
+-- * Swierstra, W. and Van Noort, T., 2013. A library for polymorphic dynamic
+--   typing. Journal of Functional Programming, 23(3), pp.229-248.
+-- * Peyton Jones, S., Weirich, S., Eisenberg, R.A. and Vytiniotis, D., 2016. A
+--   reflection on types. In A List of Successes That Can Change the World (pp.
+--   292-317). Springer, Cham.
 
 module Language.Scheme.Interop.Poly
   ( -- * Kinds
@@ -75,6 +83,10 @@ module Language.Scheme.Interop.Poly
   , URep(..)
   , uCtx
   , uKind
+  , type V(..)
+  , VRep(..)
+  , type V'(..)
+  , VRep'(..)
   -- * Encoding
   , Encode
   , encodeMonoInj
@@ -83,14 +95,22 @@ module Language.Scheme.Interop.Poly
   , Decode
   , DecodeV(..)
   , DecodeV0
+  , DecodeV'(..)
+  -- * PolytypeRepU
+  , PolytypeRepU(..)
+  , monoToPolyU
   -- * PolytypeRep
   , PolytypeRep(..)
-  , Polytypeable
-  , polytypeRep
+  -- * PolytypeRep'
+  , PolytypeRep'(..)
   -- * Dynamic
   , Dynamic
   , toDyn
   , fromDyn
+  -- * Dynamic'
+  , Dynamic'
+  , toDyn'
+  , fromDyn'
   -- * Weakening
   , WeakBy
   , weakBy
@@ -107,8 +127,8 @@ import           Data.Type.Equality (TestEquality(testEquality), (:~:)(Refl))
 import qualified Type.Reflection as R
 import           Unsafe.Coerce (unsafeCoerce)
 
-unsafeEqualityAxiom :: a :~: b
-unsafeEqualityAxiom = unsafeCoerce Refl
+axiom :: a :~: b
+axiom = unsafeCoerce Refl
 
 --------------------------------------------------------------------------------
 -- Monotypeable
@@ -220,7 +240,7 @@ instance TestEquality (EnvRep ctx) where
 -- Other possible names: @Desc@, @Code@.
 data U (ctx :: Ctx) (uk :: Kind) where
   -- TODO(lb): Try adding this for non-prenex polymorphism:
-  All :: k -> U (ctx ':> k) (k -> uk) -> U ctx uk
+  -- All :: k -> U (ctx ':> k) (k -> uk) -> U ctx uk
   App :: U ctx (k -> uk) -> U ctx k -> U ctx uk
   Const :: k -> U 'Empty k
   Var :: U (ctx ':> uk) uk
@@ -269,7 +289,7 @@ instance TestEquality (URep ctx uk) where
         return Refl
       (_, _) -> Nothing
 
--- V is currently not used...
+-- TODO(lb): pick one of these:
 
 data V (ctx :: Ctx) (uk :: Kind) where
   Base :: U ctx uk -> V ctx uk
@@ -291,6 +311,19 @@ instance TestEquality (VRep ctx uk) where
         return Refl
       (_, _) -> Nothing
 
+data V' (uk :: Kind) where
+  Forall' :: U ctx uk -> V' uk
+
+data VRep' (uk :: Kind) (v :: V' uk) where
+  ForallRep' :: CtxRep ctx -> URep ctx uk u -> VRep' uk ('Forall' u)
+
+instance TestEquality (VRep' uk) where
+  testEquality x y =
+    case (x, y) of
+      (ForallRep' ctx x', ForallRep' ctx' y') -> do
+        Refl <- testEquality ctx ctx'
+        Refl <- testEquality x' y'
+        return Refl
 
 --------------------------------------------------------------------------------
 -- Encoding
@@ -330,10 +363,10 @@ data Encoded a where
 encoded :: forall a. MonotypeRep a -> Encoded a
 encoded =
   \case
-    R.Con _ ->
-      case unsafeEqualityAxiom :: Encode 'Empty a :~: 'Const a of
-        Refl -> EncodedCon (\_k _c -> (unsafeEqualityAxiom :: Encode (ctx ':> k) a :~: 'Weak (Encode ctx a)))
     R.App f x -> EncodedApp f x (const Refl)
+    R.Con {} ->
+      case axiom :: Encode 'Empty a :~: 'Const a of
+        Refl -> EncodedCon (\_k _c -> (axiom :: Encode (ctx ':> k) a :~: 'Weak (Encode ctx a)))
     -- Not sure why GHC can't see this, since we have {-# COMPLETE App, Con #-}
     R.Fun {} -> error "Impossible"
 
@@ -405,6 +438,7 @@ encodeMonoInj ctx a b r@Refl =
     --   case (p ctx, ctx) of
     --     (Refl, ctx' ::> k) ->
     --       case g @Maybe @Maybe (Just k) (Just ctx') of {}
+
 unsafeEncodePolyInj ::
   forall k a b ctx.
   CtxRep ctx ->
@@ -412,7 +446,16 @@ unsafeEncodePolyInj ::
   URep ctx k (Encode ctx b) ->
   Encode ctx a :~: Encode ctx b ->
   a :~: b
-unsafeEncodePolyInj _ctx _u _v Refl = unsafeEqualityAxiom
+unsafeEncodePolyInj _ctx _u _v Refl = axiom
+
+monoURep ::
+  forall k (a :: k).
+  MonotypeRep a ->
+  URep 'Empty k (Encode 'Empty a)
+monoURep a =
+  case encoded a of
+    EncodedApp f x _ -> AppRep (monoURep f) (monoURep x)
+    EncodedCon {} -> ConstRep a
 
 --------------------------------------------------------------------------------
 -- Decoding
@@ -431,6 +474,7 @@ type family Decode (ctx :: Ctx) (env :: Env ctx) (u :: U ctx uk) :: uk where
 
 -- type family DecodeV (ctx :: Ctx) (env :: Env ctx) (v :: V ctx Type) :: Type where
 --   DecodeV ctx env ('Base u) = Decode ctx env u
+--   -- https://gitlab.haskell.org/ghc/ghc/-/issues/9269
 --   -- • Illegal polymorphic type: forall (a :: k). DecodeV (ctx ':> k) (env ':& a) v
 --   DecodeV ctx env ('Forall k v) = forall (a :: k). DecodeV (ctx :> k) (env :& a) v
 
@@ -444,6 +488,13 @@ data DecodeV (ctx :: Ctx) (env :: Env ctx) (v :: V ctx Type) where
 type family DecodeV0 (v :: V 'Empty Type) where
   DecodeV0 ('Base u) = Decode0 u
   DecodeV0 ('Forall k v) = DecodeV 'Empty 'EEmpty ('Forall k v)
+
+data DecodeV' (v :: V' Type) where
+  DecodeV' ::
+    forall ctx u.
+    -- TODO(lb): maybe need a CtxRep? Is a full EnvRep needed?
+    (forall env. EnvRep ctx env -> Decode ctx env u) ->
+    DecodeV' ('Forall' u)
 
 --------------------------------------------------------------------------------
 -- PolytypeRepU
@@ -468,14 +519,11 @@ data PolytypeRepU (a :: k) where
     URep ctx k (Encode ctx a) ->
     PolytypeRepU a
 
-defPolytypeRepU ::
+monoToPolyU ::
   forall k (a :: k).
   MonotypeRep a ->
-  URep 'Empty k (Encode 'Empty a)
-defPolytypeRepU a =
-  case encoded a of
-    EncodedApp f x _ -> AppRep (defPolytypeRepU f) (defPolytypeRepU x)
-    EncodedCon {} -> ConstRep a
+  PolytypeRepU a
+monoToPolyU a = PolytypeRepU (Proxy @a) EmptyRep (monoURep a)
 
 instance TestEquality PolytypeRepU where
   testEquality
@@ -493,57 +541,100 @@ instance TestEquality PolytypeRepU where
 
 -- | Like 'Type.Reflection.TypeRep, but can create representatives of
 -- polymorphic types.
-data PolytypeRep (a :: k) where
-  -- PolytypeRep ::
-  --   Proxy a ->
-  --   CtxRep ctx ->
-  --   URep ctx k (Encode ctx a) ->
-  --   PolytypeRep a
-  --
-  -- This makes PolytypeRep non-poly-kinded, since DecodeV0 requires kind Type.
-  --
+data PolytypeRep (a :: Type) where
+  -- This makes 'PolytypeRep' non-poly-kinded, since @DecodeV0@ requires kind
+  -- 'Type'... Should be fine for use with 'Dynamic'.
   PolytypeRep ::
     VRep 'Empty Type v ->
     PolytypeRep (DecodeV0 v)
 
-data IsBase v where
-  IsBase :: IsBase ('Base ('Const u))
+{-
 
-decodeV0App ::
-  forall v f b.
-  (DecodeV0 v ~ f b) =>
-  v :~: 'Base ('App (Encode 'Empty f) (Encode 'Empty b))
-decodeV0App = undefined
+data DecodedV0 v where
+  DecodedApp ::
+    (v ~ 'Base ('App (Encode 'Empty f) (Encode 'Empty b))) =>
+    MonotypeRep f ->
+    MonotypeRep b ->
+    DecodedV0 v
+  DecodedCon ::
+    (v ~ 'Base ('Const u)) =>
+    DecodedV0 v
 
-decodeV0Con ::
-  forall v a.
-  (DecodeV0 v ~ a) =>
-  MonotypeRep a ->
-  IsBase v
-decodeV0Con = undefined
+-- TODO(lb): this is wrong... (DecodeV0 'Forall) is Monotypeable...
+decoded :: forall proxy v. proxy v -> MonotypeRep (DecodeV0 v) -> DecodedV0 v
+decoded _proxy =
+  \case
+    R.App (f :: MonotypeRep f) (b :: MonotypeRep b) ->
+      case axiom :: v :~: 'Base ('App (Encode 'Empty f) (Encode 'Empty b)) of
+        Refl -> DecodedApp f b
+    R.Con {} ->
+      case axiom :: v :~: 'Base ('Const u) of
+        Refl -> DecodedCon
+    -- Not sure why GHC can't see this, since we have {-# COMPLETE App, Con #-}
+    R.Fun {} -> error "Impossible"
 
-defPolytypeRep ::
-  forall v.
+monoToPoly ::
+  forall proxy v.
+  proxy v ->
+  -- TODO(lb): this is wrong... (DecodeV0 'Forall) is Monotypeable...
   MonotypeRep (DecodeV0 v) ->
   VRep 'Empty Type v
-defPolytypeRep a =
-  case encoded a of
-    EncodedApp (f :: MonotypeRep f) (b :: MonotypeRep b) _ ->
-      case decodeV0App @v @f @b of
-        Refl -> BaseRep (AppRep (defPolytypeRepU f) (defPolytypeRepU b))
-    EncodedCon {} ->
-      case decodeV0Con @v a of
-        IsBase -> BaseRep (ConstRep a)
+monoToPoly proxy v =
+  case decoded proxy v of
+    DecodedApp (f :: MonotypeRep f) (b :: MonotypeRep b) ->
+      BaseRep (AppRep (monoURep f) (monoURep b))
+    DecodedCon {} ->
+      BaseRep (ConstRep v)
+
+-}
 
 instance TestEquality PolytypeRep where
-  testEquality
-    (PolytypeRep (Proxy :: Proxy a) ctx (u :: URep ctx k (Encode ctx a)))
-    (PolytypeRep (Proxy :: Proxy b) ctx' v) = do
+  testEquality (PolytypeRep v) (PolytypeRep w) = do
+    Refl <- testEquality v w
+    return Refl
 
-    Refl <- testEquality ctx ctx'
-    Refl <- testEquality (uKind u) (uKind v)
-    Refl <- testEquality u v
-    Refl <- return (unsafeEncodePolyInj @k @a @b ctx u v Refl)
+--------------------------------------------------------------------------------
+-- PolytypeRep'
+
+-- | Like 'Type.Reflection.TypeRep, but can create representatives of
+-- polymorphic types.
+data PolytypeRep' (a :: Type) where
+  -- This makes 'PolytypeRep' non-poly-kinded, since @DecodeV0@ requires kind
+  -- 'Type'... Should be fine for use with 'Dynamic'.
+  PolytypeRep' ::
+    VRep' Type v ->
+    PolytypeRep' (DecodeV' v)
+
+{-
+
+data IsForall (v :: V' Type) where
+  IsForall ::
+    forall v (ctx :: Ctx) (u :: U ctx Type).
+    (v ~ 'Forall' u) =>
+    -- TODO(lb): this can't be right... DecodeV' is definitely monotypeable...
+    (MonotypeRep (DecodeV' v) -> (ctx :~: 'Empty)) ->
+    IsForall v
+
+isForall :: forall v. IsForall v
+isForall =
+  case axiom :: v :~: 'Forall' u of
+    Refl -> IsForall (const axiom)
+
+monoToPoly' ::
+  forall proxy v.
+  proxy v ->
+  MonotypeRep (DecodeV' v) ->
+  VRep' Type v
+monoToPoly' proxy v = error "TODO(lb)"
+  -- case isForall @v of
+  --   IsForall f ->
+  --     case f v of
+  --       Refl -> ForallRep' EmptyRep _
+-}
+
+instance TestEquality PolytypeRep' where
+  testEquality (PolytypeRep' v) (PolytypeRep' w) = do
+    Refl <- testEquality v w
     return Refl
 
 --------------------------------------------------------------------------------
@@ -557,6 +648,21 @@ toDyn a = Dynamic a
 
 fromDyn :: PolytypeRep a -> Dynamic -> Maybe a
 fromDyn rep (Dynamic rep' a) =
+  case testEquality rep rep' of
+    Just Refl -> Just a
+    Nothing -> Nothing
+
+--------------------------------------------------------------------------------
+-- Dynamic'
+
+data Dynamic' where
+  Dynamic' :: PolytypeRep' a -> a -> Dynamic'
+
+toDyn' :: PolytypeRep' a -> a -> Dynamic'
+toDyn' a = Dynamic' a
+
+fromDyn' :: PolytypeRep' a -> Dynamic' -> Maybe a
+fromDyn' rep (Dynamic' rep' a) =
   case testEquality rep rep' of
     Just Refl -> Just a
     Nothing -> Nothing
